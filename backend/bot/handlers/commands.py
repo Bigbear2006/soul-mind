@@ -1,7 +1,8 @@
-from aiogram import Router
-from aiogram.filters import Command
+from aiogram import F, Router, flags
+from aiogram.filters import Command, CommandObject
 from aiogram.types import Message
 
+from bot.keyboards.reply import menu_kb
 from bot.loader import logger
 from core.models import Client
 
@@ -9,13 +10,26 @@ router = Router()
 
 
 @router.message(Command('start'))
-async def start(msg: Message):
-    client, created = await Client.objects.create_or_update_from_tg_user(
-        msg.from_user,
-    )
-    if created:
+@flags.with_client
+async def start(msg: Message, command: CommandObject, client: Client, client_created: bool):
+    if not client_created:
         logger.info(f'New client {client} id={client.pk} was created')
+        if invited_by := await client.check_invitation(command.args):
+            # await msg.bot.send_message(
+            #     invited_by.pk,
+            #     f'Пользователь {client} перешел по вашей реферальной ссылке.\n'
+            #     f'Вам начислено 150 астробаллов',
+            # )
+            logger.info(f'Client {client} was invited by {invited_by}')
     else:
         logger.info(f'Client {client} id={client.pk} was updated')
 
-    await msg.answer(f'Привет, {msg.from_user.full_name}!')
+    await msg.answer(
+        f'Привет, {msg.from_user.full_name}!',
+        reply_markup=menu_kb,
+    )
+
+
+@router.message(F.text == 'В меню')
+async def to_menu(msg: Message):
+    await msg.answer('Вы перешли в главное меню', reply_markup=menu_kb)

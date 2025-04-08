@@ -12,10 +12,24 @@ async def main():
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
     django.setup()
 
-    from bot.handlers import commands
+    from bot.handlers import (
+        commands,
+        personal_account,
+        personal_analysis,
+        vip_services,
+        invite_friend,
+    )
+    from bot.middlewares import WithClientMiddleware
 
-    dp.include_routers(commands.router)
+    dp.include_routers(
+        commands.router,
+        personal_account.router,
+        personal_analysis.router,
+        vip_services.router,
+        invite_friend.router,
+    )
     dp.message.filter(F.chat.type == ChatType.PRIVATE)
+    dp.message.middleware(WithClientMiddleware())
 
     await bot.delete_webhook(drop_pending_updates=True)
     await bot.set_my_commands(

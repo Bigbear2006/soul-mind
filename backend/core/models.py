@@ -1,7 +1,11 @@
+from typing import Optional
+
 from aiogram import types
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
+
+from bot.loader import logger
 
 
 class User(AbstractUser):
@@ -27,7 +31,8 @@ class ClientManager(models.Manager):
         )
 
     async def create_or_update_from_tg_user(
-        self, user: types.User,
+        self,
+        user: types.User,
     ) -> tuple['Client', bool]:
         try:
             client = await self.aget(pk=user.id)
@@ -42,10 +47,22 @@ class Client(models.Model):
     id = models.PositiveBigIntegerField('Телеграм ID', primary_key=True)
     first_name = models.CharField('Имя', max_length=255)
     last_name = models.CharField(
-        'Фамилия', max_length=255, null=True, blank=True,
+        'Фамилия',
+        max_length=255,
+        null=True,
+        blank=True,
     )
     username = models.CharField('Ник', max_length=32, null=True, blank=True)
     is_premium = models.BooleanField('Есть премиум', default=False)
+    invited_by = models.ForeignKey(
+        'self',
+        models.CASCADE,
+        'invited_friends',
+        verbose_name='Кем приглашен',
+        null=True,
+        blank=True,
+    )
+    astropoints = models.IntegerField('Астробаллы', default=0)
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
     objects = ClientManager()
 
@@ -59,3 +76,17 @@ class Client(models.Model):
         if self.username:
             username += f' (@{self.username})'
         return username
+
+    async def check_invitation(
+        self,
+        inviter_id: int | str,
+    ) -> Optional['Client']:
+        try:
+            invited_by = await Client.objects.aget(pk=inviter_id)
+        except ObjectDoesNotExist:
+            logger.info(f'Invalid inviter_id - {inviter_id}')
+            return
+
+        self.invited_by = invited_by
+        await self.asave()
+        return invited_by
