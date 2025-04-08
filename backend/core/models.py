@@ -8,6 +8,20 @@ from django.db import models
 from bot.loader import logger
 
 
+class SubscriptionPlanChoices(models.TextChoices):
+    STANDARD = 'standard', 'Стандартная'
+    PREMIUM = 'premium', 'Премиум'
+
+    @property
+    def price(self):
+        if self == SubscriptionPlanChoices.STANDARD:
+            return 500
+        elif self == SubscriptionPlanChoices.PREMIUM:
+            return 1200
+        else:
+            raise ValueError('Invalid subscription plan')
+
+
 class User(AbstractUser):
     pass
 
@@ -63,6 +77,17 @@ class Client(models.Model):
         blank=True,
     )
     astropoints = models.IntegerField('Астробаллы', default=0)
+    subscription_plan = models.CharField(
+        'Тип подписки',
+        choices=SubscriptionPlanChoices,
+        max_length=50,
+        blank=True,
+    )
+    subscription_end = models.DateTimeField(
+        verbose_name='Дата окончания подписки',
+        null=True,
+        blank=True,
+    )
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
     objects = ClientManager()
 

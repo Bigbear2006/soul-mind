@@ -11,15 +11,21 @@ router = Router()
 
 @router.message(Command('start'))
 @flags.with_client
-async def start(msg: Message, command: CommandObject, client: Client, client_created: bool):
-    if not client_created:
+async def start(
+    msg: Message,
+    command: CommandObject,
+    client: Client,
+    client_created: bool,
+):
+    if client_created:
         logger.info(f'New client {client} id={client.pk} was created')
-        if invited_by := await client.check_invitation(command.args):
-            # await msg.bot.send_message(
-            #     invited_by.pk,
-            #     f'Пользователь {client} перешел по вашей реферальной ссылке.\n'
-            #     f'Вам начислено 150 астробаллов',
-            # )
+
+        invited_by = (
+            await client.check_invitation(command.args)
+            if command.args
+            else None
+        )
+        if invited_by:
             logger.info(f'Client {client} was invited by {invited_by}')
     else:
         logger.info(f'Client {client} id={client.pk} was updated')

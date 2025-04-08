@@ -17,10 +17,12 @@ class WithClientMiddleware(BaseMiddleware):
     ) -> Any:
         with_client = get_flag(data, 'with_client')
         if with_client:
-            client, created = await Client.objects\
-                .create_or_update_from_tg_user(
-                    event.from_user,
-                )
+            (
+                client,
+                created,
+            ) = await Client.objects.create_or_update_from_tg_user(
+                event.from_user,
+            )
             data['client'] = client
             data['client_created'] = created
         return await handler(event, data)

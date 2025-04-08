@@ -14,10 +14,11 @@ async def main():
 
     from bot.handlers import (
         commands,
+        invite_friend,
         personal_account,
         personal_analysis,
+        subscribe,
         vip_services,
-        invite_friend,
     )
     from bot.middlewares import WithClientMiddleware
 
@@ -27,6 +28,7 @@ async def main():
         personal_analysis.router,
         vip_services.router,
         invite_friend.router,
+        subscribe.router,
     )
     dp.message.filter(F.chat.type == ChatType.PRIVATE)
     dp.message.middleware(WithClientMiddleware())
