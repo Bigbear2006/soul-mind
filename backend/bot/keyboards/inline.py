@@ -1,7 +1,10 @@
+from typing import Literal
+
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from django.db.models import Choices
 
-from core.models import GenderChoices, SubscriptionPlanChoices
+from core.models import QuestStatuses
 
 personal_analysis_kb = InlineKeyboardMarkup(
     inline_keyboard=[
@@ -45,15 +48,21 @@ personal_analysis_kb = InlineKeyboardMarkup(
 )
 
 
-def get_subscription_plans_kb() -> InlineKeyboardMarkup:
+def keyboard_from_choices(choices: type[Choices]) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    for value, label in SubscriptionPlanChoices.choices:
+    for value, label in choices.choices:
         kb.button(text=label, callback_data=value)
     return kb.adjust(1).as_markup()
 
 
-def get_genders_kb() -> InlineKeyboardMarkup:
+def get_quest_statuses_kb(
+    quest_type: Literal['daily', 'weekly'],
+    quest_id: int,
+) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    for value, label in GenderChoices.choices:
-        kb.button(text=label, callback_data=value)
+    for value, label in QuestStatuses.choices:
+        kb.button(
+            text=label,
+            callback_data=f'quest:{quest_type}:{quest_id}:{value}',
+        )
     return kb.adjust(1).as_markup()

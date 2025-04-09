@@ -11,11 +11,11 @@ from aiogram.types import (
 )
 from django.db import models
 
-from bot.keyboards.inline import get_subscription_plans_kb
+from bot.keyboards.inline import keyboard_from_choices
 from bot.keyboards.utils import one_button_keyboard
 from bot.loader import logger
 from bot.settings import settings
-from core.models import Client, SubscriptionPlanChoices
+from core.models import Client, SubscriptionPlans
 
 router = Router()
 
@@ -24,13 +24,13 @@ router = Router()
 async def subscription_plans_handler(query: CallbackQuery):
     await query.message.edit_text(
         'Выберите тип подписки',
-        reply_markup=get_subscription_plans_kb(),
+        reply_markup=keyboard_from_choices(SubscriptionPlans),
     )
 
 
-@router.callback_query(F.data.in_(SubscriptionPlanChoices.values))
+@router.callback_query(F.data.in_(SubscriptionPlans.values))
 async def choose_subscription_plan(query: CallbackQuery, state: FSMContext):
-    plan = SubscriptionPlanChoices(query.data)
+    plan = SubscriptionPlans(query.data)
     await state.update_data(subscription_plan=plan.value)
     await query.message.edit_text(
         f'{plan.label} - {plan.price} ₽',
@@ -44,7 +44,7 @@ async def choose_subscription_plan(query: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data == 'pay_subscription')
 async def subscribe_handler(query: CallbackQuery, state: FSMContext):
-    plan = SubscriptionPlanChoices(
+    plan = SubscriptionPlans(
         await state.get_value('subscription_plan'),
     )
     await query.message.answer_invoice(
@@ -67,7 +67,7 @@ async def on_successful_payment(msg: Message, state: FSMContext):
     client = await Client.objects.prefetch_related('invited_by').aget(
         pk=msg.chat.id,
     )
-    plan = SubscriptionPlanChoices(
+    plan = SubscriptionPlans(
         await state.get_value('subscription_plan'),
     )
 

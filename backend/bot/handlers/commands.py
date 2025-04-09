@@ -5,12 +5,12 @@ from aiogram.filters import Command, CommandObject, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
-from bot.keyboards.inline import get_genders_kb
+from bot.keyboards.inline import keyboard_from_choices
 from bot.keyboards.reply import menu_kb
 from bot.loader import logger
 from bot.settings import settings
 from bot.states import UserInfoState
-from core.models import Client, GenderChoices
+from core.models import Client, Genders
 
 router = Router()
 
@@ -48,12 +48,13 @@ async def start(
             'Для начала нужно заполнить данные.\nУкажите свой пол\n'
             '* Пользуясь ботом, вы даете свое согласие на обработку '
             'персональных данных',
-            reply_markup=get_genders_kb(),
+            reply_markup=keyboard_from_choices(Genders),
         )
 
 
 @router.callback_query(
-    F.data.in_(GenderChoices.values), StateFilter(UserInfoState.gender),
+    F.data.in_(Genders.values),
+    StateFilter(UserInfoState.gender),
 )
 async def set_gender(query: CallbackQuery, state: FSMContext):
     await Client.objects.filter(pk=query.message.chat.id).aupdate(
@@ -74,7 +75,9 @@ async def set_birth_datetime(msg: Message, state: FSMContext):
             ),
         )
     except ValueError:
-        await msg.answer('Вы ввели некорректную дату и время. Попробуйте еще раз')
+        await msg.answer(
+            'Вы ввели некорректную дату и время. Попробуйте еще раз',
+        )
         return
 
     await msg.answer(

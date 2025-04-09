@@ -17,6 +17,7 @@ async def main():
         invite_friend,
         personal_account,
         personal_analysis,
+        quests,
         subscribe,
         vip_services,
     )
@@ -24,11 +25,12 @@ async def main():
 
     dp.include_routers(
         commands.router,
+        invite_friend.router,
         personal_account.router,
         personal_analysis.router,
-        vip_services.router,
-        invite_friend.router,
+        quests.router,
         subscribe.router,
+        vip_services.router,
     )
     dp.message.filter(F.chat.type == ChatType.PRIVATE)
     dp.message.middleware(WithClientMiddleware())

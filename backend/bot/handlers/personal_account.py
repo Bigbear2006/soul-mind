@@ -5,7 +5,7 @@ from aiogram.types import Message
 
 from bot.keyboards.utils import one_button_keyboard
 from bot.settings import settings
-from core.models import Client, SubscriptionPlanChoices
+from core.models import Client, SubscriptionPlans
 
 router = Router()
 
@@ -16,7 +16,7 @@ async def personal_account_handler(msg: Message, client: Client):
     text = f'Астробаллы: {client.astropoints}\n'
 
     if client.subscription_end:
-        sub_plan = SubscriptionPlanChoices(client.subscription_plan)
+        sub_plan = SubscriptionPlans(client.subscription_plan)
         sub_end = datetime.strftime(
             client.subscription_end.astimezone(settings.TZ),
             settings.DATE_FMT,
