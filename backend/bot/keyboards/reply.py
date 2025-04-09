@@ -6,22 +6,18 @@ menu_kb = ReplyKeyboardMarkup(
             KeyboardButton(text='📌 Личностный разбор'),
             KeyboardButton(text='💞 Энергия вашей совместимости'),
         ],
-        # [],
         [
             KeyboardButton(text='🤖 Спроси у SoulMind'),
             KeyboardButton(text='🌟 Совет Вселенной'),
         ],
-        # [],
         [
             KeyboardButton(text='📆 Твой личный день'),
             KeyboardButton(text='🗺 Путеводитель судьбы'),
         ],
-        # [],
         [
             KeyboardButton(text='🤝 Пригласить друга'),
             KeyboardButton(text='👤 Личный кабинет'),
         ],
-        # [],
         [KeyboardButton(text='VIP-Услуги')],
     ],
     resize_keyboard=True,

@@ -22,6 +22,11 @@ class SubscriptionPlanChoices(models.TextChoices):
             raise ValueError('Invalid subscription plan')
 
 
+class GenderChoices(models.TextChoices):
+    MALE = 'male', 'Мужской'
+    FEMALE = 'female', 'Женский'
+
+
 class User(AbstractUser):
     pass
 
@@ -88,6 +93,12 @@ class Client(models.Model):
         null=True,
         blank=True,
     )
+    gender = models.CharField('Пол', max_length=50, blank=True)
+    birth = models.DateTimeField(
+        'Дата и время рождения', null=True, blank=True,
+    )
+    birth_latitude = models.FloatField('Широта', null=True)
+    birth_longitude = models.FloatField('Долгота', null=True)
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
     objects = ClientManager()
 

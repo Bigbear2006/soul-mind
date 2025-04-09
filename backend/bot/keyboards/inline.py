@@ -1,7 +1,7 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from core.models import SubscriptionPlanChoices
+from core.models import GenderChoices, SubscriptionPlanChoices
 
 personal_analysis_kb = InlineKeyboardMarkup(
     inline_keyboard=[
@@ -48,5 +48,12 @@ personal_analysis_kb = InlineKeyboardMarkup(
 def get_subscription_plans_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     for value, label in SubscriptionPlanChoices.choices:
+        kb.button(text=label, callback_data=value)
+    return kb.adjust(1).as_markup()
+
+
+def get_genders_kb() -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    for value, label in GenderChoices.choices:
         kb.button(text=label, callback_data=value)
     return kb.adjust(1).as_markup()
