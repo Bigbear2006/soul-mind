@@ -122,7 +122,9 @@ STATIC_ROOT = 'static'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+
 AUTH_USER_MODEL = 'core.User'
+
 
 LOGGING = {
     'version': 1,
@@ -163,3 +165,10 @@ LOGGING = {
         },
     },
 }
+
+
+CELERY_BROKER_URL = env('CELERY_BROKER_URL')
+
+CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND')
+
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = False
