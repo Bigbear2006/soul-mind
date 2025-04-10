@@ -45,6 +45,7 @@ async def start(
     else:
         await state.set_state(UserInfoState.gender)
         await msg.answer(
+            f'Привет, {msg.from_user.full_name}! '
             'Для начала нужно заполнить данные.\nУкажите свой пол\n'
             '* Пользуясь ботом, вы даете свое согласие на обработку '
             'персональных данных',

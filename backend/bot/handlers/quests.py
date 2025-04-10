@@ -1,18 +1,19 @@
 import random
 
-from asgiref.sync import sync_to_async
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
-from django.db import models, IntegrityError
+from asgiref.sync import sync_to_async
+from django.db import IntegrityError, models
 
 from bot.keyboards.inline import get_quest_statuses_kb
 from core.models import (
     Client,
     ClientDailyQuest,
+    ClientWeeklyQuestTask,
     DailyQuest,
     QuestStatuses,
-    WeeklyQuestTask, ClientWeeklyQuestTask,
+    WeeklyQuestTask,
 )
 
 router = Router()
@@ -22,7 +23,9 @@ router = Router()
 async def quest_handler(query: CallbackQuery):
     astropoints = 10
     _, quest_type, quest_id, status = query.data.split(':')
-    QuestModel = ClientDailyQuest if quest_type == 'daily' else ClientWeeklyQuestTask
+    QuestModel = (
+        ClientDailyQuest if quest_type == 'daily' else ClientWeeklyQuestTask
+    )
 
     try:
         await QuestModel.objects.acreate(
@@ -35,7 +38,9 @@ async def quest_handler(query: CallbackQuery):
         return
 
     if status == QuestStatuses.COMPLETED and quest_type == 'weekly':
-        weekly_quest_task = await WeeklyQuestTask.objects.select_related('quest').aget(
+        weekly_quest_task = await WeeklyQuestTask.objects.select_related(
+            'quest',
+        ).aget(
             quest_id=quest_id,
         )
         if weekly_quest_task.day == 7:
@@ -61,7 +66,7 @@ async def quest_handler(query: CallbackQuery):
 
 
 @router.message(Command('daily_quest'))
-async def send_quest_handler(msg: Message):
+async def send_daily_quest_handler(msg: Message):
     quests_ids = await sync_to_async(list)(
         DailyQuest.objects.values_list('id', flat=True),
     )
@@ -73,8 +78,12 @@ async def send_quest_handler(msg: Message):
 
 
 @router.message(Command('weekly_quest'))
-async def send_quest_handler(msg: Message):
-    quest = await WeeklyQuestTask.objects.filter(day=7).select_related('quest').afirst()
+async def send_weekly_quest_handler(msg: Message):
+    quest = (
+        await WeeklyQuestTask.objects.filter(day=7)
+        .select_related('quest')
+        .afirst()
+    )
     await msg.answer(
         f'{quest.quest.title} (день {quest.day})\n\n{quest.text}',
         reply_markup=get_quest_statuses_kb('weekly', quest.pk),

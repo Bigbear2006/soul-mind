@@ -71,8 +71,12 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('POSTGRES_DB'),
+        'USER': env('POSTGRES_USER'),
+        'PASSWORD': env('POSTGRES_PASSWORD'),
+        'HOST': 'db',
+        'PORT': 5432,
     },
 }
 
@@ -123,8 +127,14 @@ STATIC_ROOT = 'static'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+# Auth user model
+# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-user-model
+
 AUTH_USER_MODEL = 'core.User'
 
+
+# Logging configuration
+# https://docs.djangoproject.com/en/5.2/ref/settings/#logging
 
 LOGGING = {
     'version': 1,
@@ -166,6 +176,9 @@ LOGGING = {
     },
 }
 
+
+# Celery configuration options
+# https://docs.celeryq.dev/en/latest/django/first-steps-with-django.html
 
 CELERY_BROKER_URL = env('CELERY_BROKER_URL')
 
