@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from typing import Optional
 
 from aiogram import types
@@ -7,6 +8,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from bot.loader import logger
+from bot.settings import settings
 
 
 class SubscriptionPlans(models.TextChoices):
@@ -31,6 +33,15 @@ class Genders(models.TextChoices):
 class QuestStatuses(models.TextChoices):
     COMPLETED = 'completed', 'Выполнен'
     SKIPPED = 'skipped', 'Пропущен'
+
+
+class Actions(models.TextChoices):
+    YOUR_COMPATABILITY_ENERGY = (
+        'your_compatability_energy',
+        'Энергия вашей совместимости',
+    )
+    SOUL_MUSE_QUESTION = 'soul_muse_question', 'Спроси у Soul Muse'
+    FRIDAY_GIFT = 'friday_gift', 'Пятничный подарок'
 
 
 class User(AbstractUser):
@@ -94,7 +105,7 @@ class Client(models.Model):
         max_length=50,
         blank=True,
     )
-    subscription_end = models.DateTimeField(
+    subscription_end: datetime = models.DateTimeField(
         verbose_name='Дата окончания подписки',
         null=True,
         blank=True,
@@ -105,6 +116,7 @@ class Client(models.Model):
         max_length=50,
         blank=True,
     )
+    fullname = models.CharField('ФИО', max_length=255, blank=True)
     birth = models.DateTimeField(
         'Дата и время рождения',
         null=True,
@@ -112,7 +124,11 @@ class Client(models.Model):
     )
     birth_latitude = models.FloatField('Широта', null=True)
     birth_longitude = models.FloatField('Долгота', null=True)
-    created_at = models.DateTimeField('Дата создания', auto_now_add=True)
+    notifications_enabled = models.BooleanField('Уведомления', default=False)
+    created_at: datetime = models.DateTimeField(
+        'Дата создания',
+        auto_now_add=True,
+    )
     objects = ClientManager()
 
     class Meta:
@@ -139,6 +155,22 @@ class Client(models.Model):
         self.invited_by = invited_by
         await self.asave()
         return invited_by
+
+    def has_trial(self) -> bool:
+        return self.created_at + timedelta(days=3) > datetime.now(settings.TZ)
+
+    def subscription_is_active(self) -> bool:
+        if self.subscription_end:
+            return self.subscription_end > datetime.now(settings.TZ)
+        return False
+
+    def is_registered(self) -> bool:
+        return self.birth_longitude is not None
+
+    def get_action_permission(self, action: Actions) -> bool:
+        if self.subscription_is_active():
+            return True
+        return False
 
 
 class DailyQuest(models.Model):
@@ -220,11 +252,37 @@ class WeeklyQuestTask(models.Model):
         verbose_name_plural = 'Задачи еженедельных квестов'
 
 
-class ClientWeeklyQuestTask(models.Model):
+class ClientWeeklyQuest(models.Model):
     client = models.ForeignKey(
         Client,
         models.CASCADE,
         'weekly_quests',
+        verbose_name='Пользователь',
+    )
+    quest = models.ForeignKey(
+        WeeklyQuest,
+        models.CASCADE,
+        'clients',
+        verbose_name='Квест',
+    )
+    date = models.DateTimeField('Дата записи', auto_now_add=True)
+    objects: models.Manager
+
+    class Meta:
+        unique_together = ('client', 'quest')
+        verbose_name = 'Запись на еженедельный квест'
+        verbose_name_plural = 'Записи на еженедельные квесты'
+        ordering = ['-date']
+
+    def __str__(self):
+        return f'{self.client} - {self.quest}'
+
+
+class ClientWeeklyQuestTask(models.Model):
+    client = models.ForeignKey(
+        Client,
+        models.CASCADE,
+        'weekly_quests_tasks',
         verbose_name='Пользователь',
     )
     quest = models.ForeignKey(
@@ -250,3 +308,17 @@ class ClientWeeklyQuestTask(models.Model):
 
     def __str__(self):
         return f'{self.client} - {self.quest}'
+
+
+class ClientAction(models.Model):
+    client = models.ForeignKey(Client, models.CASCADE, 'actions')
+    action = models.CharField('Действие', max_length=100, choices=Actions)
+    date = models.DateTimeField('Дата', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Действие пользователя'
+        verbose_name_plural = 'Действия пользователей'
+        ordering = ['-date']
+
+    def __str__(self):
+        return f'{self.client} - {Actions(self.action).label}'

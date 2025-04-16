@@ -8,17 +8,27 @@ menu_kb = ReplyKeyboardMarkup(
         ],
         [
             KeyboardButton(text='🤖 Спроси у SoulMind'),
-            KeyboardButton(text='🌟 Совет Вселенной'),
+            KeyboardButton(text='🧩 Практики для роста'),
         ],
         [
+            KeyboardButton(text='🌟 Совет Вселенной'),
             KeyboardButton(text='📆 Твой личный день'),
+        ],
+        [
             KeyboardButton(text='🗺 Путеводитель судьбы'),
+            KeyboardButton(text='🎁 Пятничный подарок'),
+        ],
+        [
+            KeyboardButton(text='📄 Месяц с Soul Muse'),
+            KeyboardButton(text='💫 Премиум-пространство'),
         ],
         [
             KeyboardButton(text='🤝 Пригласить друга'),
             KeyboardButton(text='👤 Личный кабинет'),
         ],
-        [KeyboardButton(text='VIP-Услуги')],
+        [
+            KeyboardButton(text='VIP-Услуги'),
+        ],
     ],
     resize_keyboard=True,
 )

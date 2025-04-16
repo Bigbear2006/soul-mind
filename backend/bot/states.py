@@ -3,5 +3,7 @@ from aiogram.fsm.state import State, StatesGroup
 
 class UserInfoState(StatesGroup):
     gender = State()
-    birth_datetime = State()
+    fullname = State()
+    birth_date = State()
+    birth_time = State()
     birth_location = State()

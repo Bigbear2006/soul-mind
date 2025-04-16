@@ -13,27 +13,30 @@ async def main():
     django.setup()
 
     from bot.handlers import (
-        commands,
         invite_friend,
         personal_account,
         personal_analysis,
         quests,
+        registration,
         subscribe,
         vip_services,
+        weekly_quests,
     )
     from bot.middlewares import WithClientMiddleware
 
     dp.include_routers(
-        commands.router,
+        registration.router,
         invite_friend.router,
         personal_account.router,
         personal_analysis.router,
         quests.router,
         subscribe.router,
         vip_services.router,
+        weekly_quests.router,
     )
     dp.message.filter(F.chat.type == ChatType.PRIVATE)
     dp.message.middleware(WithClientMiddleware())
+    dp.callback_query.middleware(WithClientMiddleware())
 
     await bot.delete_webhook(drop_pending_updates=True)
     await bot.set_my_commands(
