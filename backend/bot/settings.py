@@ -10,12 +10,15 @@ env.read_env()
 @dataclass
 class Settings:
     BOT_TOKEN: str = field(default_factory=lambda: env('BOT_TOKEN'))
-    REDIS_URL: str = field(default_factory=lambda: env('REDIS_URL'))
-    OPENAI_API_KEY: str = field(default_factory=lambda: env('OPENAI_API_KEY'))
     PROVIDER_TOKEN: str = field(default_factory=lambda: env('PROVIDER_TOKEN'))
+    REDIS_URL: str = field(default_factory=lambda: env('REDIS_URL'))
 
-    BOT_LINK: str = field(default='https://t.me/learnpoemsbot')
+    HD_API_KEY: str = field(default_factory=lambda: env('HD_API_KEY'))
+    HD_GEOCODE_KEY: str = field(default_factory=lambda: env('HD_GEOCODE_KEY'))
+    OPENAI_API_KEY: str = field(default_factory=lambda: env('OPENAI_API_KEY'))
+
     CURRENCY: str = field(default='RUB')
+    BOT_LINK: str = field(default='https://t.me/search_net_bot')
     TZ: ZoneInfo = field(default=ZoneInfo('Europe/Moscow'))
     DATE_FMT: str = field(default='%d.%m.%Y %H:%M')
 

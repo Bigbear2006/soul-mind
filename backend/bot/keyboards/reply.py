@@ -7,7 +7,7 @@ menu_kb = ReplyKeyboardMarkup(
             KeyboardButton(text='💞 Энергия вашей совместимости'),
         ],
         [
-            KeyboardButton(text='🤖 Спроси у SoulMind'),
+            KeyboardButton(text='🤖 Спроси у Soul Muse'),
             KeyboardButton(text='🧩 Практики для роста'),
         ],
         [
@@ -15,7 +15,7 @@ menu_kb = ReplyKeyboardMarkup(
             KeyboardButton(text='📆 Твой личный день'),
         ],
         [
-            KeyboardButton(text='🗺 Путеводитель судьбы'),
+            KeyboardButton(text='🗺️ Путеводитель судьбы'),
             KeyboardButton(text='🎁 Пятничный подарок'),
         ],
         [
@@ -29,16 +29,6 @@ menu_kb = ReplyKeyboardMarkup(
         [
             KeyboardButton(text='VIP-Услуги'),
         ],
-    ],
-    resize_keyboard=True,
-)
-
-vip_services_kb = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text='Мини-консультация с экспертом')],
-        [KeyboardButton(text='Глубокий персональный отчёт')],
-        [KeyboardButton(text='VIP-анализ совместимости')],
-        [KeyboardButton(text='В меню')],
     ],
     resize_keyboard=True,
 )

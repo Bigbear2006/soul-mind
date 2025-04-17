@@ -110,40 +110,6 @@ notifications_kb = InlineKeyboardMarkup(
     ],
 )
 
-to_registration_kb = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text='🔓 Разблокировать',
-                callback_data='to_registration',
-            ),
-        ],
-        [
-            InlineKeyboardButton(
-                text='Назад',
-                callback_data='to_personal_analysis',
-            ),
-        ],
-    ],
-)
-
-to_subscription_plans_kb = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text='🔓 Разблокировать',
-                callback_data='subscription_plans',
-            ),
-        ],
-        [
-            InlineKeyboardButton(
-                text='Назад',
-                callback_data='to_personal_analysis',
-            ),
-        ],
-    ],
-)
-
 back_to_personal_analysis_kb = InlineKeyboardMarkup(
     inline_keyboard=[
         [
@@ -154,6 +120,136 @@ back_to_personal_analysis_kb = InlineKeyboardMarkup(
         ],
     ],
 )
+
+universe_advice_extended_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text='🌟 Открыть совет',
+                callback_data='university_advice',
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text='📆 Узнать свой день',
+                callback_data='personal_day',
+            ),
+        ],
+    ],
+)
+
+vip_services_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text='Мини-консультация с экспертом',
+                callback_data='vip_mini_consult',
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text='Глубокий персональный отчёт',
+                callback_data='vip_personal_report',
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text='VIP-анализ совместимости',
+                callback_data='vip_compatibility',
+            ),
+        ],
+        [InlineKeyboardButton(text='В меню', callback_data='to_menu')],
+    ],
+)
+
+month_with_soul_muse_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text='🎁 Персональный прогноз на месяц',
+                callback_data='month_forecast',
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text='🎁 Главный ресурс месяца',
+                callback_data='month_main_resource',
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text='🎁 Твой сценарий месяца',
+                callback_data='month_script',
+            ),
+        ],
+    ],
+)
+
+premium_space_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text='🚀 Твой День силы',
+                callback_data='power_day',
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text='✨ Ответ Вселенной',
+                callback_data='universe_answer',
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text='VIP-совет от Soul Muse',
+                callback_data='soul_muse_vip_answer',
+            ),
+        ],
+    ],
+)
+
+
+def get_to_registration_kb(
+    *,
+    text='🔓 Разблокировать',
+    back_button_data: str = None,
+):
+    kb = InlineKeyboardBuilder()
+    kb.button(text=text, callback_data='to_registration')
+    if back_button_data:
+        kb.button(text='Назад', callback_data=back_button_data)
+    return kb.adjust(1).as_markup()
+
+
+def get_to_subscription_plans_kb(
+    *,
+    text='🔓 Разблокировать',
+    back_button_data: str = None,
+):
+    kb = InlineKeyboardBuilder()
+    kb.button(text=text, callback_data='subscription_plans')
+    if back_button_data:
+        kb.button(text='Назад', callback_data=back_button_data)
+    return kb.adjust(1).as_markup()
+
+
+def get_soul_muse_question_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text='✍🏽 Задать вопрос Soul Muse',
+                    callback_data='ask_soul_muse',
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text='💎 Купить дополнительные вопросы',
+                    callback_data='buy_more_soul_muse',
+                ),
+            ],
+        ],
+    )
 
 
 async def get_weekly_quest_kb(quest: WeeklyQuest):

@@ -3,9 +3,9 @@ from aiogram.types import CallbackQuery, Message
 
 from bot.keyboards.inline import (
     back_to_personal_analysis_kb,
+    get_to_registration_kb,
+    get_to_subscription_plans_kb,
     personal_analysis_kb,
-    to_registration_kb,
-    to_subscription_plans_kb,
 )
 from core.models import Client
 
@@ -27,7 +27,9 @@ async def personal_analysis_handler(msg: Message | CallbackQuery):
             'но ещё даже не сделал первый шаг?\n\n'
             'Зарегистрируйся. Без этого я не смогу рассказать тебе '
             'самую важную историю — твою.',
-            reply_markup=to_registration_kb,
+            reply_markup=get_to_registration_kb(
+                back_button_data='to_personal_analysis',
+            ),
         )
 
     await answer_func(
@@ -49,7 +51,9 @@ async def destiny_mystery(query: CallbackQuery):
             'Ты хочешь услышать, зачем ты здесь.\n'
             'Но пока молчит даже твоя Вселенная.\n\n'
             'Пройди регистрацию — и твой путь начнёт разворачиваться.',
-            reply_markup=to_registration_kb,
+            reply_markup=get_to_registration_kb(
+                back_button_data='to_personal_analysis',
+            ),
         )
     elif client.subscription_is_active() or client.has_trial():
         await query.message.edit_text(
@@ -66,7 +70,9 @@ async def destiny_mystery(query: CallbackQuery):
             'И это не отпустит.\n\n'
             'Открой доступ — и я расскажу тебе,\n'
             'почему ты больше, чем кажется.',
-            reply_markup=to_subscription_plans_kb,
+            reply_markup=get_to_subscription_plans_kb(
+                back_button_data='to_personal_analysis',
+            ),
         )
 
 
@@ -79,7 +85,9 @@ async def career_and_finance(query: CallbackQuery):
             'Хочешь понять, где твои деньги —\n'
             'но сам(а) ещё не знаешь, кто ты?\n\n'
             'Пройди регистрацию. Всё начинается с тебя.',
-            reply_markup=to_registration_kb,
+            reply_markup=get_to_registration_kb(
+                back_button_data='to_personal_analysis',
+            ),
         )
     elif client.subscription_is_active() or client.has_trial():
         await query.message.edit_text(
@@ -94,7 +102,9 @@ async def career_and_finance(query: CallbackQuery):
             'Твоя энергия знает, куда ей течь.\n'
             'Осталось только разрешить ей это.\n\n'
             'Оформи доступ — и я покажу, как реализуется твой потенциал.',
-            reply_markup=to_subscription_plans_kb,
+            reply_markup=get_to_subscription_plans_kb(
+                back_button_data='to_personal_analysis',
+            ),
         )
 
 
@@ -107,7 +117,9 @@ async def love_code(query: CallbackQuery):
             'Ты хочешь любви.\n'
             'Но пока не знаешь, как любишь сам(а).\n\n'
             'Пройди регистрацию — и я покажу твой способ чувствовать.',
-            reply_markup=to_registration_kb,
+            reply_markup=get_to_registration_kb(
+                back_button_data='to_personal_analysis',
+            ),
         )
     elif client.subscription_is_active() or client.has_trial():
         await query.message.edit_text(
@@ -121,7 +133,9 @@ async def love_code(query: CallbackQuery):
             'Любовь уже постучалась.\n'
             'Ты просто ещё не полностью открыл(а) дверь.\n\n'
             'Позволь себе войти глубже. Я рядом.',
-            reply_markup=to_subscription_plans_kb,
+            reply_markup=get_to_subscription_plans_kb(
+                back_button_data='to_personal_analysis',
+            ),
         )
 
 
@@ -134,7 +148,9 @@ async def superpower(query: CallbackQuery):
             'Сила есть.\n'
             'Но чтобы я показала её — ты должен(на) включиться.\n\n'
             'Зарегистрируйся — и ты узнаешь, что в тебе уже работает на тебя.',
-            reply_markup=to_registration_kb,
+            reply_markup=get_to_registration_kb(
+                back_button_data='to_personal_analysis',
+            ),
         )
     elif client.subscription_is_active() or client.has_trial():
         await query.message.edit_text(
@@ -149,7 +165,9 @@ async def superpower(query: CallbackQuery):
             'Ты уже почувствовал(а), что у тебя есть сила.\n'
             'Теперь — пора ей довериться.\n\n'
             'Разблокируй доступ. Там твой настоящий ресурс.',
-            reply_markup=to_subscription_plans_kb,
+            reply_markup=get_to_subscription_plans_kb(
+                back_button_data='to_personal_analysis',
+            ),
         )
 
 
@@ -163,7 +181,9 @@ async def full_profile(query: CallbackQuery):
             'но пока даже не открыл(а) дверь.\n\n'
             'Зарегистрируйся — и я покажу тебе целостную картину. '
             'Без догадок, без хаоса.',
-            reply_markup=to_registration_kb,
+            reply_markup=get_to_registration_kb(
+                back_button_data='to_personal_analysis',
+            ),
         )
     elif client.subscription_is_active() or client.has_trial():
         await query.message.edit_text(
@@ -179,5 +199,7 @@ async def full_profile(query: CallbackQuery):
             'И если что-то внутри щёлкнуло — это не совпадение.\n\n'
             'Разблокируй доступ — и ты соберёшь свой пазл '
             'до последнего фрагмента.',
-            reply_markup=to_subscription_plans_kb,
+            reply_markup=get_to_subscription_plans_kb(
+                back_button_data='to_personal_analysis',
+            ),
         )

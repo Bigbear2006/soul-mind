@@ -3,7 +3,7 @@ from datetime import datetime
 from aiogram import F, Router, flags
 from aiogram.filters import Command, CommandObject, StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
+from aiogram.types import CallbackQuery, Message
 
 from bot.keyboards.inline import (
     birth_times_kb,
@@ -243,22 +243,30 @@ async def set_notifications(query: CallbackQuery, state: FSMContext):
         'Пазл собран. Звёзды встали на свои места. Теперь я покажу тебе тебя.',
         reply_markup=one_button_keyboard(
             text='Начать разбор',
-            callback_data='to_menu',
+            callback_data='trial_teaser',
         ),
     )
     await state.clear()
 
 
-@router.message(F.text == 'В меню')
-async def to_menu_message_handler(msg: Message):
-    await msg.answer('Главное меню', reply_markup=menu_kb)
-
-
-@router.callback_query(F.data == 'to_menu')
-async def to_menu_callback_query_handler(query: CallbackQuery):
-    await query.message.answer('Главное меню', reply_markup=menu_kb)
-
-
-@router.message(F.text == 'rm')
-async def rm(msg: Message):
-    await msg.answer('rm', reply_markup=ReplyKeyboardRemove())
+@router.callback_query(F.data == 'trial_teaser')
+async def trial_teaser(query: CallbackQuery):
+    await query.message.answer(
+        'Ты в пространстве SoulMind. '
+        'И у тебя три дня — чтобы услышать, вспомнить, почувствовать.\n'
+        'Вот, что тебе уже доступно:\n\n'
+        '📌 Экспресс-разбор личности — '
+        'первые штрихи твоей внутренней карты\n\n'
+        '🔮 Совместимость — 2 расчёта: узнай, что происходит между вами\n\n'
+        '📆 Твой личный день — персональный прогноз, '
+        'чтобы не плыть вслепую\n\n'
+        '🌟 Совет Вселенной — одно послание, '
+        'как отклик на твой внутренний вопрос\n\n'
+        '🧩 Челлендж самопознания (3 дня) — мягкое погружение в себя\n\n'
+        '🤖 Вопрос Soul Muse — ты можешь задать 2 вопроса и услышать, '
+        'что всегда знал(а)\n\n'
+        '🎁 Бонус — случайный инсайт от Soul Muse '
+        '(1 раз, рандомно из "Пятничных подарков от Soul Muse")\n\n'
+        'Это только начало. Дальше — глубже.',
+        reply_markup=menu_kb,
+    )

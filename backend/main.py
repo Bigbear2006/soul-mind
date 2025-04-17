@@ -13,26 +13,44 @@ async def main():
     django.setup()
 
     from bot.handlers import (
+        compatability_energy,
+        destiny_guide,
+        friday_gift,
         invite_friend,
+        menu,
+        month_with_soul_muse,
         personal_account,
         personal_analysis,
+        personal_day,
+        premium_space,
         quests,
         registration,
+        soul_muse_question,
         subscribe,
+        universe_advice,
         vip_services,
         weekly_quests,
     )
     from bot.middlewares import WithClientMiddleware
 
     dp.include_routers(
+        menu.router,
         registration.router,
+        subscribe.router,
+        personal_analysis.router,
+        compatability_energy.router,
+        soul_muse_question.router,
+        weekly_quests.router,
+        universe_advice.router,
+        personal_day.router,
+        destiny_guide.router,
+        friday_gift.router,
+        month_with_soul_muse.router,
+        premium_space.router,
         invite_friend.router,
         personal_account.router,
-        personal_analysis.router,
-        quests.router,
-        subscribe.router,
         vip_services.router,
-        weekly_quests.router,
+        quests.router,
     )
     dp.message.filter(F.chat.type == ChatType.PRIVATE)
     dp.message.middleware(WithClientMiddleware())

@@ -23,7 +23,7 @@ router = Router()
 @router.callback_query(F.data == 'subscription_plans')
 async def subscription_plans_handler(query: CallbackQuery):
     await query.message.edit_text(
-        'Выберите тип подписки',
+        SubscriptionPlans.subscription_plans_teaser(),
         reply_markup=keyboard_from_choices(SubscriptionPlans),
     )
 
@@ -33,7 +33,7 @@ async def choose_subscription_plan(query: CallbackQuery, state: FSMContext):
     plan = SubscriptionPlans(query.data)
     await state.update_data(subscription_plan=plan.value)
     await query.message.edit_text(
-        f'{plan.label} - {plan.price} ₽',
+        plan.teaser,
         reply_markup=one_button_keyboard(
             text='Оплатить',
             callback_data='pay_subscription',
