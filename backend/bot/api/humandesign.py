@@ -1,3 +1,4 @@
+import json
 from dataclasses import asdict
 
 from aiohttp import ClientSession
@@ -22,7 +23,7 @@ class HumanDesignAPI:
         async with self.session.post(
             'https://api.humandesignapi.nl/v1/bodygraphs',
             headers=self.get_headers(),
-            data=asdict(data),
+            data=json.dumps(asdict(data)),
         ) as rsp:
             print(await rsp.text())
             return await rsp.json()

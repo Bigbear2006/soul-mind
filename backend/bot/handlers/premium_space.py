@@ -60,7 +60,7 @@ async def premium_space(msg: Message | CallbackQuery):
             'В нужное время. О самом важном.\n\n'
             'Добро пожаловать в Премиум-пространство.\n'
             'Открой — и почувствуй, как звучит твой следующий уровень.',
-            reply_markup=premium_space_kb
+            reply_markup=premium_space_kb,
         )
     elif client.has_trial():
         await answer_func(
