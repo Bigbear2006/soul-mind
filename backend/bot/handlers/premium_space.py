@@ -1,12 +1,17 @@
-from aiogram import F, Router
+import random
+from datetime import date
+
+from aiogram import F, Router, flags
 from aiogram.types import CallbackQuery, Message
 
+from bot.calculations import get_power_day, get_life_path_number
 from bot.keyboards.inline import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
     premium_space_kb,
 )
 from bot.keyboards.utils import one_button_keyboard
+from bot.templates.premium_space import power_days_descriptions, universe_answers, universe_vip_advices
 from core.models import Actions, Client, SubscriptionPlans
 
 router = Router()
@@ -14,9 +19,8 @@ router = Router()
 
 @router.message(F.text == '💫 Премиум-пространство')
 @router.callback_query(F.data == 'premium_space')
-async def premium_space(msg: Message | CallbackQuery):
-    pk = msg.chat.id if isinstance(msg, Message) else msg.message.chat.id
-    client: Client = await Client.objects.aget(pk=pk)
+@flags.with_client
+async def premium_space(msg: Message | CallbackQuery, client: Client):
     answer_func = (
         msg.answer if isinstance(msg, Message) else msg.message.edit_text
     )
@@ -75,7 +79,7 @@ async def premium_space(msg: Message | CallbackQuery):
 
 
 @router.callback_query(F.data == 'power_day')
-async def power_day(query: CallbackQuery):
+async def power_day_handler(query: CallbackQuery):
     client: Client = await Client.objects.aget(pk=query.message.chat.id)
 
     if not client.subscription_plan == SubscriptionPlans.PREMIUM:
@@ -109,8 +113,21 @@ async def power_day(query: CallbackQuery):
     )
 
 
+@router.callback_query(F.data == 'show_power_day')
+@flags.with_client
+async def show_power_day(query: CallbackQuery, client: Client):
+    power_day = get_power_day(client.birth.date())
+    await query.message.edit_text(
+        power_days_descriptions[power_day],
+        reply_markup=one_button_keyboard(
+            text='Назад',
+            callback_data='power_day',
+        )
+    )
+
+
 @router.callback_query(F.data == 'universe_answer')
-async def universe_answer(query: CallbackQuery):
+async def universe_answer_handler(query: CallbackQuery):
     client: Client = await Client.objects.aget(pk=query.from_user.id)
 
     if not client.subscription_plan == SubscriptionPlans.PREMIUM:
@@ -140,6 +157,23 @@ async def universe_answer(query: CallbackQuery):
             callback_data='show_universe_answer',
             back_button_data='premium_space',
         ),
+    )
+
+
+@router.callback_query(F.data == 'show_universe_answer')
+@flags.with_client
+async def show_universe_answer(query: CallbackQuery, client: Client):
+    lpn = get_life_path_number(client.birth.date())
+    month_answers = universe_answers.get(
+        '05.2025',# date.today().strftime('%m.%Y'),  # for test: '05.2025',
+        {},
+    )
+    await query.message.edit_text(
+        month_answers[lpn],
+        reply_markup=one_button_keyboard(
+            text='Назад',
+            callback_data='universe_answer',
+        )
     )
 
 
@@ -176,4 +210,17 @@ async def soul_muse_vip_answer(query: CallbackQuery):
             callback_data='show_vip_advice',
             back_button_data='premium_space',
         ),
+    )
+
+
+@router.callback_query(F.data == 'show_vip_advice')
+@flags.with_client
+async def show_vip_advice(query: CallbackQuery, client: Client):
+    advice = random.choice(list(universe_vip_advices.values()))
+    await query.message.edit_text(
+        advice,
+        reply_markup=one_button_keyboard(
+            text='Назад',
+            callback_data='soul_muse_vip_answer',
+        )
     )

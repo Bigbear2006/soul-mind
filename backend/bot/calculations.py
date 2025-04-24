@@ -51,3 +51,7 @@ def get_personality_number(fullname: str) -> int:
 
 def get_fate_number(fullname: str, master_numbers: Sequence[int] = None) -> int:
     return fullname_to_number(fullname, lambda x: x, master_numbers)
+
+
+def get_power_day(birth_date: date):
+    return get_life_path_number(birth_date) + date.today().month
