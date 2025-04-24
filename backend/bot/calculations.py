@@ -24,7 +24,13 @@ def reduce_number(number: int) -> int:
     return calculate_number(number, ())
 
 
-def fullname_to_number(fullname: str, condition: Callable[[str], bool]) -> int:
+def fullname_to_number(
+    fullname: str,
+    condition: Callable[[str], bool],
+    master_numbers: Sequence[[int]] = None,
+) -> int:
+    if not master_numbers:
+        master_numbers = (11, 22)
     number = sum(
         [
             pythagorean_matrix[i]
@@ -32,7 +38,7 @@ def fullname_to_number(fullname: str, condition: Callable[[str], bool]) -> int:
             if condition(i)
         ],
     )
-    return calculate_number(number, (11, 22))
+    return calculate_number(number, master_numbers)
 
 
 def get_soul_number(fullname: str) -> int:
@@ -43,5 +49,5 @@ def get_personality_number(fullname: str) -> int:
     return fullname_to_number(fullname, lambda x: x not in 'АЕЁИОУЫЭЮЯ')
 
 
-def get_fate_number(fullname: str) -> int:
-    return fullname_to_number(fullname, lambda x: x)
+def get_fate_number(fullname: str, master_numbers: Sequence[int] = None) -> int:
+    return fullname_to_number(fullname, lambda x: x, master_numbers)

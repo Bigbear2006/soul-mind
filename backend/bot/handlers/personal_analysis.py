@@ -109,10 +109,9 @@ async def full_profile(query: CallbackQuery, client: Client):
 @router.callback_query(F.data == 'show_full_profile')
 @flags.with_client
 async def show_full_profile(query: CallbackQuery, client: Client):
-    # TODO: добавить текст для тестового периода
     intro, content, conclusion = get_full_profile_text(client)
     await query.message.edit_text(intro, reply_markup=None)
-    await query.message.answer(content)
+    [await query.message.answer(i) for i in content]
     await query.message.answer(
         intro,
         reply_markup=back_to_personal_analysis_kb,

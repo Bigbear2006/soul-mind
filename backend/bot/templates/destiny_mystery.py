@@ -62,7 +62,9 @@ def get_destiny_mystery_text(client: Client) -> str:
     hd_type = hd_types_translation[client.type]
     soul_number = get_soul_number(client.fullname)
     fate_number = get_fate_number(client.fullname)
-    north_moon_sign = [i for i in client.planets if i['name'] == 'Луна'][0]['sign']
+    north_moon_sign = [i for i in client.planets if i['name'] == 'Луна'][0][
+        'sign'
+    ]
     south_moon_sign = signs_map[north_moon_sign]
 
     if client.subscription_is_active():
@@ -108,7 +110,7 @@ def get_destiny_mystery_text(client: Client) -> str:
     elif client.has_trial():
         hd_profile = hd_profiles_trial[client.profile]
         return (
-            '🔮 Тайна твоего предназначения (экспресс-версия)\n\n'
+            '🔮 Тайна твоего предназначения\n\n'
             'У каждого свой маршрут.\n'
             'Но ты — из тех, кто пришёл сюда не просто «жить». А вспомнить, зачем.\n\n'
             f'В тебе звучит энергия {archetypes_in_case[soul_number]} — не роль, не маска, а направление.\n'
