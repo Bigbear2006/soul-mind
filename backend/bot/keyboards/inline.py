@@ -260,7 +260,8 @@ def get_soul_muse_question_kb(
     kb = InlineKeyboardBuilder()
     if ask_question_btn:
         kb.button(
-            text='✍🏽 Задать вопрос Soul Muse', callback_data='ask_soul_muse'
+            text='✍🏽 Задать вопрос Soul Muse',
+            callback_data='ask_soul_muse',
         )
     if buy_extra_questions_btn:
         kb.button(

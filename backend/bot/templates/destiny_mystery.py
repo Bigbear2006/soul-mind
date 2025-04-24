@@ -1,18 +1,22 @@
 from aiogram.types import InlineKeyboardMarkup
 
-from bot.api.astrology import AstrologyAPI
 from bot.calculations import (
+    get_fate_number,
     get_life_path_number,
     get_soul_number,
-    get_fate_number,
 )
 from bot.keyboards.inline import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
 )
 from bot.keyboards.utils import one_button_keyboard
-from bot.schemas import HDOutputData, AstrologyParams
-from bot.templates.base import shadow_archetypes, signs_map, nodes, nodes_trial
+from bot.templates.base import (
+    hd_types_translation,
+    nodes,
+    nodes_trial,
+    shadow_archetypes,
+    signs_map,
+)
 from core.models import Client
 
 
@@ -53,18 +57,16 @@ def get_destiny_mystery_intro(
         )
 
 
-def get_destiny_mystery_text(client: Client, hd_data: HDOutputData) -> str:
+def get_destiny_mystery_text(client: Client) -> str:
     lpn = get_life_path_number(client.birth.date())
-    hd_type = hd_types_translation[hd_data.type]
+    hd_type = hd_types_translation[client.type]
     soul_number = get_soul_number(client.fullname)
     fate_number = get_fate_number(client.fullname)
-
-    async with AstrologyAPI() as api:
-        north_moon_sign = api.get_moon_sign(AstrologyParams.from_client(client))
-        south_moon_sign = signs_map[north_moon_sign]
+    north_moon_sign = [i for i in client.planets if i['name'] == 'Луна'][0]['sign']
+    south_moon_sign = signs_map[north_moon_sign]
 
     if client.subscription_is_active():
-        hd_profile = hd_profiles[hd_data.profile]
+        hd_profile = hd_profiles[client.profile]
         return (
             '🔮 Тайна твоего предназначения\n\n'
             'У каждого — свой маршрут.\n'
@@ -104,7 +106,7 @@ def get_destiny_mystery_text(client: Client, hd_data: HDOutputData) -> str:
             'А в том, кем ты всегда был(-а), просто наконец перестал(-а) прятаться.'
         )
     elif client.has_trial():
-        hd_profile = hd_profiles_trial[hd_data.profile]
+        hd_profile = hd_profiles_trial[client.profile]
         return (
             '🔮 Тайна твоего предназначения (экспресс-версия)\n\n'
             'У каждого свой маршрут.\n'
@@ -133,14 +135,6 @@ def get_destiny_mystery_text(client: Client, hd_data: HDOutputData) -> str:
             'Я просто перевожу.'
         )
 
-
-hd_types_translation = {
-    'Generator': 'Генератор',
-    'Manifestor': 'Манифестор',
-    'Projector': 'Проектор',
-    'Reflector': 'Рефлектор',
-    'Manifesting Generator': 'Манифестирующий Генератор',
-}
 
 hd_types = {
     'Генератор': (

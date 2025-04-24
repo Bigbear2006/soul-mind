@@ -1,7 +1,7 @@
 import random
 
 from aiogram import F, Router, flags
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import CallbackQuery, Message
 
 from bot.keyboards.inline import (
     get_to_registration_kb,
@@ -10,11 +10,11 @@ from bot.keyboards.inline import (
 from bot.keyboards.utils import one_button_keyboard
 from bot.templates.friday_gift import (
     friday_gifts_order,
+    friday_gifts_preambles,
     insight_phrases,
     symbols,
-    friday_gifts_preambles,
 )
-from core.models import Client, ClientAction, Actions
+from core.models import Actions, Client, ClientAction
 
 # TODO: Добавить чередование и сохранение подарков
 
@@ -87,5 +87,6 @@ async def friday_gift(query: CallbackQuery):
         await query.message.edit_text(preamble + random.choice(symbols))
 
     await ClientAction.objects.acreate(
-        client_id=client_id, action=Actions.FRIDAY_GIFT
+        client_id=client_id,
+        action=Actions.FRIDAY_GIFT,
     )

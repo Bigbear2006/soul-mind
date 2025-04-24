@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from datetime import datetime
 
 from aiogram import F, Router, flags
@@ -5,6 +6,9 @@ from aiogram.filters import Command, CommandObject, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
+from bot.api.astrology import AstrologyAPI
+from bot.api.geocoding import GeocodingAPI
+from bot.api.humandesign import HumanDesignAPI
 from bot.keyboards.inline import (
     birth_times_kb,
     keyboard_from_choices,
@@ -14,6 +18,7 @@ from bot.keyboards.inline import (
 from bot.keyboards.reply import menu_kb
 from bot.keyboards.utils import one_button_keyboard
 from bot.loader import logger
+from bot.schemas import AstrologyParams, HDInputData
 from bot.settings import settings
 from bot.states import UserInfoState
 from core.models import Client, Genders
@@ -33,6 +38,7 @@ async def start(
     ) = await Client.objects.create_or_update_from_tg_user(
         msg.from_user,
     )
+
     if created:
         logger.info(f'New client {client} id={client.pk} was created')
 
@@ -203,18 +209,38 @@ async def set_birth_time(msg: Message | CallbackQuery, state: FSMContext):
     )
 
     await answer_func(
-        'Отправь место своего рождения.\n'
-        'Нажми на скрепку и выбери "Геопозиция" внизу экрана',
+        'Отправь место своего рождения.\n📍 Только город — без страны',
     )
     await state.set_state(UserInfoState.birth_location)
 
 
-@router.message(F.location, StateFilter(UserInfoState.birth_location))
-async def set_birth_location(msg: Message, state: FSMContext):
+@router.message(F.text, StateFilter(UserInfoState.birth_location))
+@flags.with_client
+async def set_birth_location(msg: Message, client: Client, state: FSMContext):
+    async with GeocodingAPI() as api:
+        lat, lon = await api.get_coordinates(msg.text)
+
+    async with AstrologyAPI() as api:
+        tzone = await api.get_timezone(lat, lon, client.birth.date())
+
+    async with HumanDesignAPI() as api:
+        bodygraphs = await api.bodygraphs(
+            HDInputData.from_datetime(client.birth, msg.text),
+        )
+
+    async with AstrologyAPI() as api:
+        planets = await api.western_horoscope(
+            AstrologyParams.from_client(client),
+        )
+
     await Client.objects.filter(pk=msg.chat.id).aupdate(
-        birth_latitude=msg.location.latitude,
-        birth_longitude=msg.location.longitude,
+        birth_latitude=lat,
+        birth_longitude=lon,
+        tzone=tzone,
+        planets=[asdict(i) for i in planets],
+        **asdict(bodygraphs),
     )
+
     await msg.answer(
         '⚠ Я храню твои данные как свою тайну.'
         'Тётя Люда из маркетинга не узнает.',

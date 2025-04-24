@@ -42,6 +42,8 @@ def get_superpower_intro(client: Client) -> tuple[str, InlineKeyboardMarkup]:
 
 
 def get_superpower_text(client: Client) -> str:
+    sun_sign = [i for i in client.planets if i['name'] == 'Солнце'][0]['sign']
+    mars_sign = [i for i in client.planets if i['name'] == 'Марс'][0]['sign']
     if client.subscription_is_active():
         return (
             '⚡ Твоя суперсила (полная версия)\n\n'

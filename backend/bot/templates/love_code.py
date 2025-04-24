@@ -41,6 +41,9 @@ def get_love_code_intro(client: Client) -> tuple[str, InlineKeyboardMarkup]:
 
 
 def get_love_code_text(client: Client) -> str:
+    moon_sign = [i for i in client.planets if i['name'] == 'Луна'][0]['sign']
+    venus_sign = [i for i in client.planets if i['name'] == 'Венера'][0]['sign']
+    house_7 = [i for i in client.planets if i['house'] == 7][0]['house']
     if client.subscription_is_active():
         return (
             '❤️ Твой код любви\n\n'

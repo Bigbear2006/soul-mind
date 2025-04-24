@@ -1,7 +1,7 @@
 from datetime import date
 
 from aiogram import F, Router, flags
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import CallbackQuery, Message
 
 from bot.calculations import calculate_number
 from bot.keyboards.inline import (

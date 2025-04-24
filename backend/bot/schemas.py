@@ -10,14 +10,23 @@ class HDInputData:
     birthtime: str = '21:17'
     location: str = 'Amsterdam'
 
+    @classmethod
+    def from_datetime(cls, birth: datetime, location: str):
+        return cls(
+            birthdate=birth.strftime('%d-%b-%y'),
+            birthtime=birth.strftime('%H:%M'),
+            location=location,
+        )
+
 
 @dataclass
-class HDOutputData:
+class Bodygraphs:
     type: str
     profile: str
     centers: list[str]
     strategy: str
     authority: str
+    gates: list[str]
 
 
 @dataclass
@@ -38,10 +47,10 @@ class AstrologyParams:
             month=client.birth.month,
             year=client.birth.year,
             hour=client.birth.hour,
-            min=client.birth.min,
+            min=client.birth.minute,
             lat=client.birth_latitude,
             lon=client.birth_longitude,
-            tzone=3,
+            tzone=client.tzone,
         )
 
 
@@ -55,10 +64,3 @@ class Planet:
     sign_id: int
     sign: str
     house: int
-
-
-@dataclass
-class LunarMetric:
-    month: str
-    moon_sign: str
-    moon_phase: str

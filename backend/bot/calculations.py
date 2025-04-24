@@ -1,4 +1,6 @@
-from collections.abc import Sequence, Callable
+import re
+
+from collections.abc import Callable, Sequence
 from datetime import date
 
 from bot.templates.base import pythagorean_matrix
@@ -26,9 +28,9 @@ def fullname_to_number(fullname: str, condition: Callable[[str], bool]) -> int:
     number = sum(
         [
             pythagorean_matrix[i]
-            for i in fullname.strip().upper()
+            for i in re.sub(r'[^а-яА-ЯёЁ]', '', fullname).upper()
             if condition(i)
-        ]
+        ],
     )
     return calculate_number(number, (11, 22))
 

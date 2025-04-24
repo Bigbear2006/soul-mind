@@ -1,6 +1,7 @@
 from aiogram import F, Router, flags
 from aiogram.types import CallbackQuery, Message
 
+from bot.api.astrology import western_horoscope
 from bot.keyboards.inline import back_to_personal_analysis_kb
 from bot.templates import (
     get_career_and_finance_intro,

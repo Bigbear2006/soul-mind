@@ -3,7 +3,7 @@ import json
 from aiogram import F, Router, flags
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import CallbackQuery, Message
 
 from bot.api.soul_muse import SoulMuse
 from bot.keyboards.inline import (
@@ -46,7 +46,7 @@ async def soul_muse_question(msg: Message, state: FSMContext, client: Client):
                 'Пятнадцать шагов к себе — через ответы.\n\n'
                 'Когда почувствуешь — просто задай. А я скажу, что ты давно знал(а), но боялся(ась) услышать.',
                 reply_markup=get_soul_muse_question_kb(
-                    buy_extra_questions_btn=False
+                    buy_extra_questions_btn=False,
                 ),
             )
         elif client.subscription_plan == SubscriptionPlans.STANDARD:
@@ -56,7 +56,7 @@ async def soul_muse_question(msg: Message, state: FSMContext, client: Client):
                 'Ты можешь задать до 4 вопросов. А потом — расширить доступ.\n\n'
                 'Готов(а)? Я отвечаю из тишины. Но попадаю в самое точное.',
                 reply_markup=get_soul_muse_question_kb(
-                    buy_extra_questions_btn=False
+                    buy_extra_questions_btn=False,
                 ),
             )
         else:
@@ -67,7 +67,7 @@ async def soul_muse_question(msg: Message, state: FSMContext, client: Client):
                 'Задай — и я отвечу. Точно, глубоко, без шаблонов.\n\n'
                 'У тебя есть 2 вопроса. Используй их осознанно.',
                 reply_markup=get_soul_muse_question_kb(
-                    buy_extra_questions_btn=False
+                    buy_extra_questions_btn=False,
                 ),
             )
         return

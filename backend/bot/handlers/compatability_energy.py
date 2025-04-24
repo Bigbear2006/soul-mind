@@ -23,7 +23,9 @@ router = Router()
 @router.message(F.text == '💞 Энергия вашей совместимости')
 @flags.with_client
 async def compatability_energy(
-    msg: Message, state: FSMContext, client: Client
+    msg: Message,
+    state: FSMContext,
+    client: Client,
 ):
     if not client.is_registered():
         await msg.answer(

@@ -3,6 +3,7 @@ from typing import Optional
 
 from aiogram import types
 from django.contrib.auth.models import AbstractUser
+from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -184,6 +185,32 @@ class Client(models.Model):
     )
     birth_latitude = models.FloatField('Широта', null=True)
     birth_longitude = models.FloatField('Долгота', null=True)
+    tzone = models.FloatField('Часовой пояс', null=True)
+    type = models.CharField('Тип', max_length=255, blank=True)
+    profile = models.CharField('Профиль', max_length=255, blank=True)
+    centers = ArrayField(
+        models.CharField(max_length=50),
+        verbose_name='Центры',
+        default=list,
+        null=True,
+        blank=True,
+    )
+    strategy = models.CharField('Стратегия', max_length=255, blank=True)
+    authority = models.CharField('Авторитет', max_length=255, blank=True)
+    gates = ArrayField(
+        models.CharField(max_length=50),
+        verbose_name='Ворота',
+        default=list,
+        null=True,
+        blank=True,
+    )
+    planets = ArrayField(
+        models.JSONField(),
+        verbose_name='Планеты',
+        default=list,
+        null=True,
+        blank=True,
+    )
     notifications_enabled = models.BooleanField('Уведомления', default=False)
     created_at: datetime = models.DateTimeField(
         'Дата создания',
@@ -239,7 +266,6 @@ class Client(models.Model):
 
 class DailyQuest(models.Model):
     text = models.TextField('Задание')
-    objects: models.Manager
 
     class Meta:
         verbose_name = 'Ежедневный квест'
@@ -269,7 +295,6 @@ class ClientDailyQuest(models.Model):
         blank=True,
     )
     created_at = models.DateTimeField('Дата прохождения', auto_now_add=True)
-    objects: models.Manager
 
     class Meta:
         verbose_name = 'Результат ежедневного квеста'
@@ -282,7 +307,6 @@ class ClientDailyQuest(models.Model):
 
 class WeeklyQuest(models.Model):
     title = models.TextField('Название')
-    objects: models.Manager
 
     class Meta:
         verbose_name = 'Еженедельный квест'
@@ -305,7 +329,6 @@ class WeeklyQuestTask(models.Model):
         default=1,
     )
     text = models.TextField('Задание')
-    objects: models.Manager
 
     def __str__(self):
         return f'[{self.day} день] {self.quest}'
@@ -330,7 +353,6 @@ class ClientWeeklyQuest(models.Model):
         verbose_name='Квест',
     )
     date = models.DateTimeField('Дата записи', auto_now_add=True)
-    objects: models.Manager
 
     class Meta:
         unique_together = ('client', 'quest')
@@ -362,7 +384,6 @@ class ClientWeeklyQuestTask(models.Model):
         blank=True,
     )
     created_at = models.DateTimeField('Дата прохождения', auto_now_add=True)
-    objects: models.Manager
 
     class Meta:
         unique_together = ('client', 'quest')
@@ -378,7 +399,6 @@ class ClientAction(models.Model):
     client = models.ForeignKey(Client, models.CASCADE, 'actions')
     action = models.CharField('Действие', max_length=100, choices=Actions)
     date = models.DateTimeField('Дата', auto_now_add=True)
-    objects: models.Manager
 
     class Meta:
         verbose_name = 'Действие пользователя'
