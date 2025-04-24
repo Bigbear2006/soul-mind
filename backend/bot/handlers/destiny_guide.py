@@ -1,17 +1,21 @@
-from aiogram import F, Router
-from aiogram.types import Message
+from datetime import date
+
+from aiogram import F, Router, flags
+from aiogram.types import Message, CallbackQuery
 
 from bot.keyboards.inline import get_to_registration_kb
 from bot.keyboards.utils import one_button_keyboard
+from bot.templates.destiny_guide import astro_events, important_days
 from core.models import Client
+
+# TODO: подсвечивать внутри бота, что Путеводитель на этой неделе еще не открыт
 
 router = Router()
 
 
 @router.message(F.text == '🗺️ Путеводитель судьбы')
-async def handle_destiny_guide(msg: Message):
-    client: Client = await Client.objects.aget(pk=msg.chat.id)
-
+@flags.with_client
+async def destiny_guide_intro(msg: Message, client: Client):
     if not client.is_registered():
         await msg.answer(
             '🗺️ Путеводитель судьбы\n\n'
@@ -61,4 +65,31 @@ async def handle_destiny_guide(msg: Message):
         )
 
 
-# TODO: подсвечивать внутри бота, что Путеводитель на этой неделе еще не открыт
+@router.callback_query(F.data == 'destiny_guide')
+@flags.with_client
+async def destiny_guide(query: CallbackQuery, client: Client):
+    reply_markup = None
+    if client.subscription_is_active():
+        reply_markup = one_button_keyboard(
+            text='🌘 Смотреть важные дни месяца',
+            callback_data='important_days',
+        )
+    await query.message.edit_text(
+        astro_events.get(
+            date.today().strftime('%m.%Y'), ''
+        ),  # for test: '05.2025'
+        reply_markup=reply_markup,
+    )
+
+
+@router.callback_query(F.data == 'important_days')
+async def important_days_handler(query: CallbackQuery):
+    await query.message.edit_text(
+        important_days.get(
+            date.today().strftime('%m.%Y'), ''
+        ),  # for test: '05.2025'
+        reply_markup=one_button_keyboard(
+            text='🌘 Смотреть астрособытия месяца',
+            callback_data='destiny_guide',
+        ),
+    )

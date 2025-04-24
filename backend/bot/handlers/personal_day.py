@@ -1,20 +1,25 @@
-from aiogram import F, Router
-from aiogram.types import Message
+from datetime import date
 
+from aiogram import F, Router, flags
+from aiogram.types import Message, CallbackQuery
+
+from bot.calculations import calculate_number
 from bot.keyboards.inline import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
 )
 from bot.keyboards.utils import one_button_keyboard
+from bot.templates.personal_day import moon_phases, personal_day_messages
 from core.models import Client
 
 router = Router()
 
+# TODO: подсвечивать внутри бота, что Совет Вселенной или Твой личный  день не открыт
+
 
 @router.message(F.text == '📆 Твой личный день')
-async def handle_personal_day(msg: Message):
-    client: Client = await Client.objects.aget(pk=msg.chat.id)
-
+@flags.with_client
+async def personal_day_preview(msg: Message, client: Client):
     if not client.is_registered():
         await msg.answer(
             '📆 Твой личный день\n\n'
@@ -61,4 +66,13 @@ async def handle_personal_day(msg: Message):
         )
 
 
-# TODO: подсвечивать внутри бота, что Совет Вселенной или Твой личный  день не открыт
+@router.callback_query(F.data == 'personal_day')
+@flags.with_client
+async def personal_day(query: CallbackQuery, client: Client):
+    phase = moon_phases[
+        date.today().strftime('%d.%m.%Y')
+    ]  # for test: '10.05.2025'
+    number = calculate_number(str(client.birth.date()), ())
+    await query.message.edit_text(
+        personal_day_messages[phase][number],
+    )

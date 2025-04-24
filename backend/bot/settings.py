@@ -15,6 +15,12 @@ class Settings:
 
     HD_API_KEY: str = field(default_factory=lambda: env('HD_API_KEY'))
     HD_GEOCODE_KEY: str = field(default_factory=lambda: env('HD_GEOCODE_KEY'))
+    ASTROLOGY_USER_ID: str = field(
+        default_factory=lambda: env('ASTROLOGY_USER_ID')
+    )
+    ASTROLOGY_API_KEY: str = field(
+        default_factory=lambda: env('ASTROLOGY_API_KEY')
+    )
     OPENAI_API_KEY: str = field(default_factory=lambda: env('OPENAI_API_KEY'))
 
     CURRENCY: str = field(default='RUB')

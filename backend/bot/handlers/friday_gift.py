@@ -1,20 +1,29 @@
-from aiogram import F, Router
-from aiogram.types import Message
+import random
+
+from aiogram import F, Router, flags
+from aiogram.types import Message, CallbackQuery
 
 from bot.keyboards.inline import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
 )
 from bot.keyboards.utils import one_button_keyboard
-from core.models import Client
+from bot.templates.friday_gift import (
+    friday_gifts_order,
+    insight_phrases,
+    symbols,
+    friday_gifts_preambles,
+)
+from core.models import Client, ClientAction, Actions
+
+# TODO: Добавить чередование и сохранение подарков
 
 router = Router()
 
 
 @router.message(F.text == '🎁 Пятничный подарок')
-async def friday_gift(msg: Message):
-    client: Client = await Client.objects.aget(pk=msg.chat.id)
-
+@flags.with_client
+async def friday_gift_intro(msg: Message, client: Client):
     if not client.is_registered():
         await msg.answer(
             '🎁 Пятничный подарок от Soul Muse\n\n'
@@ -59,3 +68,24 @@ async def friday_gift(msg: Message):
                 text='🔒 Оформи подписку и получай каждую неделю',
             ),
         )
+
+
+@router.callback_query(F.data == 'friday_gift')
+async def friday_gift(query: CallbackQuery):
+    client_id = query.message.chat.id
+    gift = random.choice(list(friday_gifts_order.keys()))
+    preamble = friday_gifts_preambles[gift]
+
+    if gift == 'insight_phrases':
+        await query.message.edit_text(
+            preamble + random.choice(insight_phrases),
+        )
+    elif gift == 'cards':
+        card = random.choice(insight_phrases)
+        await query.message.edit_text(f'{card["card"]}\n\n{card["text"]}')
+    elif gift == 'symbols':
+        await query.message.edit_text(preamble + random.choice(symbols))
+
+    await ClientAction.objects.acreate(
+        client_id=client_id, action=Actions.FRIDAY_GIFT
+    )

@@ -22,15 +22,18 @@ router = Router()
 
 
 @router.message(Command('start'))
-@flags.with_client
 async def start(
     msg: Message,
     state: FSMContext,
     command: CommandObject,
-    client: Client,
-    client_created: bool,
 ):
-    if client_created:
+    (
+        client,
+        created,
+    ) = await Client.objects.create_or_update_from_tg_user(
+        msg.from_user,
+    )
+    if created:
         logger.info(f'New client {client} id={client.pk} was created')
 
         invited_by = (

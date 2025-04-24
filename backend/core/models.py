@@ -378,6 +378,7 @@ class ClientAction(models.Model):
     client = models.ForeignKey(Client, models.CASCADE, 'actions')
     action = models.CharField('Действие', max_length=100, choices=Actions)
     date = models.DateTimeField('Дата', auto_now_add=True)
+    objects: models.Manager
 
     class Meta:
         verbose_name = 'Действие пользователя'

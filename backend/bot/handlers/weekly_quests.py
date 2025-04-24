@@ -5,15 +5,16 @@ from bot.keyboards.inline import get_to_registration_kb, get_weekly_quest_kb
 from bot.keyboards.utils import keyboard_from_queryset, one_button_keyboard
 from core.models import Client, ClientWeeklyQuest, WeeklyQuest
 
+
+# TODO: Кастомизация и теги
+
 router = Router()
 
 
 @router.message(F.text == '🧩 Практики для роста')
 @router.callback_query(F.data == 'to_weekly_quests_list')
-async def weekly_quests_list(msg: Message | CallbackQuery):
-    pk = msg.chat.id if isinstance(msg, Message) else msg.message.chat.id
-    client: Client = await Client.objects.aget(pk=pk)
-
+@flags.with_client
+async def weekly_quests_list(msg: Message | CallbackQuery, client: Client):
     if not client.is_registered():
         await msg.answer(
             '🧩 Практики для роста\n\n'

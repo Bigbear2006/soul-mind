@@ -121,6 +121,25 @@ back_to_personal_analysis_kb = InlineKeyboardMarkup(
     ],
 )
 
+compatability_energy_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text='Вместе', callback_data='together')],
+        [InlineKeyboardButton(text='Нравится', callback_data='like')],
+        [InlineKeyboardButton(text='Бывшие', callback_data='past_lovers')],
+    ],
+)
+
+show_connection_depth = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text='💎 Узнать глубину связи – 1599 ₽ / 2500 баллов',
+                callback_data='show_connection_depth',
+            ),
+        ],
+    ],
+)
+
 universe_advice_extended_kb = InlineKeyboardMarkup(
     inline_keyboard=[
         [
@@ -233,23 +252,22 @@ def get_to_subscription_plans_kb(
     return kb.adjust(1).as_markup()
 
 
-def get_soul_muse_question_kb() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text='✍🏽 Задать вопрос Soul Muse',
-                    callback_data='ask_soul_muse',
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text='💎 Купить дополнительные вопросы',
-                    callback_data='buy_more_soul_muse',
-                ),
-            ],
-        ],
-    )
+def get_soul_muse_question_kb(
+    *,
+    ask_question_btn: bool = True,
+    buy_extra_questions_btn: bool = True,
+) -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    if ask_question_btn:
+        kb.button(
+            text='✍🏽 Задать вопрос Soul Muse', callback_data='ask_soul_muse'
+        )
+    if buy_extra_questions_btn:
+        kb.button(
+            text='💎 Купить дополнительные вопросы',
+            callback_data='buy_more_soul_muse',
+        )
+    return kb.adjust(1).as_markup()
 
 
 async def get_weekly_quest_kb(quest: WeeklyQuest):
