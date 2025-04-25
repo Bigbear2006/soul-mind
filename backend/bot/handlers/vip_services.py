@@ -11,7 +11,6 @@ from aiogram.types import (
     PreCheckoutQuery,
 )
 
-from bot.api.geocoding import GeocodingAPI
 from bot.api.humandesign import HumanDesignAPI
 from bot.api.soul_muse import SoulMuse
 from bot.keyboards.inline import (
@@ -99,7 +98,7 @@ async def vip_compatibility(callback: CallbackQuery):
 
 
 @router.callback_query(
-    F.data.in_('buy_compatibility', 'show_connection_depth')
+    F.data.in_(('buy_compatibility', 'show_connection_depth'))
 )
 @flags.with_client
 async def chose_payment_type(query: CallbackQuery, state: FSMContext):
@@ -114,14 +113,18 @@ async def chose_payment_type(query: CallbackQuery, state: FSMContext):
     StateFilter(VIPCompatabilityState.payment_type),
 )
 @flags.with_client
-async def buy_compatibility(query: CallbackQuery, state: FSMContext, client: Client):
+async def buy_compatibility(
+    query: CallbackQuery, state: FSMContext, client: Client
+):
     if query.data == 'astropoints':
         if client.astropoints < 2500:
             await query.message.answer('Не хватает астробаллов')
             return
-        client.astropoints -=150
+        client.astropoints -= 150
         await client.asave()
-        await query.message.edit_text('Выбери тип связи', reply_markup=connection_types_kb)
+        await query.message.edit_text(
+            'Выбери тип связи', reply_markup=connection_types_kb
+        )
         await state.clear()
     else:
         await query.message.answer_invoice(

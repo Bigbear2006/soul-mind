@@ -64,3 +64,10 @@ class Planet:
     sign_id: int
     sign: str
     house: int
+
+
+@dataclass
+class House:
+    house: int
+    sign: str
+    degree: float

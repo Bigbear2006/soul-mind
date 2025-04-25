@@ -211,6 +211,13 @@ class Client(models.Model):
         null=True,
         blank=True,
     )
+    houses = ArrayField(
+        models.JSONField(),
+        verbose_name='Дома',
+        default=list,
+        null=True,
+        blank=True,
+    )
     notifications_enabled = models.BooleanField('Уведомления', default=False)
     created_at: datetime = models.DateTimeField(
         'Дата создания',

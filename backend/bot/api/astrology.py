@@ -4,7 +4,7 @@ from dataclasses import asdict
 from aiohttp import BasicAuth, ClientSession
 
 from bot.loader import logger
-from bot.schemas import AstrologyParams, Planet
+from bot.schemas import AstrologyParams, Planet, House
 from bot.settings import settings
 from core.models import Client
 
@@ -156,7 +156,7 @@ class AstrologyAPI:
     @property
     def headers(self):
         return {
-            'Accept-Language': 'ru',
+            'Accept-Language': 'en',
         }
 
     @property
@@ -172,15 +172,15 @@ class AstrologyAPI:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.session.close()
 
-    async def western_horoscope(self, data: AstrologyParams) -> list[Planet]:
+    async def western_horoscope(self, data: AstrologyParams) -> tuple[list[Planet], list[House]]:
         async with self.session.post(
             'western_horoscope',
             json=asdict(data),
         ) as rsp:
-            # data = await rsp.json()
-            data = PLANETS
+            data = await rsp.json()
+            # data = PLANETS
             logger.info(data)
-        return [Planet(**i) for i in data['planets']]
+        return [Planet(**i) for i in data['planets']], [House(**i) for i in data['houses']]
 
     async def get_timezone(
         self,
@@ -196,8 +196,8 @@ class AstrologyAPI:
                 'date': date.strftime('%m-%d-%Y'),
             },
         ) as rsp:
-            # data = await rsp.json()
-            data = {'timezone': 3}
+            data = await rsp.json()
+            # data = {'timezone': 3}
             logger.info(data)
         return float(data['timezone'])
 

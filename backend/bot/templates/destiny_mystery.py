@@ -62,7 +62,7 @@ def get_destiny_mystery_text(client: Client) -> str:
     hd_type = hd_types_translation[client.type]
     soul_number = get_soul_number(client.fullname)
     fate_number = get_fate_number(client.fullname)
-    north_moon_sign = [i for i in client.planets if i['name'] == 'Луна'][0][
+    north_moon_sign = [i for i in client.planets if i['name'] == 'Moon'][0][
         'sign'
     ]
     south_moon_sign = signs_map[north_moon_sign]

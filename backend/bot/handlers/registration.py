@@ -229,8 +229,17 @@ async def set_birth_location(msg: Message, client: Client, state: FSMContext):
         )
 
     async with AstrologyAPI() as api:
-        planets = await api.western_horoscope(
-            AstrologyParams.from_client(client),
+        planets, houses = await api.western_horoscope(
+            AstrologyParams(
+                day=client.birth.day,
+                month=client.birth.month,
+                year=client.birth.year,
+                hour=client.birth.hour,
+                min=client.birth.minute,
+                lat=lat,
+                lon=lon,
+                tzone=tzone,
+            ),
         )
 
     await Client.objects.filter(pk=msg.chat.id).aupdate(
@@ -238,6 +247,7 @@ async def set_birth_location(msg: Message, client: Client, state: FSMContext):
         birth_longitude=lon,
         tzone=tzone,
         planets=[asdict(i) for i in planets],
+        houses=[asdict(i) for i in houses],
         **asdict(bodygraphs),
     )
 
