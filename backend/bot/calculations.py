@@ -49,7 +49,9 @@ def get_personality_number(fullname: str) -> int:
     return fullname_to_number(fullname, lambda x: x not in 'АЕЁИОУЫЭЮЯ')
 
 
-def get_fate_number(fullname: str, master_numbers: Sequence[int] = None) -> int:
+def get_fate_number(
+    fullname: str, master_numbers: Sequence[int] = None
+) -> int:
     return fullname_to_number(fullname, lambda x: x, master_numbers)
 
 

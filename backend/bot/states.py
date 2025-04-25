@@ -16,3 +16,12 @@ class CompatabilityEnergyState(StatesGroup):
 
 class SoulMuseQuestionState(StatesGroup):
     question = State()
+
+
+class VIPCompatabilityState(StatesGroup):
+    payment_type = State()
+    payment = State()
+    fullname = State()
+    birth_date = State()
+    birth_time = State()
+    birth_location = State()

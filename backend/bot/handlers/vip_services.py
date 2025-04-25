@@ -1,8 +1,32 @@
-from aiogram import F, Router
-from aiogram.types import CallbackQuery, Message
+from dataclasses import asdict
+from datetime import datetime
 
-from bot.keyboards.inline import vip_services_kb
+from aiogram import F, Router, flags
+from aiogram.filters import StateFilter
+from aiogram.fsm.context import FSMContext
+from aiogram.types import (
+    CallbackQuery,
+    Message,
+    LabeledPrice,
+    PreCheckoutQuery,
+)
+
+from bot.api.geocoding import GeocodingAPI
+from bot.api.humandesign import HumanDesignAPI
+from bot.api.soul_muse import SoulMuse
+from bot.keyboards.inline import (
+    vip_services_kb,
+    connection_types_kb,
+    birth_times_kb,
+    get_vip_compatability_report_kb,
+    vip_compatibility_payment_choices_kb,
+)
 from bot.keyboards.utils import one_button_keyboard
+from bot.schemas import HDInputData
+from bot.settings import settings
+from bot.states import VIPCompatabilityState
+from bot.templates.base import connection_types
+from core.models import Client
 
 router = Router()
 
@@ -72,3 +96,166 @@ async def vip_compatibility(callback: CallbackQuery):
             back_button_data='vip_services',
         ),
     )
+
+
+@router.callback_query(
+    F.data.in_('buy_compatibility', 'show_connection_depth')
+)
+@flags.with_client
+async def chose_payment_type(query: CallbackQuery, state: FSMContext):
+    await state.set_state(VIPCompatabilityState.payment_type)
+    await query.message.answer(
+        'Выбери тип оплаты', reply_markup=vip_compatibility_payment_choices_kb
+    )
+
+
+@router.callback_query(
+    F.data.in_(('astropoints', 'money')),
+    StateFilter(VIPCompatabilityState.payment_type),
+)
+@flags.with_client
+async def buy_compatibility(query: CallbackQuery, state: FSMContext, client: Client):
+    if query.data == 'astropoints':
+        if client.astropoints < 2500:
+            await query.message.answer('Не хватает астробаллов')
+            return
+        client.astropoints -=150
+        await client.asave()
+        await query.message.edit_text('Выбери тип связи', reply_markup=connection_types_kb)
+        await state.clear()
+    else:
+        await query.message.answer_invoice(
+            'VIP-анализ совместимости',
+            'VIP-анализ совместимости',
+            '',
+            settings.CURRENCY,
+            [LabeledPrice(label=settings.CURRENCY, amount=1599 * 100)],
+            settings.PROVIDER_TOKEN,
+        )
+        await state.set_state(VIPCompatabilityState.payment)
+
+
+@router.pre_checkout_query(StateFilter(VIPCompatabilityState.payment))
+async def accept_pre_checkout_query(query: PreCheckoutQuery):
+    await query.answer(True)
+
+
+@router.message(
+    F.successful_payment, StateFilter(VIPCompatabilityState.payment)
+)
+@router.callback_query(F.data == 'connection_types')
+async def on_successful_payment(msg: Message, state: FSMContext):
+    await msg.answer('Выбери тип связи', reply_markup=connection_types_kb)
+    await state.clear()
+
+
+@router.callback_query(F.data.startswith('connection_type'))
+async def connection_type_info(query: CallbackQuery, state: FSMContext):
+    connection_type = query.data.split(':')[-1]
+    await state.update_data(connection_type=connection_type)
+    await query.message.edit_text(
+        connection_types[connection_type],
+        reply_markup=one_button_keyboard(
+            text='Выбрать',
+            callback_data='choose_connection_type',
+            back_button_data='connection_types',
+        ),
+    )
+
+
+@router.callback_query(F.data == 'chose_connection_type')
+async def chose_connection_type(query: CallbackQuery):
+    await query.message.edit_reply_markup(
+        reply_markup=one_button_keyboard(
+            text='Добавить человека',
+            callback_data='add_person',
+        )
+    )
+
+
+@router.callback_query(F.data == 'add_person')
+async def add_person(query: CallbackQuery, state: FSMContext):
+    await state.set_state(VIPCompatabilityState.fullname)
+    await query.message.answer('✍ Введи ФИО человека полностью')
+
+
+@router.message(F.text, StateFilter(VIPCompatabilityState.fullname))
+async def set_fullname(msg: Message, state: FSMContext):
+    await state.update_data(fullname=msg.text)
+    await msg.answer('📆 Введи дату рождения человека в формате ДД.ММ.ГГГГ.')
+    await state.set_state(VIPCompatabilityState.birth_date)
+
+
+@router.message(F.text, StateFilter(VIPCompatabilityState.birth_date))
+async def set_birth_date(msg: Message, state: FSMContext):
+    try:
+        datetime.strptime(msg.text, '%d.%m.%Y')
+    except ValueError:
+        await msg.answer(
+            'Некорректная дата. Попробуй еще раз',
+        )
+        return
+
+    await state.update_data(birth_date=msg.text)
+    await msg.answer(
+        '⏳ Введи точное время рождения человека. '
+        'Это важно для точности разбора.\n'
+        'Не знаешь? Выбери:',
+        reply_markup=birth_times_kb,
+    )
+    await state.set_state(VIPCompatabilityState.birth_time)
+
+
+@router.message(F.text, StateFilter(VIPCompatabilityState.birth_time))
+@router.callback_query(
+    F.data.startswith('birth_time'),
+    StateFilter(VIPCompatabilityState.birth_time),
+)
+async def set_birth_time(msg: Message | CallbackQuery, state: FSMContext):
+    if isinstance(msg, Message):
+        birth_time = msg.text
+        answer_func = msg.answer
+    else:
+        birth_time = msg.data.split('_')[-1]
+        answer_func = msg.message.answer
+
+    await state.update_data(birth_time=birth_time)
+    await answer_func(
+        'Отправь место своего рождения.\n📍 Только город — без страны',
+    )
+    await state.set_state(VIPCompatabilityState.birth_location)
+
+
+@router.message(F.text, StateFilter(VIPCompatabilityState.birth_location))
+async def set_birth_location(msg: Message, state: FSMContext):
+    data = await state.get_data()
+    birth = f'{data["birth_date"]} {data["birth_time"]}'
+    birth = datetime.strptime(birth, settings.DATE_FMT).astimezone(
+        settings.TZ,
+    )
+    async with HumanDesignAPI() as api:
+        bodygraphs = await api.bodygraphs(
+            HDInputData.from_datetime(birth, msg.text),
+        )
+    persons = data.get('persons', [])
+    persons.append(asdict(bodygraphs))
+    await state.update_data(persons=persons)
+    await msg.answer(
+        f'{data["current_person"]} добавлен',
+        reply_markup=get_vip_compatability_report_kb(
+            (data['connection_type'] == 'family' and len(persons) < 3)
+            or (data['connection_type'] == 'team' and len(persons) < 2)
+        ),
+    )
+    await state.set_state(None)
+
+
+@router.callback_query(F.data == 'vip_compatability_report')
+async def vip_compatability_report(query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    muse = SoulMuse()
+    compatability = await muse.get_vip_compatability(
+        data['connection_type'],
+        data['persons'],
+    )
+    await query.message.edit_text(compatability, reply_markup=None)

@@ -4,6 +4,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from django.db.models import Choices
 
+from bot.handlers.vip_services import vip_compatibility
 from core.models import QuestStatuses, WeeklyQuest
 
 personal_analysis_kb = InlineKeyboardMarkup(
@@ -227,6 +228,40 @@ premium_space_kb = InlineKeyboardMarkup(
     ],
 )
 
+vip_compatibility_payment_choices_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text='2500 баллов', callback_data='astropoints'
+            )
+        ],
+        [InlineKeyboardButton(text='1599 ₽', callback_data='money')],
+    ]
+)
+
+connection_types_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text='💞 Пара (романтическая)',
+                callback_data='connection_type:couple',
+            ),
+            InlineKeyboardButton(
+                text='🏡 Семья', callback_data='connection_type:family'
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                text='🤝 Друзья', callback_data='connection_type:friends'
+            ),
+            InlineKeyboardButton(
+                text='🚀 Команда / бизнес / коллеги',
+                callback_data='connection_type:team',
+            ),
+        ],
+    ]
+)
+
 
 def get_to_registration_kb(
     *,
@@ -307,4 +342,14 @@ def get_quest_statuses_kb(
             text=label,
             callback_data=f'quest:{quest_type}:{quest_id}:{value}',
         )
+    return kb.adjust(1).as_markup()
+
+
+def get_vip_compatability_report_kb(
+    add_person_btn: bool,
+) -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    if add_person_btn:
+        kb.button(text='Добавить человека', callback_data='add_person')
+    kb.button(text='Получить отчет', callback_data='vip_compatability_report')
     return kb.adjust(1).as_markup()

@@ -158,5 +158,5 @@ def get_full_profile_text(client: Client) -> tuple[str, list[str], str]:
             '\n'
             'Soul Muse здесь.\n'
             'И она знает, что тебе есть куда идти.\n'
-            'Хочешь — она пойдёт рядом.'
+            'Хочешь — она пойдёт рядом.',
         )

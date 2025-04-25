@@ -11,7 +11,11 @@ from bot.keyboards.inline import (
     premium_space_kb,
 )
 from bot.keyboards.utils import one_button_keyboard
-from bot.templates.premium_space import power_days_descriptions, universe_answers, universe_vip_advices
+from bot.templates.premium_space import (
+    power_days_descriptions,
+    universe_answers,
+    universe_vip_advices,
+)
 from core.models import Actions, Client, SubscriptionPlans
 
 router = Router()
@@ -122,7 +126,7 @@ async def show_power_day(query: CallbackQuery, client: Client):
         reply_markup=one_button_keyboard(
             text='Назад',
             callback_data='power_day',
-        )
+        ),
     )
 
 
@@ -165,7 +169,7 @@ async def universe_answer_handler(query: CallbackQuery):
 async def show_universe_answer(query: CallbackQuery, client: Client):
     lpn = get_life_path_number(client.birth.date())
     month_answers = universe_answers.get(
-        '05.2025',# date.today().strftime('%m.%Y'),  # for test: '05.2025',
+        '05.2025',  # date.today().strftime('%m.%Y'),  # for test: '05.2025',
         {},
     )
     await query.message.edit_text(
@@ -173,7 +177,7 @@ async def show_universe_answer(query: CallbackQuery, client: Client):
         reply_markup=one_button_keyboard(
             text='Назад',
             callback_data='universe_answer',
-        )
+        ),
     )
 
 
@@ -222,5 +226,5 @@ async def show_vip_advice(query: CallbackQuery, client: Client):
         reply_markup=one_button_keyboard(
             text='Назад',
             callback_data='soul_muse_vip_answer',
-        )
+        ),
     )
