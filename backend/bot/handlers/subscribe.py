@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from aiogram import F, Router
 from aiogram.exceptions import TelegramAPIError
+from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     CallbackQuery,
@@ -57,12 +58,12 @@ async def subscribe_handler(query: CallbackQuery, state: FSMContext):
     )
 
 
-@router.pre_checkout_query()
+@router.pre_checkout_query(StateFilter(None))
 async def accept_pre_checkout_query(query: PreCheckoutQuery):
     await query.answer(True)
 
 
-@router.message(F.successful_payment)
+@router.message(F.successful_payment, StateFilter(None))
 async def on_successful_payment(msg: Message, state: FSMContext):
     client = await Client.objects.prefetch_related('invited_by').aget(
         pk=msg.chat.id,

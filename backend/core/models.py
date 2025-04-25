@@ -204,15 +204,21 @@ class Client(models.Model):
         null=True,
         blank=True,
     )
-    planets = ArrayField(
-        models.JSONField(),
+    definition = models.CharField('Определение', max_length=255, blank=True)
+    channels_long = ArrayField(
+        models.CharField(max_length=150),
+        verbose_name='Каналы',
+        default=list,
+        null=True,
+        blank=True,
+    )
+    planets = models.JSONField(
         verbose_name='Планеты',
         default=list,
         null=True,
         blank=True,
     )
-    houses = ArrayField(
-        models.JSONField(),
+    houses = models.JSONField(
         verbose_name='Дома',
         default=list,
         null=True,

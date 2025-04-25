@@ -1,30 +1,33 @@
 from dataclasses import asdict
 from datetime import datetime
+from io import BytesIO
 
 from aiogram import F, Router, flags
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     CallbackQuery,
-    Message,
     LabeledPrice,
-    PreCheckoutQuery,
+    Message,
+    PreCheckoutQuery, BufferedInputFile,
 )
+from fpdf import FPDF
 
 from bot.api.humandesign import HumanDesignAPI
 from bot.api.soul_muse import SoulMuse
 from bot.keyboards.inline import (
-    vip_services_kb,
-    connection_types_kb,
     birth_times_kb,
+    connection_types_kb,
     get_vip_compatability_report_kb,
     vip_compatibility_payment_choices_kb,
+    vip_services_kb,
 )
 from bot.keyboards.utils import one_button_keyboard
-from bot.schemas import HDInputData
+from bot.schemas import Bodygraphs, HDInputData
 from bot.settings import settings
 from bot.states import VIPCompatabilityState
 from bot.templates.base import connection_types
+from bot.templates.vip_services import get_vip_compatability_prompt
 from core.models import Client
 
 router = Router()
@@ -98,13 +101,13 @@ async def vip_compatibility(callback: CallbackQuery):
 
 
 @router.callback_query(
-    F.data.in_(('buy_compatibility', 'show_connection_depth'))
+    F.data.in_(('buy_compatibility', 'show_connection_depth')),
 )
 @flags.with_client
 async def chose_payment_type(query: CallbackQuery, state: FSMContext):
     await state.set_state(VIPCompatabilityState.payment_type)
     await query.message.answer(
-        'Выбери тип оплаты', reply_markup=vip_compatibility_payment_choices_kb
+        'Выбери тип оплаты', reply_markup=vip_compatibility_payment_choices_kb,
     )
 
 
@@ -114,23 +117,23 @@ async def chose_payment_type(query: CallbackQuery, state: FSMContext):
 )
 @flags.with_client
 async def buy_compatibility(
-    query: CallbackQuery, state: FSMContext, client: Client
+    query: CallbackQuery, state: FSMContext, client: Client,
 ):
     if query.data == 'astropoints':
         if client.astropoints < 2500:
             await query.message.answer('Не хватает астробаллов')
             return
-        client.astropoints -= 150
+        client.astropoints -= 2500
         await client.asave()
         await query.message.edit_text(
-            'Выбери тип связи', reply_markup=connection_types_kb
+            'Выбери тип связи', reply_markup=connection_types_kb,
         )
         await state.clear()
     else:
         await query.message.answer_invoice(
             'VIP-анализ совместимости',
             'VIP-анализ совместимости',
-            '',
+            'vip_compatability',
             settings.CURRENCY,
             [LabeledPrice(label=settings.CURRENCY, amount=1599 * 100)],
             settings.PROVIDER_TOKEN,
@@ -144,11 +147,16 @@ async def accept_pre_checkout_query(query: PreCheckoutQuery):
 
 
 @router.message(
-    F.successful_payment, StateFilter(VIPCompatabilityState.payment)
+    F.successful_payment, StateFilter(VIPCompatabilityState.payment),
 )
 @router.callback_query(F.data == 'connection_types')
-async def on_successful_payment(msg: Message, state: FSMContext):
-    await msg.answer('Выбери тип связи', reply_markup=connection_types_kb)
+async def on_successful_payment(
+    msg: Message | CallbackQuery, state: FSMContext,
+):
+    answer_func = (
+        msg.answer if isinstance(msg, Message) else msg.message.edit_text
+    )
+    await answer_func('Выбери тип связи', reply_markup=connection_types_kb)
     await state.clear()
 
 
@@ -166,13 +174,13 @@ async def connection_type_info(query: CallbackQuery, state: FSMContext):
     )
 
 
-@router.callback_query(F.data == 'chose_connection_type')
-async def chose_connection_type(query: CallbackQuery):
+@router.callback_query(F.data == 'choose_connection_type')
+async def choose_connection_type(query: CallbackQuery):
     await query.message.edit_reply_markup(
         reply_markup=one_button_keyboard(
             text='Добавить человека',
             callback_data='add_person',
-        )
+        ),
     )
 
 
@@ -224,7 +232,8 @@ async def set_birth_time(msg: Message | CallbackQuery, state: FSMContext):
 
     await state.update_data(birth_time=birth_time)
     await answer_func(
-        'Отправь место своего рождения.\n📍 Только город — без страны',
+        'Отправь место рождения человека.\n'
+        '📍 Только город — без страны',
     )
     await state.set_state(VIPCompatabilityState.birth_location)
 
@@ -241,24 +250,45 @@ async def set_birth_location(msg: Message, state: FSMContext):
             HDInputData.from_datetime(birth, msg.text),
         )
     persons = data.get('persons', [])
-    persons.append(asdict(bodygraphs))
+    person = asdict(bodygraphs)
+    person.update({'fullname': data['fullname']})
+    persons.append(person)
     await state.update_data(persons=persons)
     await msg.answer(
-        f'{data["current_person"]} добавлен',
+        f'{data["fullname"]} добавлен',
         reply_markup=get_vip_compatability_report_kb(
             (data['connection_type'] == 'family' and len(persons) < 3)
-            or (data['connection_type'] == 'team' and len(persons) < 2)
+            or (data['connection_type'] == 'team' and len(persons) < 2),
         ),
     )
-    await state.set_state(None)
+    await state.set_state(VIPCompatabilityState.report)
 
 
-@router.callback_query(F.data == 'vip_compatability_report')
-async def vip_compatability_report(query: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data == 'vip_compatability_report', StateFilter(VIPCompatabilityState.report))
+@flags.with_client
+async def vip_compatability_report(
+    query: CallbackQuery, state: FSMContext, client: Client,
+):
     data = await state.get_data()
-    muse = SoulMuse()
-    compatability = await muse.get_vip_compatability(
+    person = asdict(Bodygraphs.from_client(client))
+    person.update({'fullname': client.fullname})
+    data['persons'].append(person)
+    compatability = await SoulMuse().get_vip_compatability(
         data['connection_type'],
         data['persons'],
     )
-    await query.message.edit_text(compatability, reply_markup=None)
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.add_font('Arial', '', 'assets/arial.ttf', uni=True)
+    pdf.set_font("Arial", size=14)
+    pdf.multi_cell(0, 10, text=compatability)
+    pdf_bytes = BytesIO()
+    pdf.output(pdf_bytes)
+    pdf_bytes.seek(0)
+    await query.message.answer_document(
+        BufferedInputFile(
+            pdf_bytes.getvalue(),
+            'vip_compatability.pdf'
+        )
+    )
+    await state.clear()

@@ -44,4 +44,6 @@ class HumanDesignAPI:
                 strategy=data['strategy'],
                 authority=data['authority'],
                 gates=data['gates'],
+                definition=data['definition'],
+                channels_long=data['channels_long'],
             )

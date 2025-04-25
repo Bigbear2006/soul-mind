@@ -27,6 +27,21 @@ class Bodygraphs:
     strategy: str
     authority: str
     gates: list[str]
+    definition: str
+    channels_long: list[str]
+
+    @classmethod
+    def from_client(cls, client: Client):
+        return cls(
+            type=client.type,
+            profile=client.profile,
+            centers=client.centers,
+            strategy=client.strategy,
+            authority=client.authority,
+            gates=client.gates,
+            definition=client.definition,
+            channels_long=client.channels_long,
+        )
 
 
 @dataclass

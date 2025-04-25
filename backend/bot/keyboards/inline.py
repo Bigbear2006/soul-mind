@@ -231,11 +231,11 @@ vip_compatibility_payment_choices_kb = InlineKeyboardMarkup(
     inline_keyboard=[
         [
             InlineKeyboardButton(
-                text='2500 баллов', callback_data='astropoints'
-            )
+                text='2500 баллов', callback_data='astropoints',
+            ),
         ],
         [InlineKeyboardButton(text='1599 ₽', callback_data='money')],
-    ]
+    ],
 )
 
 connection_types_kb = InlineKeyboardMarkup(
@@ -245,20 +245,24 @@ connection_types_kb = InlineKeyboardMarkup(
                 text='💞 Пара (романтическая)',
                 callback_data='connection_type:couple',
             ),
+        ],
+        [
             InlineKeyboardButton(
-                text='🏡 Семья', callback_data='connection_type:family'
+                text='🏡 Семья', callback_data='connection_type:family',
             ),
         ],
         [
             InlineKeyboardButton(
-                text='🤝 Друзья', callback_data='connection_type:friends'
+                text='🤝 Друзья', callback_data='connection_type:friends',
             ),
+        ],
+        [
             InlineKeyboardButton(
                 text='🚀 Команда / бизнес / коллеги',
                 callback_data='connection_type:team',
             ),
         ],
-    ]
+    ],
 )
 
 

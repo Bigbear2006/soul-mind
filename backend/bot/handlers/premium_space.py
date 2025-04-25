@@ -1,10 +1,9 @@
 import random
-from datetime import date
 
 from aiogram import F, Router, flags
 from aiogram.types import CallbackQuery, Message
 
-from bot.calculations import get_power_day, get_life_path_number
+from bot.calculations import get_life_path_number, get_power_day
 from bot.keyboards.inline import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,

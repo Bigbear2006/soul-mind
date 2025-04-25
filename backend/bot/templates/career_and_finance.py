@@ -49,9 +49,7 @@ def get_career_and_finance_intro(
 def get_career_and_finance_text(
     client: Client,
 ) -> str:
-    venus_sign = [i for i in client.planets if i['name'] == 'Venus'][0][
-        'sign'
-    ]
+    venus_sign = [i for i in client.planets if i['name'] == 'Venus'][0]['sign']
     house_2 = [i for i in client.houses if i['house'] == 2][0]['sign']
     house_10 = [i for i in client.houses if i['house'] == 10][0]['sign']
     fate_number = get_fate_number(client.fullname)

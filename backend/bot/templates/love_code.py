@@ -1,6 +1,6 @@
 from aiogram.types import InlineKeyboardMarkup
 
-from bot.calculations import get_soul_number, get_personality_number
+from bot.calculations import get_personality_number, get_soul_number
 from bot.keyboards.inline import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
@@ -42,11 +42,8 @@ def get_love_code_intro(client: Client) -> tuple[str, InlineKeyboardMarkup]:
 
 
 def get_love_code_text(client: Client) -> str:
-    # TODO: нету седьмого дома
     moon_sign = [i for i in client.planets if i['name'] == 'Moon'][0]['sign']
-    venus_sign = [i for i in client.planets if i['name'] == 'Venus'][0][
-        'sign'
-    ]
+    venus_sign = [i for i in client.planets if i['name'] == 'Venus'][0]['sign']
     house_7 = [i for i in client.houses if i['house'] == 7][0]['sign']
     soul_number = get_soul_number(client.fullname)
     personality_number = get_personality_number(client.fullname)

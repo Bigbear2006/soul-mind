@@ -25,3 +25,4 @@ class VIPCompatabilityState(StatesGroup):
     birth_date = State()
     birth_time = State()
     birth_location = State()
+    report = State()
