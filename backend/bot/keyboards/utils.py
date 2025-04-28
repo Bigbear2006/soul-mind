@@ -33,11 +33,14 @@ async def keyboard_from_queryset(
 
 
 def keyboard_from_choices(
-    choices: type[Choices], *, prefix: str = '',
+    choices: type[Choices],
+    *,
+    prefix: str = '',
 ) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     for value, label in choices.choices:
         kb.button(
-            text=label, callback_data=f'{prefix}:{value}' if prefix else value,
+            text=label,
+            callback_data=f'{prefix}:{value}' if prefix else value,
         )
     return kb.adjust(1).as_markup()

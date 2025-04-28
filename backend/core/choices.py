@@ -88,6 +88,11 @@ class Actions(models.TextChoices):
         'Энергия вашей совместимости',
     )
     SOUL_MUSE_QUESTION = 'soul_muse_question', 'Спроси у Soul Muse'
+
+    UNIVERSE_ADVICE = 'universe_advice', 'Совет вселенной'
+    PERSONAL_DAY = 'personal_day', 'Твой личный день'
+    DESTINY_GUIDE = 'destiny_guide', 'Путеводитель судьбы'
+
     FRIDAY_GIFT = 'friday_gift', 'Пятничный подарок'
     POWER_DAY = 'power_day', 'Твой День силы'
     UNIVERSE_ANSWER = 'universe_answer', 'Ответ Вселенной'
@@ -133,3 +138,9 @@ class MiniConsultFeedbackRatings(models.TextChoices):
     GOOD = 'good', 'В точку'
     NOT_BAD = 'not_bad', 'Неплохо, но можно глубже'
     BAD = 'bad', 'Не отозвалось'
+
+
+class FridayGiftTypes(models.TextChoices):
+    INSIGHT_PHRASES = 'insight_phrases', 'Инсайт'
+    CARDS = 'cards', 'Карта Soul Muse'
+    SYMBOLS = 'symbols', 'Интуитивный символ / образ недели'

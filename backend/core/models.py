@@ -16,6 +16,7 @@ from core.choices import (
     ExperienceTypes,
     ExpertTypes,
     FeelingsTypes,
+    FridayGiftTypes,
     Genders,
     Intentions,
     MiniConsultFeedbackRatings,
@@ -72,6 +73,40 @@ class MonthTextManager(models.Manager):
                 created_at__month=now().month,
                 type=type,
             )
+        except ObjectDoesNotExist:
+            return None
+
+
+class FridayGiftManager(models.Manager):
+    async def get_current_week_gift(
+        self,
+        client: 'Client',
+    ) -> Optional['FridayGift']:
+        today = now()
+        first_week_day = today - timedelta(days=today.weekday())
+        first_week_day = first_week_day.replace(
+            hour=0,
+            minute=0,
+            second=0,
+            microsecond=0,
+        )
+        last_week_day = first_week_day + timedelta(days=6)
+        last_week_day = last_week_day.replace(hour=23, minute=59, second=59)
+        try:
+            return await self.aget(
+                client=client,
+                created_at__gte=first_week_day,
+                created_at__lte=last_week_day,
+            )
+        except ObjectDoesNotExist:
+            return None
+
+    async def get_latest_gift(
+        self,
+        client: 'Client',
+    ) -> Optional['FridayGift']:
+        try:
+            return await self.filter(client=client).alatest('created_at')
         except ObjectDoesNotExist:
             return None
 
@@ -458,9 +493,11 @@ class WeeklyQuestTag(models.Model):
     tag = models.ForeignKey(QuestTag, models.CASCADE, 'weekly_quests')
 
 
-class SoulMuseQuestion:
+class SoulMuseQuestion(models.Model):
     category = models.CharField('Категория', max_length=50)
-    text = models.TextField('Текст')
+    reason = models.TextField('Причина')
+    question = models.TextField('Вопрос')
+    answer = models.TextField('Ответ', blank=True)
     date = models.DateTimeField('Дата', auto_now_add=True)
 
     class Meta:
@@ -469,7 +506,7 @@ class SoulMuseQuestion:
         ordering = ['-date']
 
     def __str__(self):
-        return f'[{self.category}] {self.text[:50]}'
+        return f'[{self.category}] {self.question[:50]}'
 
 
 class MiniConsult(models.Model):
@@ -481,18 +518,30 @@ class MiniConsult(models.Model):
     )
     text = models.TextField('Текст', blank=True)
     audio_file_id = models.TextField(
-        'ID аудиофайла в телеграм', null=True, blank=True,
+        'ID аудиофайла в телеграм',
+        null=True,
+        blank=True,
     )
     expert_type = models.CharField(
-        'Тип эксперта', max_length=50, choices=ExpertTypes,
+        'Тип эксперта',
+        max_length=50,
+        choices=ExpertTypes,
     )
     intention = models.CharField(
-        'Намерение', max_length=50, choices=Intentions,
+        'Намерение',
+        max_length=50,
+        choices=Intentions,
     )
     experience_type = models.CharField(
-        'Уже сталкивался', max_length=50, choices=ExperienceTypes,
+        'Уже сталкивался',
+        max_length=50,
+        choices=ExperienceTypes,
     )
-    feelings_type = models.CharField('Как себя чувствует', max_length=50, choices=FeelingsTypes)
+    feelings_type = models.CharField(
+        'Как себя чувствует',
+        max_length=50,
+        choices=FeelingsTypes,
+    )
     date = models.DateTimeField('Дата', auto_now_add=True)
 
     class Meta:
@@ -506,6 +555,7 @@ class MiniConsult(models.Model):
 
 class Topic(models.Model):
     name = models.CharField('Метка', max_length=50, unique=True)
+    is_global = models.BooleanField('Виден всем', default=False)
 
     def __str__(self):
         return self.name
@@ -524,11 +574,15 @@ class MiniConsultTopic(models.Model):
 class MiniConsultFeedback(models.Model):
     consult = models.ForeignKey(MiniConsult, models.CASCADE, 'feedbacks')
     rating = models.CharField(
-        'Оценка', max_length=50, choices=MiniConsultFeedbackRatings,
+        'Оценка',
+        max_length=50,
+        choices=MiniConsultFeedbackRatings,
     )
     text = models.TextField('Текст', blank=True)
     audio_file_id = models.TextField(
-        'ID аудиофайла в телеграм', null=True, blank=True,
+        'ID аудиофайла в телеграм',
+        null=True,
+        blank=True,
     )
     date = models.DateTimeField('Дата', auto_now_add=True)
 
@@ -559,3 +613,67 @@ class ExpertAnswer(models.Model):
 
     def __str__(self):
         return f'{self.expert} - {self.consult}'
+
+
+class FridayGift(models.Model):
+    client = models.ForeignKey(
+        Client,
+        models.CASCADE,
+        'friday_gifts',
+        verbose_name='Пользователь',
+    )
+    type = models.CharField(
+        'Тип подарка',
+        max_length=50,
+        choices=FridayGiftTypes,
+    )
+    text = models.TextField('Текст', blank=True)
+    audio_file_id = models.TextField(
+        'ID аудиофайла в телеграм',
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField('Дата', auto_now_add=True)
+    objects = FridayGiftManager()
+
+    class Meta:
+        verbose_name = 'Пятничный подарок'
+        verbose_name_plural = 'Пятничные подарки'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        title = (
+            f'[{self.created_at.strftime(settings.DATE_FMT)}] {self.client}'
+        )
+        if self.text:
+            title += f' - {self.text[:50]}'
+        return title
+
+
+class Insight(models.Model):
+    client = models.ForeignKey(
+        Client,
+        models.CASCADE,
+        'insights',
+        verbose_name='Пользователь',
+    )
+    text = models.TextField('Текст', blank=True)
+    audio_file_id = models.TextField(
+        'ID аудиофайла в телеграм',
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField('Дата', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Инсайт'
+        verbose_name_plural = 'Инсайты'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        title = (
+            f'[{self.created_at.strftime(settings.DATE_FMT)}] {self.client}'
+        )
+        if self.text:
+            title += f' - {self.text[:50]}'
+        return title

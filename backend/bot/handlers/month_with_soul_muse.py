@@ -1,8 +1,7 @@
 from aiogram import F, Router, flags
-from aiogram.types import BufferedInputFile, CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message
 
 from bot.api.soul_muse import SoulMuse
-from bot.api.speechkit import synthesize
 from bot.keyboards.inline.base import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,

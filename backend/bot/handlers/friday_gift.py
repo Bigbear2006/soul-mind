@@ -8,15 +8,16 @@ from bot.keyboards.inline.base import (
     get_to_subscription_plans_kb,
 )
 from bot.keyboards.utils import one_button_keyboard
+from bot.loader import logger
 from bot.templates.friday_gift import (
+    cards,
     friday_gifts_order,
     friday_gifts_preambles,
     insight_phrases,
     symbols,
 )
-from core.models import Actions, Client, ClientAction
-
-# TODO: Добавить чередование и сохранение подарков
+from core.choices import FridayGiftTypes
+from core.models import Client, FridayGift
 
 router = Router()
 
@@ -71,22 +72,36 @@ async def friday_gift_intro(msg: Message, client: Client):
 
 
 @router.callback_query(F.data == 'friday_gift')
-async def friday_gift(query: CallbackQuery):
-    client_id = query.message.chat.id
-    gift = random.choice(list(friday_gifts_order.keys()))
-    preamble = friday_gifts_preambles[gift]
+@flags.with_client
+async def friday_gift(query: CallbackQuery, client: Client):
+    gift = await FridayGift.objects.get_current_week_gift(client)
+    if gift:
+        await query.message.edit_text(gift.text)
+        return
 
-    if gift == 'insight_phrases':
-        await query.message.edit_text(
-            preamble + random.choice(insight_phrases),
-        )
-    elif gift == 'cards':
+    latest_gift = await FridayGift.objects.get_latest_gift(client)
+    if latest_gift:
+        gift_type = friday_gifts_order[latest_gift.type]
+    else:
+        gift_type = random.choice(list(FridayGiftTypes.values))
+
+    preamble = friday_gifts_preambles[gift_type]
+    if gift_type == FridayGiftTypes.INSIGHT_PHRASES:
+        text = preamble + random.choice(insight_phrases)
+        await query.message.edit_text(text)
+    elif gift_type == FridayGiftTypes.CARDS:
         card = random.choice(cards)
-        await query.message.edit_text(f'{card["card"]}\n\n{card["text"]}')
-    elif gift == 'symbols':
-        await query.message.edit_text(preamble + random.choice(symbols))
+        text = f'{card["card"]}\n\n{card["text"]}'
+        await query.message.edit_text(text)
+    elif gift_type == FridayGiftTypes.SYMBOLS:
+        text = preamble + random.choice(symbols)
+        await query.message.edit_text(text)
+    else:
+        logger.info(f'Invalid gift_type {gift_type!r}')
+        return
 
-    await ClientAction.objects.acreate(
-        client_id=client_id,
-        action=Actions.FRIDAY_GIFT,
+    await FridayGift.objects.acreate(
+        client=client,
+        type=gift_type,
+        text=text,
     )

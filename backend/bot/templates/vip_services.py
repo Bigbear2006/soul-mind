@@ -1,6 +1,7 @@
 from typing import Literal
 
 from bot.templates.base import all_centers
+from core.models import Client
 
 
 def get_vip_compatability_prompt(
@@ -481,7 +482,7 @@ def get_vip_compatability_prompt(
         )
 
 
-def get_personal_report_prompt():
+def get_personal_report_prompt(client: Client):
     return (
         'Задача:\n'
         'Создать харизматичный, глубокий, персонализированный текст от имени Soul Muse — по входным данным пользователя '

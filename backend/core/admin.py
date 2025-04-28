@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.models import Group
 
 from core import models
+from core.models import SoulMuseQuestion
 
 admin.site.unregister(Group)
 
@@ -57,6 +58,11 @@ class MonthForecastAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at',)
 
 
+@admin.register(SoulMuseQuestion)
+class SoulMuseQuestion(admin.ModelAdmin):
+    readonly_fields = ('date',)
+
+
 @admin.register(models.MiniConsult)
 class MiniConsultAdmin(admin.ModelAdmin):
     list_select_related = ('client',)
@@ -71,3 +77,13 @@ class MiniConsultFeedbackAdmin(admin.ModelAdmin):
 @admin.register(models.ExpertAnswer)
 class ExpertAnswerAdmin(admin.ModelAdmin):
     list_select_related = ('expert', 'consult')
+
+
+@admin.register(models.FridayGift)
+class FridayGiftAdmin(admin.ModelAdmin):
+    list_select_related = ('client',)
+
+
+@admin.register(models.Insight)
+class InsightAdmin(admin.ModelAdmin):
+    list_select_related = ('client',)

@@ -33,10 +33,9 @@ from core.models import (
     Client,
     ClientAction,
     ClientActionBuying,
+    SoulMuseQuestion,
     SubscriptionPlans,
 )
-
-# TODO: сохранение запросов с категориями в бд
 
 router = Router()
 
@@ -61,7 +60,6 @@ async def soul_muse_question(msg: Message, state: FSMContext, client: Client):
             Actions.SOUL_MUSE_QUESTION,
         )
         remaining_usages_str = f'* У тебя осталось {remaining_usages} вопросов'
-        await state.set_state(SoulMuseQuestionState.question)
         if client.subscription_plan == SubscriptionPlans.PREMIUM:
             await msg.answer(
                 '🤖 Спроси у Soul Muse\n'
@@ -229,7 +227,8 @@ async def on_extra_questions_buying(
 
 
 @router.callback_query(F.data == 'ask_soul_muse')
-async def ask_soul_muse(query: CallbackQuery):
+async def ask_soul_muse(query: CallbackQuery, state: FSMContext):
+    await state.set_state(SoulMuseQuestionState.question)
     await query.message.edit_text(
         'Задай вопрос — и я отвечу.\n'
         'Максимальная длина вопроса - 250 символов.',
@@ -245,11 +244,13 @@ async def soul_muse_answer(msg: Message, state: FSMContext, client: Client):
         )
 
     muse = SoulMuse()
-    category = await muse.answer(
+    data = await muse.answer(
         get_categorize_question_prompt(msg.text[:250]),
     )
-    logger.info(category)
-    category = json.loads(category)['category']
+    logger.info(data)
+    data = json.loads(data)
+    category = data['category']
+    reason = data['reason']
 
     await ClientAction.objects.acreate(
         client=client,
@@ -263,5 +264,14 @@ async def soul_muse_answer(msg: Message, state: FSMContext, client: Client):
         )
         await msg.answer(answer)
     else:
-        await msg.answer(inappropriate_questions_answers[category])
+        answer = inappropriate_questions_answers[category]
+        await msg.answer(answer)
+
+    await SoulMuseQuestion.objects.acreate(
+        category=category,
+        reason=reason,
+        question=msg.text[:250],
+        answer=answer,
+    )
+
     await state.clear()

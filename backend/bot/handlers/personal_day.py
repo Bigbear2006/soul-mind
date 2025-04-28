@@ -73,3 +73,7 @@ async def personal_day(query: CallbackQuery, client: Client):
     await query.message.edit_text(
         personal_day_messages[phase][number],
     )
+    # await ClientAction.objects.acreate(
+    #     client=client,
+    #     action=Actions.PERSONAL_DAY,
+    # )

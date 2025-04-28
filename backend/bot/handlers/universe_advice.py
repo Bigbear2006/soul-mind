@@ -35,7 +35,8 @@ async def universe_advice_intro(msg: Message, client: Client):
 
 
 @router.callback_query(F.data == 'universe_advice')
-async def universe_advice(query: CallbackQuery):
+@flags.with_client
+async def universe_advice(query: CallbackQuery, client: Client):
     # for prod: date.today().strftime('%d.%m.%Y')
     await query.message.edit_text(
         universe_advices.get(
@@ -43,3 +44,7 @@ async def universe_advice(query: CallbackQuery):
             'К сожалению, на сегодняшний день совета нет.',
         ),
     )
+    # await ClientAction.objects.acreate(
+    #     client=client,
+    #     action=Actions.UNIVERSE_ANSWER,
+    # )

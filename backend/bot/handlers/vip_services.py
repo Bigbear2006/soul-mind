@@ -3,7 +3,6 @@ from dataclasses import asdict
 from datetime import datetime
 
 from aiogram import F, Router, flags
-from aiogram.enums import ContentType
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
@@ -30,7 +29,6 @@ from bot.keyboards.utils import (
     keyboard_from_choices,
     one_button_keyboard,
 )
-from bot.loader import logger
 from bot.pdf import generate_pdf
 from bot.schemas import Bodygraphs, HDInputData
 from bot.settings import settings
@@ -199,7 +197,8 @@ async def choose_experience_type(
     await answer_func(
         'Ты уже сталкивался с этим направлением?',
         reply_markup=keyboard_from_choices(
-            ExperienceTypes, prefix='experience',
+            ExperienceTypes,
+            prefix='experience',
         ),
     )
 
@@ -261,7 +260,9 @@ async def ask_question(msg: Message | CallbackQuery, state: FSMContext):
 @router.message(F.text | F.voice, StateFilter(MiniConsultState.question))
 @flags.with_client
 async def send_question_to_expert(
-    msg: Message, state: FSMContext, client: Client,
+    msg: Message,
+    state: FSMContext,
+    client: Client,
 ):
     data = await state.get_data()
     topics_ids = data['topics']
@@ -280,8 +281,9 @@ async def send_question_to_expert(
     topics = await sync_to_async(
         lambda: list(
             Topic.objects.filter(pk__in=topics_ids).values_list(
-                'name', flat=True,
-            )
+                'name',
+                flat=True,
+            ),
         ),
     )()
 
@@ -294,7 +296,8 @@ async def send_question_to_expert(
         f'Метки: {", ".join(topics)}'
     )
     kb = one_button_keyboard(
-        text='Ответить', callback_data=f'answer_consult:{consult.pk}',
+        text='Ответить',
+        callback_data=f'answer_consult:{consult.pk}',
     )
 
     if msg.voice:
@@ -361,7 +364,8 @@ async def end_consult(query: CallbackQuery, state: FSMContext):
 
     async for answer in answers:
         await query.bot.send_audio(
-            consult.client.pk, audio=answer.audio_file_id,
+            consult.client.pk,
+            audio=answer.audio_file_id,
         )
         await asyncio.sleep(1)
 
@@ -396,7 +400,8 @@ async def send_feedback(query: CallbackQuery, state: FSMContext):
     StateFilter(MiniConsultState.comment),
 )
 async def send_feedback_without_comment(
-    query: CallbackQuery, state: FSMContext,
+    query: CallbackQuery,
+    state: FSMContext,
 ):
     data = await state.get_data()
     await MiniConsultFeedback.objects.acreate(
@@ -483,7 +488,7 @@ async def choose_personal_report_payment_type(
             [LabeledPrice(label=settings.CURRENCY, amount=1299 * 100)],
             settings.PROVIDER_TOKEN,
         )
-        await state.set_state(VIPCompatabilityState.payment)
+        await state.set_state(PersonalReportState.payment)
 
 
 @router.message(
@@ -500,13 +505,13 @@ async def on_successful_payment(
         'Создаю отчет и аудио...\nЭто может занять несколько минут...',
     )
     await state.clear()
-    report = await SoulMuse().answer(get_personal_report_prompt())
+    report = await SoulMuse().answer(get_personal_report_prompt(client))
     await msg.answer_document(
         BufferedInputFile(generate_pdf(report), 'personal_report.pdf'),
     )
-    # await msg.answer_audio(
-    #     BufferedInputFile(await synthesize(report), 'personal_report.wav'),
-    # )
+    await msg.answer_audio(
+        BufferedInputFile(await synthesize(report), 'personal_report.wav'),
+    )
     await state.clear()
 
 

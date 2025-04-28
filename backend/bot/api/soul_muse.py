@@ -1,4 +1,4 @@
-from openai import AsyncOpenAI, NOT_GIVEN
+from openai import NOT_GIVEN, AsyncOpenAI
 
 
 class SoulMuse:

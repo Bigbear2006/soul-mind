@@ -9,14 +9,14 @@ from bot.settings import settings
 class SpeechKit:
     def __init__(self, **session_kwargs):
         self.session = ClientSession(
-            'https://tts.api.cloud.yandex.net/tts/v3/',
+            'https://tts.api.cloud.yandex.net/',
             headers=self.headers,
             **session_kwargs,
         )
 
     @property
     def headers(self):
-        return {'Authorization': f'Bearer {settings.YANDEX_API_KEY}'}
+        return {'Authorization': f'Api-Key {settings.YANDEX_API_KEY}'}
 
     async def __aenter__(self):
         return self
@@ -24,9 +24,9 @@ class SpeechKit:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.session.close()
 
-    async def synthesize(self, text: str) -> bytes:
+    async def synthesize_v3(self, text: str) -> bytes:
         async with self.session.post(
-            'utteranceSynthesis',
+            'tts/v3/utteranceSynthesis',
             json={
                 'text': text,
                 'hints': [{'voice': 'zhanar'}, {'role': 'friendly'}],
@@ -39,8 +39,22 @@ class SpeechKit:
         logger.info(f'Synthesized text ({result.get("lengthMs")} ms)')
         return base64.b64decode(result['audioChunk']['data'])
 
+    async def synthesize_v1(self, text: str) -> bytes:
+        logger.info(f'Text length: {len(text)}')
+        async with self.session.post(
+            'speech/v1/tts:synthesize',
+            data={
+                'text': text,
+                'voice': 'filipp',
+                'emotion': 'friendly',
+                'lang': 'ru-RU',
+            },
+        ) as rsp:
+            data = await rsp.read()
+            return data
+
 
 async def synthesize(text: str) -> bytes:
     async with SpeechKit() as sk:
-        audio = await sk.synthesize(text)
+        audio = await sk.synthesize_v1(text)
     return audio

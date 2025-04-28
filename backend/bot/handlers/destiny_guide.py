@@ -80,7 +80,8 @@ async def destiny_guide(query: CallbackQuery, client: Client):
 
 
 @router.callback_query(F.data == 'important_days')
-async def important_days_handler(query: CallbackQuery):
+@flags.with_client
+async def important_days_handler(query: CallbackQuery, client: Client):
     await query.message.edit_text(
         # for prod: date.today().strftime('%m.%Y')
         important_days.get('05.2025'),
@@ -89,3 +90,7 @@ async def important_days_handler(query: CallbackQuery):
             callback_data='destiny_guide',
         ),
     )
+    # await ClientAction.objects.acreate(
+    #     client=client,
+    #     action=Actions.DESTINY_GUIDE,
+    # )

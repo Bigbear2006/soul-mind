@@ -216,9 +216,9 @@ symbols = [
 ]
 
 friday_gifts_order = {
-    'insight_phrases': cards,
-    'cards': symbols,
-    'symbols': insight_phrases,
+    'insight_phrases': 'cards',
+    'cards': 'symbols',
+    'symbols': 'insight_phrases',
 }
 
 friday_gifts_preambles = {
