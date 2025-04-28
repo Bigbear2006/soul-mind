@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date
 from typing import Literal
 
 from bot.calculations import get_life_path_number, reduce_number
@@ -6,8 +6,8 @@ from bot.calculations import get_life_path_number, reduce_number
 
 def get_compatability_energy_text(
     connection_type: Literal['together', 'like', 'past_lovers'],
-    birth_date_1: datetime,
-    birth_date_2: datetime,
+    birth_date_1: date,
+    birth_date_2: date,
 ) -> str:
     lpn_1 = get_life_path_number(birth_date_1)
     lpn_2 = get_life_path_number(birth_date_2)

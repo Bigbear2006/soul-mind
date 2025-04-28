@@ -10,11 +10,15 @@ class UserInfoState(StatesGroup):
 
 
 class CompatabilityEnergyState(StatesGroup):
+    payment_type = State()
+    payment = State()
     connection_type = State()
     birth_date_2 = State()
 
 
 class SoulMuseQuestionState(StatesGroup):
+    payment_type = State()
+    payment = State()
     question = State()
 
 
@@ -26,3 +30,18 @@ class VIPCompatabilityState(StatesGroup):
     birth_time = State()
     birth_location = State()
     report = State()
+
+
+class PersonalReportState(StatesGroup):
+    payment_type = State()
+    payment = State()
+
+
+class MiniConsultState(StatesGroup):
+    payment_type = State()
+    payment = State()
+    intention = State()
+    topics = State()
+    question = State()
+    answer_consult = State()
+    comment = State()

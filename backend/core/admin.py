@@ -5,9 +5,35 @@ from core import models
 
 admin.site.unregister(Group)
 
-admin.site.register(models.Client)
-admin.site.register(models.DailyQuest)
-admin.site.register(models.WeeklyQuest)
+admin.site.register(models.QuestTag)
+admin.site.register(models.Topic)
+
+
+class DailyQuestTagInline(admin.TabularInline):
+    model = models.DailyQuestTag
+
+
+class WeeklyQuestTagInline(admin.TabularInline):
+    model = models.WeeklyQuestTag
+
+
+class MiniConsultTopicInline(admin.TabularInline):
+    model = models.MiniConsultTopic
+
+
+@admin.register(models.DailyQuest)
+class DailyQuestAdmin(admin.ModelAdmin):
+    inlines = [DailyQuestTagInline]
+
+
+@admin.register(models.WeeklyQuest)
+class WeeklyQuestAdmin(admin.ModelAdmin):
+    inlines = [WeeklyQuestTagInline]
+
+
+@admin.register(models.Client)
+class ClientAdmin(admin.ModelAdmin):
+    readonly_fields = ('created_at',)
 
 
 @admin.register(models.ClientDailyQuest)
@@ -23,3 +49,25 @@ class WeeklyQuestTaskAdmin(admin.ModelAdmin):
 @admin.register(models.ClientWeeklyQuestTask)
 class ClientWeeklyQuestTaskAdmin(admin.ModelAdmin):
     list_select_related = ('client', 'quest', 'quest__quest')
+
+
+@admin.register(models.MonthText)
+class MonthForecastAdmin(admin.ModelAdmin):
+    list_select_related = ('client',)
+    readonly_fields = ('created_at',)
+
+
+@admin.register(models.MiniConsult)
+class MiniConsultAdmin(admin.ModelAdmin):
+    list_select_related = ('client',)
+    inlines = [MiniConsultTopicInline]
+
+
+@admin.register(models.MiniConsultFeedback)
+class MiniConsultFeedbackAdmin(admin.ModelAdmin):
+    list_select_related = ('consult',)
+
+
+@admin.register(models.ExpertAnswer)
+class ExpertAnswerAdmin(admin.ModelAdmin):
+    list_select_related = ('expert', 'consult')

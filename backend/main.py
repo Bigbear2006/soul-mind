@@ -1,8 +1,6 @@
 import os
 
 import django
-from aiogram import F
-from aiogram.enums import ChatType
 from aiogram.types import BotCommand
 
 from bot.loader import bot, dp, logger, loop
@@ -34,8 +32,8 @@ async def main():
     from bot.middlewares import WithClientMiddleware
 
     dp.include_routers(
-        menu.router,
         registration.router,
+        menu.router,
         subscribe.router,
         personal_analysis.router,
         compatability_energy.router,
@@ -52,13 +50,15 @@ async def main():
         vip_services.router,
         quests.router,
     )
-    dp.message.filter(F.chat.type == ChatType.PRIVATE)
     dp.message.middleware(WithClientMiddleware())
     dp.callback_query.middleware(WithClientMiddleware())
 
     await bot.delete_webhook(drop_pending_updates=True)
     await bot.set_my_commands(
-        [BotCommand(command='/start', description='Запустить бота')],
+        [
+            BotCommand(command='/start', description='Запустить бота'),
+            BotCommand(command='/menu', description='Главное меню'),
+        ],
     )
 
     logger.info('Starting bot...')

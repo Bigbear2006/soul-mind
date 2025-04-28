@@ -1,21 +1,19 @@
 from aiogram import F, Router
-from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
+from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, Message
 
 from bot.keyboards.reply import menu_kb
 
 router = Router()
 
 
-@router.message(F.text == 'В меню')
-async def to_menu_message_handler(msg: Message):
+@router.message(Command('menu'))
+async def to_menu_message_handler(msg: Message, state: FSMContext):
+    await state.clear()
     await msg.answer('Главное меню', reply_markup=menu_kb)
 
 
 @router.callback_query(F.data == 'to_menu')
 async def to_menu_callback_query_handler(query: CallbackQuery):
     await query.message.answer('Главное меню', reply_markup=menu_kb)
-
-
-@router.message(F.text == 'rm')
-async def rm(msg: Message):
-    await msg.answer('Клавиатура удалена', reply_markup=ReplyKeyboardRemove())

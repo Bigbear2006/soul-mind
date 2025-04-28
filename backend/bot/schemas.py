@@ -86,3 +86,9 @@ class House:
     house: int
     sign: str
     degree: float
+
+
+@dataclass
+class WesternHoroscope:
+    planets: list[Planet]
+    houses: list[House]

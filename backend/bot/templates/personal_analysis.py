@@ -1,6 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup
 
-from bot.keyboards.inline import get_to_registration_kb, personal_analysis_kb
+from bot.keyboards.inline.base import get_to_registration_kb
+from bot.keyboards.inline.personal_analysis import personal_analysis_kb
 from core.models import Client
 
 

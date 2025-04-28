@@ -1,7 +1,8 @@
 from aiogram import F, Router, flags
 from aiogram.types import CallbackQuery, Message
 
-from bot.keyboards.inline import get_to_registration_kb, get_weekly_quest_kb
+from bot.keyboards.inline.base import get_to_registration_kb
+from bot.keyboards.inline.quests import get_weekly_quest_kb
 from bot.keyboards.utils import keyboard_from_queryset, one_button_keyboard
 from core.models import Client, ClientWeeklyQuest, WeeklyQuest
 

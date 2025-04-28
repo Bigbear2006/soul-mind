@@ -1,10 +1,8 @@
-from datetime import date
-
 from aiogram import F, Router, flags
 from aiogram.types import CallbackQuery, Message
 
 from bot.calculations import calculate_number
-from bot.keyboards.inline import (
+from bot.keyboards.inline.base import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
 )
@@ -69,9 +67,8 @@ async def personal_day_preview(msg: Message, client: Client):
 @router.callback_query(F.data == 'personal_day')
 @flags.with_client
 async def personal_day(query: CallbackQuery, client: Client):
-    phase = moon_phases[
-        date.today().strftime('%d.%m.%Y')
-    ]  # for test: '10.05.2025'
+    # for prod: date.today().strftime('%d.%m.%Y')
+    phase = moon_phases['10.05.2025']
     number = calculate_number(str(client.birth.date()), ())
     await query.message.edit_text(
         personal_day_messages[phase][number],

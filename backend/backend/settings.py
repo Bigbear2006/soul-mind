@@ -173,6 +173,11 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+        'aiogram': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        }
     },
 }
 

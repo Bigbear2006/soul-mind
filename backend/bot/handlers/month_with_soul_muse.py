@@ -1,22 +1,29 @@
-from aiogram import F, Router
-from aiogram.types import CallbackQuery, Message
+from aiogram import F, Router, flags
+from aiogram.types import BufferedInputFile, CallbackQuery, Message
 
-from bot.keyboards.inline import (
+from bot.api.soul_muse import SoulMuse
+from bot.api.speechkit import synthesize
+from bot.keyboards.inline.base import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
-    month_with_soul_muse_kb,
 )
+from bot.keyboards.inline.month_with_soul_muse import month_with_soul_muse_kb
 from bot.keyboards.utils import one_button_keyboard
-from core.models import Client, SubscriptionPlans
+from bot.templates.month_with_soul_muse import (
+    get_month_forecast_prompt,
+    get_month_resource_text,
+    get_month_script_text,
+)
+from core.choices import MonthTextTypes
+from core.models import Client, MonthText, SubscriptionPlans
 
 router = Router()
 
 
 @router.message(F.text == '📄 Месяц с Soul Muse')
 @router.callback_query(F.data == 'month_with_soul_muse')
-async def month_with_soul_muse(msg: Message | CallbackQuery):
-    pk = msg.chat.id if isinstance(msg, Message) else msg.message.chat.id
-    client: Client = await Client.objects.aget(pk=pk)
+@flags.with_client
+async def month_with_soul_muse(msg: Message | CallbackQuery, client: Client):
     answer_func = (
         msg.answer if isinstance(msg, Message) else msg.message.edit_text
     )
@@ -65,6 +72,11 @@ async def month_with_soul_muse(msg: Message | CallbackQuery):
         )
 
 
+######################
+### MONTH FORECAST ###
+######################
+
+
 @router.callback_query(F.data == 'month_forecast')
 async def month_forecast(query: CallbackQuery):
     await query.message.edit_text(
@@ -74,10 +86,42 @@ async def month_forecast(query: CallbackQuery):
         'Чтобы ты чувствовал(а) не хаос — а направление.',
         reply_markup=one_button_keyboard(
             text='📄 Открыть прогноз',
-            callback_data='month_forecast_open',
+            callback_data='show_month_forecast',
             back_button_data='month_with_soul_muse',
         ),
     )
+
+
+@router.callback_query(F.data == 'show_month_forecast')
+@flags.with_client
+async def show_month_forecast(query: CallbackQuery, client: Client):
+    forecast = await MonthText.objects.get_month_text(
+        client=client,
+        type=MonthTextTypes.MONTH_FORECAST,
+    )
+
+    if forecast:
+        text = forecast.text
+    else:
+        text = await SoulMuse().answer(get_month_forecast_prompt(client))
+        await MonthText.objects.acreate(
+            text=text,
+            client=client,
+            type=MonthTextTypes.MONTH_FORECAST,
+        )
+
+    await query.message.edit_text(
+        text,
+        reply_markup=one_button_keyboard(
+            text='Назад',
+            callback_data='month_forecast',
+        ),
+    )
+
+
+###########################
+### MONTH MAIN RESOURCE ###
+###########################
 
 
 @router.callback_query(F.data == 'month_main_resource')
@@ -89,16 +133,54 @@ async def month_main_resource(query: CallbackQuery):
         'Я помогу его распознать и опереться на него.',
         reply_markup=one_button_keyboard(
             text='🪶 Узнать свой ресурс',
-            callback_data='month_resource_open',
+            callback_data='show_month_resource',
             back_button_data='month_with_soul_muse',
         ),
     )
 
 
-@router.callback_query(F.data == 'month_script')
-async def month_script(query: CallbackQuery):
-    client: Client = await Client.objects.aget(pk=query.message.chat.id)
+@router.callback_query(F.data == 'show_month_resource')
+@flags.with_client
+async def show_month_resource(query: CallbackQuery, client: Client):
+    resource = await MonthText.objects.get_month_text(
+        client=client,
+        type=MonthTextTypes.MONTH_MAIN_RESOURCE,
+    )
 
+    if resource:
+        text = resource.text
+    else:
+        text = get_month_resource_text(client)
+    await query.message.edit_text(
+        text,
+        reply_markup=one_button_keyboard(
+            text='Назад',
+            callback_data='month_main_resource',
+        ),
+    )
+
+    # if resource:
+    #     await query.message.answer_audio(resource.audio_file_id)
+    # else:
+    #     audio_msg = await query.message.answer_audio(
+    #         BufferedInputFile(await synthesize(text), 'main_resource.wav'),
+    #     )
+    #     await MonthText.objects.acreate(
+    #         text=text,
+    #         audio_file_id=audio_msg.audio.file_id,
+    #         client=client,
+    #         type=MonthTextTypes.MONTH_MAIN_RESOURCE,
+    #     )
+
+
+####################
+### MONTH SCRIPT ###
+####################
+
+
+@router.callback_query(F.data == 'month_script')
+@flags.with_client
+async def month_script(query: CallbackQuery, client: Client):
     if (
         client.subscription_is_active()
         and client.subscription_plan == SubscriptionPlans.PREMIUM
@@ -110,7 +192,7 @@ async def month_script(query: CallbackQuery):
             'что станет вызовом, где поворот, когда выход на свет.',
             reply_markup=one_button_keyboard(
                 text='🎬 Открыть сценарий месяца',
-                callback_data='month_script_open',
+                callback_data='show_month_script',
                 back_button_data='month_with_soul_muse',
             ),
         )
@@ -125,3 +207,30 @@ async def month_script(query: CallbackQuery):
                 text='💎 Оформить Премиум и открыть сценарий',
             ),
         )
+
+
+@router.callback_query(F.data == 'show_month_script')
+@flags.with_client
+async def show_month_script(query: CallbackQuery, client: Client):
+    script = await MonthText.objects.get_month_text(
+        client=client,
+        type=MonthTextTypes.MONTH_SCRIPT,
+    )
+
+    if script:
+        text = script.text
+    else:
+        text = get_month_script_text(client)
+        await MonthText.objects.acreate(
+            text=text,
+            client=client,
+            type=MonthTextTypes.MONTH_SCRIPT,
+        )
+
+    await query.message.edit_text(
+        text,
+        reply_markup=one_button_keyboard(
+            text='Назад',
+            callback_data='month_script',
+        ),
+    )

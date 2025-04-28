@@ -12,8 +12,7 @@ from aiogram.types import (
 )
 from django.db import models
 
-from bot.keyboards.inline import keyboard_from_choices
-from bot.keyboards.utils import one_button_keyboard
+from bot.keyboards.utils import keyboard_from_choices, one_button_keyboard
 from bot.loader import logger
 from bot.settings import settings
 from core.models import Client, SubscriptionPlans
@@ -22,7 +21,8 @@ router = Router()
 
 
 @router.callback_query(F.data == 'subscription_plans')
-async def subscription_plans_handler(query: CallbackQuery):
+async def subscription_plans_handler(query: CallbackQuery, state: FSMContext):
+    await state.set_state(None)
     await query.message.edit_text(
         SubscriptionPlans.subscription_plans_teaser(),
         reply_markup=keyboard_from_choices(SubscriptionPlans),

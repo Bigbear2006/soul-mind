@@ -3,7 +3,7 @@ import random
 from aiogram import F, Router, flags
 from aiogram.types import CallbackQuery, Message
 
-from bot.keyboards.inline import (
+from bot.keyboards.inline.base import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
 )
@@ -81,7 +81,7 @@ async def friday_gift(query: CallbackQuery):
             preamble + random.choice(insight_phrases),
         )
     elif gift == 'cards':
-        card = random.choice(insight_phrases)
+        card = random.choice(cards)
         await query.message.edit_text(f'{card["card"]}\n\n{card["text"]}')
     elif gift == 'symbols':
         await query.message.edit_text(preamble + random.choice(symbols))

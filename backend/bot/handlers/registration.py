@@ -9,14 +9,13 @@ from aiogram.types import CallbackQuery, Message
 from bot.api.astrology import AstrologyAPI
 from bot.api.geocoding import GeocodingAPI
 from bot.api.humandesign import HumanDesignAPI
-from bot.keyboards.inline import (
+from bot.keyboards.inline.registration import (
     birth_times_kb,
-    keyboard_from_choices,
     notifications_kb,
     start_ways_kb,
 )
 from bot.keyboards.reply import menu_kb
-from bot.keyboards.utils import one_button_keyboard
+from bot.keyboards.utils import keyboard_from_choices, one_button_keyboard
 from bot.loader import logger
 from bot.schemas import AstrologyParams, HDInputData
 from bot.settings import settings
@@ -229,7 +228,7 @@ async def set_birth_location(msg: Message, client: Client, state: FSMContext):
         )
 
     async with AstrologyAPI() as api:
-        planets, houses = await api.western_horoscope(
+        horoscope = await api.western_horoscope(
             AstrologyParams(
                 day=client.birth.day,
                 month=client.birth.month,
@@ -246,8 +245,8 @@ async def set_birth_location(msg: Message, client: Client, state: FSMContext):
         birth_latitude=lat,
         birth_longitude=lon,
         tzone=tzone,
-        planets=[asdict(i) for i in planets],
-        houses=[asdict(i) for i in houses],
+        planets=[asdict(i) for i in horoscope.planets],
+        houses=[asdict(i) for i in horoscope.planets],
         **asdict(bodygraphs),
     )
 

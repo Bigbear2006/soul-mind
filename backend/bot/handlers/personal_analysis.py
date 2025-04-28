@@ -1,7 +1,7 @@
 from aiogram import F, Router, flags
 from aiogram.types import CallbackQuery, Message
 
-from bot.keyboards.inline import back_to_personal_analysis_kb
+from bot.keyboards.inline.personal_analysis import back_to_personal_analysis_kb
 from bot.templates.career_and_finance import (
     get_career_and_finance_intro,
     get_career_and_finance_text,
@@ -114,6 +114,6 @@ async def show_full_profile(query: CallbackQuery, client: Client):
     await query.message.edit_text(intro, reply_markup=None)
     [await query.message.answer(i) for i in content]
     await query.message.answer(
-        intro,
+        conclusion,
         reply_markup=back_to_personal_analysis_kb,
     )

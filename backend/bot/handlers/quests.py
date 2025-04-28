@@ -6,7 +6,7 @@ from aiogram.types import CallbackQuery, Message
 from asgiref.sync import sync_to_async
 from django.db import IntegrityError, models
 
-from bot.keyboards.inline import get_quest_statuses_kb
+from bot.keyboards.inline.quests import get_quest_statuses_kb
 from core.models import (
     Client,
     ClientDailyQuest,

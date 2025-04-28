@@ -3,20 +3,39 @@ import json
 from aiogram import F, Router, flags
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import (
+    CallbackQuery,
+    LabeledPrice,
+    Message,
+    PreCheckoutQuery,
+)
 
 from bot.api.soul_muse import SoulMuse
-from bot.keyboards.inline import (
-    get_soul_muse_question_kb,
+from bot.keyboards.inline.base import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
 )
+from bot.keyboards.inline.soul_muse_question import (
+    buy_questions_kb,
+    get_soul_muse_question_kb,
+)
+from bot.keyboards.inline.vip_services import get_payment_choices_kb
 from bot.loader import logger
+from bot.settings import settings
 from bot.states import SoulMuseQuestionState
-from bot.templates.soul_muse_question import inappropriate_questions_answers
-from core.models import Actions, Client, SubscriptionPlans
+from bot.templates.soul_muse_question import (
+    get_answer_prompt,
+    get_categorize_question_prompt,
+    inappropriate_questions_answers,
+)
+from core.models import (
+    Actions,
+    Client,
+    ClientAction,
+    ClientActionBuying,
+    SubscriptionPlans,
+)
 
-# TODO: лимит на количеств запросов
 # TODO: сохранение запросов с категориями в бд
 
 router = Router()
@@ -37,14 +56,20 @@ async def soul_muse_question(msg: Message, state: FSMContext, client: Client):
         )
         return
 
-    if client.has_action_permission(Actions.SOUL_MUSE_QUESTION):
+    if await client.get_remaining_usages(Actions.SOUL_MUSE_QUESTION) > 0:
+        remaining_usages = await client.get_remaining_usages(
+            Actions.SOUL_MUSE_QUESTION,
+        )
+        remaining_usages_str = f'* У тебя осталось {remaining_usages} вопросов'
         await state.set_state(SoulMuseQuestionState.question)
         if client.subscription_plan == SubscriptionPlans.PREMIUM:
             await msg.answer(
                 '🤖 Спроси у Soul Muse\n'
                 'У тебя есть пространство для настоящих вопросов.\n'
                 'Пятнадцать шагов к себе — через ответы.\n\n'
-                'Когда почувствуешь — просто задай. А я скажу, что ты давно знал(а), но боялся(ась) услышать.',
+                'Когда почувствуешь — просто задай. А я скажу, что ты давно знал(а), '
+                'но боялся(ась) услышать.\n\n'
+                f'{remaining_usages_str}',
                 reply_markup=get_soul_muse_question_kb(
                     buy_extra_questions_btn=False,
                 ),
@@ -54,7 +79,8 @@ async def soul_muse_question(msg: Message, state: FSMContext, client: Client):
                 '🤖 Спроси у Soul Muse\n'
                 'Иногда один вопрос — открывает целый пласт.\n'
                 'Ты можешь задать до 4 вопросов. А потом — расширить доступ.\n\n'
-                'Готов(а)? Я отвечаю из тишины. Но попадаю в самое точное.',
+                'Готов(а)? Я отвечаю из тишины. Но попадаю в самое точное.\n\n'
+                f'{remaining_usages_str}',
                 reply_markup=get_soul_muse_question_kb(
                     buy_extra_questions_btn=False,
                 ),
@@ -65,14 +91,15 @@ async def soul_muse_question(msg: Message, state: FSMContext, client: Client):
                 'Ты носишь в себе вопрос?\n'
                 'О себе. О чувствах. О пути.\n'
                 'Задай — и я отвечу. Точно, глубоко, без шаблонов.\n\n'
-                'У тебя есть 2 вопроса. Используй их осознанно.',
+                'У тебя есть 2 вопроса. Используй их осознанно.\n\n'
+                f'{remaining_usages_str}',
                 reply_markup=get_soul_muse_question_kb(
                     buy_extra_questions_btn=False,
                 ),
             )
         return
 
-    if client.action_limit_exceed(Actions.SOUL_MUSE_QUESTION):
+    if await client.get_remaining_usages(Actions.SOUL_MUSE_QUESTION) <= 0:
         if client.subscription_is_active():
             await msg.answer(
                 '🤖 Спроси у Soul Muse\n'
@@ -92,6 +119,115 @@ async def soul_muse_question(msg: Message, state: FSMContext, client: Client):
             )
 
 
+###########################
+### BUY EXTRA QUESTIONS ###
+###########################
+
+
+@router.callback_query(F.data == 'buy_more_questions')
+async def buy_more_questions(query: CallbackQuery):
+    return await query.message.edit_text(
+        'Сколько вопросов ты хочешь купить?\n\n'
+        '1 персональный вопрос → 129 ₽ или 200 астробаллов\n'
+        '5 персональных вопросов → 599 ₽ или 900 астробаллов',
+        reply_markup=buy_questions_kb,
+    )
+
+
+@router.callback_query(F.data.startswith('buy_question'))
+async def buy_question(query: CallbackQuery, state: FSMContext):
+    buy_count = query.data.split(':')[1]
+    await state.update_data(buy_count=buy_count)
+    await state.set_state(SoulMuseQuestionState.payment_type)
+    await query.message.edit_text(
+        'Выбери тип оплаты',
+        reply_markup=get_payment_choices_kb(
+            '200 баллов' if buy_count == 'one' else '900 баллов',
+            '129 ₽' if buy_count == 'one' else '599 ₽',
+            back_button_data='buy_more_questions',
+        ),
+    )
+
+
+@router.callback_query(
+    F.data.in_(('astropoints', 'money')),
+    StateFilter(SoulMuseQuestionState.payment_type),
+)
+@flags.with_client
+async def choose_extra_questions_payment_type(
+    query: CallbackQuery,
+    state: FSMContext,
+    client: Client,
+):
+    buy_count = await state.get_value('buy_count')
+    buy_count_str = '1' if buy_count == 'one' else '5'
+    astropoints = 200 if buy_count == 'one' else 900
+    money = 129 if buy_count == 'one' else 599
+
+    if query.data == 'astropoints':
+        if client.astropoints < astropoints:
+            await query.message.answer('Не хватает астробаллов')
+            return
+
+        await ClientActionBuying.objects.acreate(
+            client=client,
+            action=Actions.SOUL_MUSE_QUESTION,
+            count=1 if await state.get_value('buy_count') == 'one' else 5,
+        )
+        client.astropoints -= astropoints
+        await client.asave()
+
+        remaining_usages = await client.get_remaining_usages(
+            Actions.SOUL_MUSE_QUESTION,
+        )
+        await query.message.edit_text(
+            f'Теперь у тебя {remaining_usages} вопросов!',
+        )
+        await state.clear()
+    else:
+        await query.message.answer_invoice(
+            f'Дополнительные вопросы ({buy_count_str})',
+            f'Дополнительные вопросы ({buy_count_str})',
+            'extra_questions',
+            settings.CURRENCY,
+            [LabeledPrice(label=settings.CURRENCY, amount=money * 100)],
+            settings.PROVIDER_TOKEN,
+        )
+        await state.set_state(SoulMuseQuestionState.payment)
+
+
+@router.pre_checkout_query(StateFilter(SoulMuseQuestionState.payment))
+async def accept_pre_checkout_query(query: PreCheckoutQuery):
+    await query.answer(True)
+
+
+@router.message(
+    F.successful_payment,
+    StateFilter(SoulMuseQuestionState.payment),
+)
+@flags.with_client
+async def on_extra_questions_buying(
+    msg: Message,
+    state: FSMContext,
+    client: Client,
+):
+    await ClientActionBuying.objects.acreate(
+        client=client,
+        action=Actions.SOUL_MUSE_QUESTION,
+        count=1 if await state.get_value('buy_count') == 'one' else 5,
+    )
+    remaining_usages = await client.get_remaining_usages(
+        Actions.SOUL_MUSE_QUESTION,
+    )
+    await msg.answer(f'Теперь у тебя {remaining_usages} вопросов!')
+    await state.clear()
+
+
+####################
+### ASK QUESTION ###
+####################
+
+
 @router.callback_query(F.data == 'ask_soul_muse')
 async def ask_soul_muse(query: CallbackQuery):
     await query.message.edit_text(
@@ -101,19 +237,30 @@ async def ask_soul_muse(query: CallbackQuery):
 
 
 @router.message(F.text, StateFilter(SoulMuseQuestionState.question))
-async def ask_soul_muse(msg: Message, state: FSMContext):
+@flags.with_client
+async def soul_muse_answer(msg: Message, state: FSMContext, client: Client):
     if len(msg.text) > 250:
         await msg.answer(
             'Максимальная длина вопроса - 250 символов. Текст будет обрезан.',
         )
 
     muse = SoulMuse()
-    category = await muse.categorize_question(msg.text[:250])
+    category = await muse.answer(
+        get_categorize_question_prompt(msg.text[:250]),
+    )
     logger.info(category)
     category = json.loads(category)['category']
 
+    await ClientAction.objects.acreate(
+        client=client,
+        action=Actions.SOUL_MUSE_QUESTION,
+    )
+
     if category == 'deep_personal':
-        answer = await muse.answer(msg.text[:250])
+        answer = await muse.answer(
+            get_answer_prompt(msg.text[:250]),
+            max_output_tokens=270,
+        )
         await msg.answer(answer)
     else:
         await msg.answer(inappropriate_questions_answers[category])

@@ -4,11 +4,11 @@ from aiogram import F, Router, flags
 from aiogram.types import CallbackQuery, Message
 
 from bot.calculations import get_life_path_number, get_power_day
-from bot.keyboards.inline import (
+from bot.keyboards.inline.base import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
-    premium_space_kb,
 )
+from bot.keyboards.inline.premium_space import premium_space_kb
 from bot.keyboards.utils import one_button_keyboard
 from bot.templates.premium_space import (
     power_days_descriptions,
@@ -95,7 +95,7 @@ async def power_day_handler(query: CallbackQuery):
         )
         return
 
-    if not client.has_action_permission(Actions.POWER_DAY):
+    if await client.get_remaining_usages(Actions.POWER_DAY) <= 0:
         await query.message.edit_text(
             '🚀 Твой День силы\n\n'
             'Твой День силы ещё не наступил — я сообщу тебе, когда придёт время.',
@@ -142,7 +142,7 @@ async def universe_answer_handler(query: CallbackQuery):
         )
         return
 
-    if not client.has_action_permission(Actions.UNIVERSE_ANSWER):
+    if await client.get_remaining_usages(Actions.UNIVERSE_ANSWER) <= 0:
         await query.message.edit_text(
             '✨ Ответ Вселенной\n\n'
             'Ты уже получил(а) ответ на этот месяц. Новый будет 1 числа.',
@@ -167,8 +167,9 @@ async def universe_answer_handler(query: CallbackQuery):
 @flags.with_client
 async def show_universe_answer(query: CallbackQuery, client: Client):
     lpn = get_life_path_number(client.birth.date())
+    # for prod: date.today().strftime('%m.%Y')
     month_answers = universe_answers.get(
-        '05.2025',  # date.today().strftime('%m.%Y'),  # for test: '05.2025',
+        '05.2025',
         {},
     )
     await query.message.edit_text(
@@ -194,7 +195,7 @@ async def soul_muse_vip_answer(query: CallbackQuery):
         )
         return
 
-    if not client.has_action_permission(Actions.SOUL_MUSE_VIP_ANSWER):
+    if await client.get_remaining_usages(Actions.SOUL_MUSE_VIP_ANSWER) <= 0:
         await query.message.edit_text(
             '🔮 VIP-совет от Soul Muse\n\n'
             'Ты уже получил(а) VIP-совет в этом месяце.\n'

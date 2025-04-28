@@ -1,7 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup
 
 from bot.calculations import get_fate_number, get_soul_number
-from bot.keyboards.inline import (
+from bot.keyboards.inline.base import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
 )

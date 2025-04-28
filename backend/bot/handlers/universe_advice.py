@@ -1,9 +1,7 @@
-from datetime import date
-
 from aiogram import F, Router, flags
 from aiogram.types import CallbackQuery, Message
 
-from bot.keyboards.inline import get_to_registration_kb
+from bot.keyboards.inline.base import get_to_registration_kb
 from bot.keyboards.utils import one_button_keyboard
 from bot.templates.universe_advice import universe_advices
 from core.models import Client
@@ -38,9 +36,10 @@ async def universe_advice_intro(msg: Message, client: Client):
 
 @router.callback_query(F.data == 'universe_advice')
 async def universe_advice(query: CallbackQuery):
+    # for prod: date.today().strftime('%d.%m.%Y')
     await query.message.edit_text(
         universe_advices.get(
-            date.today().strftime('%d.%m.%Y'),  # for test: '10.05.2025',
+            '10.05.2025',
             'К сожалению, на сегодняшний день совета нет.',
         ),
     )

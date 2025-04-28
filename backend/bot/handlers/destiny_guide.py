@@ -1,9 +1,7 @@
-from datetime import date
-
 from aiogram import F, Router, flags
 from aiogram.types import CallbackQuery, Message
 
-from bot.keyboards.inline import get_to_registration_kb
+from bot.keyboards.inline.base import get_to_registration_kb
 from bot.keyboards.utils import one_button_keyboard
 from bot.templates.destiny_guide import astro_events, important_days
 from core.models import Client
@@ -75,10 +73,8 @@ async def destiny_guide(query: CallbackQuery, client: Client):
             callback_data='important_days',
         )
     await query.message.edit_text(
-        astro_events.get(
-            date.today().strftime('%m.%Y'),
-            '',
-        ),  # for test: '05.2025'
+        # for prod: date.today().strftime('%m.%Y')
+        astro_events.get('05.2025'),
         reply_markup=reply_markup,
     )
 
@@ -86,10 +82,8 @@ async def destiny_guide(query: CallbackQuery, client: Client):
 @router.callback_query(F.data == 'important_days')
 async def important_days_handler(query: CallbackQuery):
     await query.message.edit_text(
-        important_days.get(
-            date.today().strftime('%m.%Y'),
-            '',
-        ),  # for test: '05.2025'
+        # for prod: date.today().strftime('%m.%Y')
+        important_days.get('05.2025'),
         reply_markup=one_button_keyboard(
             text='🌘 Смотреть астрособытия месяца',
             callback_data='destiny_guide',

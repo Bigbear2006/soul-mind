@@ -3,19 +3,28 @@ from datetime import datetime
 from aiogram import F, Router, flags
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import (
+    CallbackQuery,
+    LabeledPrice,
+    Message,
+    PreCheckoutQuery,
+)
 
-from bot.keyboards.inline import (
-    compatability_energy_kb,
+from bot.keyboards.inline.base import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
+)
+from bot.keyboards.inline.compatability_energy import (
+    buy_compatability_kb,
+    compatability_energy_kb,
     show_connection_depth,
 )
+from bot.keyboards.inline.vip_services import get_payment_choices_kb
+from bot.settings import settings
 from bot.states import CompatabilityEnergyState
 from bot.templates.compatability_energy import get_compatability_energy_text
-from core.models import Actions, Client
-
-# TODO: ограничить количество использований кнопки
+from core.choices import SubscriptionPlans
+from core.models import Actions, Client, ClientAction, ClientActionBuying
 
 router = Router()
 
@@ -36,7 +45,7 @@ async def compatability_energy(
         )
         return
 
-    if client.action_limit_exceed(Actions.COMPATABILITY_ENERGY):
+    if await client.get_remaining_usages(Actions.COMPATABILITY_ENERGY) <= 0:
         await msg.answer(
             'Твоя энергия не ограничена тремя людьми.\n'
             'Каждая новая связь — это отражение тебя.\n\n'
@@ -49,16 +58,25 @@ async def compatability_energy(
             'Это разбор, после которого вы оба увидите себя иначе.\n\n'
             'Пара. Семья. Команда. Друзья.\n'
             'Выбирай формат — и ныряем вглубь.\n\n',
-            reply_markup=show_connection_depth,
+            reply_markup=buy_compatability_kb,
         )
         return
 
     if client.subscription_is_active():
+        remaining_usages = await client.get_remaining_usages(
+            Actions.COMPATABILITY_ENERGY,
+        )
+        remaining_usages_str = (
+            f'* У тебя осталось {remaining_usages} совместимостей'
+            if client.subscription_plan != SubscriptionPlans.PREMIUM
+            else ''
+        )
         await state.set_state(CompatabilityEnergyState.connection_type)
         await msg.answer(
             'Случайных встреч не бывает.\n'
             'Я покажу, почему этот человек рядом — и чему вы учите друг друга.\n\n'
-            'Ты готов(а) взглянуть на вашу связь по-настоящему?',
+            'Ты готов(а) взглянуть на вашу связь по-настоящему?\n\n'
+            f'{remaining_usages_str}',
             reply_markup=compatability_energy_kb,
         )
     else:
@@ -68,6 +86,104 @@ async def compatability_energy(
             'Продолжи путь — и я покажу, что между вами на самом деле.',
             reply_markup=get_to_subscription_plans_kb(),
         )
+
+
+###############################
+### BUY EXTRA COMPATABILITY ###
+###############################
+
+
+@router.callback_query(F.data.startswith('buy_compatability'))
+async def buy_compatability(query: CallbackQuery, state: FSMContext):
+    buy_count = query.data.split(':')[1]
+    await state.update_data(buy_count=buy_count)
+    await state.set_state(CompatabilityEnergyState.payment_type)
+    await query.message.edit_text(
+        'Выбери тип оплаты',
+        reply_markup=get_payment_choices_kb(
+            '250 баллов' if buy_count == 'one' else '650 баллов',
+            '159 ₽' if buy_count == 'one' else '399 ₽',
+        ),
+    )
+
+
+@router.callback_query(
+    F.data.in_(('astropoints', 'money')),
+    StateFilter(CompatabilityEnergyState.payment_type),
+)
+@flags.with_client
+async def choose_compatability_payment_type(
+    query: CallbackQuery,
+    state: FSMContext,
+    client: Client,
+):
+    buy_count = await state.get_value('buy_count')
+    buy_count_str = '1' if buy_count == 'one' else '3'
+    astropoints = 250 if buy_count == 'one' else 650
+    money = 159 if buy_count == 'one' else 399
+
+    if query.data == 'astropoints':
+        if client.astropoints < astropoints:
+            await query.message.answer('Не хватает астробаллов')
+            return
+
+        await ClientActionBuying.objects.acreate(
+            client=client,
+            action=Actions.COMPATABILITY_ENERGY,
+            count=1 if await state.get_value('buy_count') == 'one' else 3,
+        )
+        client.astropoints -= astropoints
+        await client.asave()
+
+        remaining_usages = await client.get_remaining_usages(
+            Actions.COMPATABILITY_ENERGY,
+        )
+        await query.message.edit_text(
+            f'Теперь у тебя {remaining_usages} совместимостей!',
+        )
+        await state.clear()
+    else:
+        await query.message.answer_invoice(
+            f'Дополнительные совместимости ({buy_count_str})',
+            f'Дополнительные совместимости ({buy_count_str})',
+            'extra_compatability',
+            settings.CURRENCY,
+            [LabeledPrice(label=settings.CURRENCY, amount=money * 100)],
+            settings.PROVIDER_TOKEN,
+        )
+        await state.set_state(CompatabilityEnergyState.payment)
+
+
+@router.pre_checkout_query(StateFilter(CompatabilityEnergyState.payment))
+async def accept_pre_checkout_query(query: PreCheckoutQuery):
+    await query.answer(True)
+
+
+@router.message(
+    F.successful_payment,
+    StateFilter(CompatabilityEnergyState.payment),
+)
+@flags.with_client
+async def on_extra_compatability_buying(
+    msg: Message,
+    state: FSMContext,
+    client: Client,
+):
+    await ClientActionBuying.objects.acreate(
+        client=client,
+        action=Actions.COMPATABILITY_ENERGY,
+        count=1 if await state.get_value('buy_count') == 'one' else 3,
+    )
+    remaining_usages = await client.get_remaining_usages(
+        Actions.COMPATABILITY_ENERGY,
+    )
+    await msg.answer(f'Теперь у тебя {remaining_usages} совместимостей!')
+    await state.clear()
+
+
+##########################
+### SHOW COMPATABILITY ###
+##########################
 
 
 @router.callback_query(
@@ -105,5 +221,9 @@ async def get_first_person_birth_date(
             birth_date_2,
         ),
         reply_markup=show_connection_depth,
+    )
+    await ClientAction.objects.acreate(
+        client=client,
+        action=Actions.COMPATABILITY_ENERGY,
     )
     await state.clear()

@@ -1,7 +1,6 @@
-from bot.keyboards.inline import universe_advice_extended_kb
+from bot.keyboards.inline.push_messages import universe_advice_extended_kb
 from bot.keyboards.utils import one_button_keyboard
 
-# push_messages = {
 new_weekly_quest_is_available = {
     'text': (
         '🧩 Время обновиться\n'
