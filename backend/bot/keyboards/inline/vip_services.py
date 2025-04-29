@@ -74,7 +74,11 @@ def get_payment_choices_kb(
 
 async def get_topics_kb():
     kb = InlineKeyboardBuilder.from_markup(
-        await keyboard_from_queryset(Topic, prefix='topic'),
+        await keyboard_from_queryset(
+            Topic,
+            prefix='topic',
+            filters={'is_global': True},
+        ),
     )
     kb.button(text='Я выбрал нужные метки', callback_data='topic:done')
     return kb.adjust(1).as_markup()

@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from django.db.models import Choices, Model
@@ -19,12 +21,16 @@ async def keyboard_from_queryset(
     model: type[Model],
     prefix: str,
     *,
+    filters: dict | None = None,
+    str_func: Callable[[Model], str] | None = None,
     back_button_data: str = None,
 ) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
+    filters = filters or {}
+    str_func = str_func or str
 
-    async for obj in model.objects.all():
-        kb.button(text=str(obj), callback_data=f'{prefix}:{obj.pk}')
+    async for obj in model.objects.filter(**filters):
+        kb.button(text=str_func(obj), callback_data=f'{prefix}:{obj.pk}')
 
     if back_button_data:
         kb.button(text='Назад', callback_data=back_button_data)

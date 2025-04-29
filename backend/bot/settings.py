@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass, field
 from zoneinfo import ZoneInfo
 
@@ -8,10 +9,25 @@ env.read_env()
 
 
 @dataclass
+class Media:
+    privacy_policy: str
+    public_offer: str
+
+    @classmethod
+    def from_file(cls):
+        with open('bot/media.json') as f:
+            data = json.load(f)
+        return cls(**data)
+
+
+@dataclass
 class Settings:
     BOT_TOKEN: str = field(default_factory=lambda: env('BOT_TOKEN'))
     PROVIDER_TOKEN: str = field(default_factory=lambda: env('PROVIDER_TOKEN'))
     REDIS_URL: str = field(default_factory=lambda: env('REDIS_URL'))
+
+    MEDIA: Media = field(default_factory=lambda: Media.from_file())
+    CAN_LOAD_MEDIA: list = field(default_factory=lambda: [1736885484])
 
     HD_API_KEY: str = field(default_factory=lambda: env('HD_API_KEY'))
     HD_GEOCODE_KEY: str = field(default_factory=lambda: env('HD_GEOCODE_KEY'))

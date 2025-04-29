@@ -1,0 +1,130 @@
+[
+  {
+    "model": "core.topic",
+    "pk": 1,
+    "fields": {
+      "name": "Отношения",
+      "is_global": true
+    }
+  },
+  {
+    "model": "core.topic",
+    "pk": 2,
+    "fields": {
+      "name": "Предназначение",
+      "is_global": true
+    }
+  },
+  {
+    "model": "core.topic",
+    "pk": 3,
+    "fields": {
+      "name": "Эмоции",
+      "is_global": true
+    }
+  },
+  {
+    "model": "core.topic",
+    "pk": 4,
+    "fields": {
+      "name": "Деньги",
+      "is_global": true
+    }
+  },
+  {
+    "model": "core.topic",
+    "pk": 5,
+    "fields": {
+      "name": "Семья и род",
+      "is_global": true
+    }
+  },
+  {
+    "model": "core.topic",
+    "pk": 6,
+    "fields": {
+      "name": "Детство и травмы",
+      "is_global": true
+    }
+  },
+  {
+    "model": "core.topic",
+    "pk": 7,
+    "fields": {
+      "name": "Принятие себя",
+      "is_global": true
+    }
+  },
+  {
+    "model": "core.topic",
+    "pk": 8,
+    "fields": {
+      "name": "Интуиция",
+      "is_global": true
+    }
+  },
+  {
+    "model": "core.topic",
+    "pk": 9,
+    "fields": {
+      "name": "Страхи и сомнения",
+      "is_global": true
+    }
+  },
+  {
+    "model": "core.topic",
+    "pk": 10,
+    "fields": {
+      "name": "Здоровье",
+      "is_global": true
+    }
+  },
+  {
+    "model": "core.topic",
+    "pk": 11,
+    "fields": {
+      "name": "Карьера",
+      "is_global": true
+    }
+  },
+  {
+    "model": "core.topic",
+    "pk": 12,
+    "fields": {
+      "name": "Циклы жизни",
+      "is_global": true
+    }
+  },
+  {
+    "model": "core.topic",
+    "pk": 13,
+    "fields": {
+      "name": "Духовный путь",
+      "is_global": true
+    }
+  },
+  {
+    "model": "core.topic",
+    "pk": 14,
+    "fields": {
+      "name": "Энергия",
+      "is_global": true
+    }
+  },
+  {
+    "model": "core.topic",
+    "pk": 15,
+    "fields": {
+      "name": "Выбор / раздор внутри",
+      "is_global": true
+    }
+  },
+  {
+    "model": "core.topic",
+    "pk": 16,
+    "fields": {
+      "name": "Запутался(ась)",
+      "is_global": true
+    }
+  }
+]

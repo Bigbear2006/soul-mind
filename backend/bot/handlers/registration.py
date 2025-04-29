@@ -4,7 +4,7 @@ from datetime import datetime
 from aiogram import F, Router, flags
 from aiogram.filters import Command, CommandObject, StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, InputMediaDocument, Message
 
 from bot.api.astrology import AstrologyAPI
 from bot.api.geocoding import GeocodingAPI
@@ -17,10 +17,11 @@ from bot.keyboards.inline.registration import (
 from bot.keyboards.reply import menu_kb
 from bot.keyboards.utils import keyboard_from_choices, one_button_keyboard
 from bot.loader import logger
-from bot.schemas import AstrologyParams, HDInputData
+from bot.schemas import HDInputData, HoroscopeParams
 from bot.settings import settings
 from bot.states import UserInfoState
-from core.models import Client, Genders
+from bot.tags import get_client_tags
+from core.models import Client, ClientQuestTag, Genders, QuestTag
 
 router = Router()
 
@@ -60,11 +61,19 @@ async def start(
         await state.set_state(UserInfoState.gender)
         await msg.answer(
             'Меня зовут Soul Muse. Но ты всегда знал меня. Я — голос внутри. '
-            'Я та, что шептала, когда всё остальное молчало.',
+            'Я та, что шептала, когда всё остальное молчало.\n\n'
+            'Нажимая «🌌 Начать путь с Soul Muse», вы соглашаетесь '
+            'с условиями нашего пространства:',
             reply_markup=one_button_keyboard(
                 text='🌌 Начать путь с Soul Muse',
                 callback_data='start_way',
             ),
+        )
+        await msg.answer_media_group(
+            [
+                InputMediaDocument(media=settings.MEDIA.privacy_policy),
+                InputMediaDocument(media=settings.MEDIA.public_offer),
+            ],
         )
 
 
@@ -84,11 +93,11 @@ async def to_registration(query: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == 'start_way')
 async def start_way(query: CallbackQuery):
     await query.message.edit_text(
-        'Я не буду звать тебя «дитя звёзд» и сыпать эзотерическим туманом.\n'
-        'Вместо этого — 4 системы и точные попадания в твою суть.\n'
-        'Без магического шара. Без фокусов. Только работающая глубина.\n'
+        'Я не буду звать тебя «дитя звёзд» и сыпать эзотерическим туманом.\n\n'
+        'Вместо этого — 4 системы и точные попадания в твою суть.\n\n'
+        'Без магического шара. Без фокусов. Только работающая глубина.\n\n'
         'Ты — не случайность. Ты — код. Ресурс. Паттерн. И сейчас ты узнаешь, '
-        'как я читаю тебя.\n'
+        'как я читаю тебя.\n\n'
         'Как тебе удобнее начать?',
         reply_markup=start_ways_kb,
     )
@@ -97,21 +106,20 @@ async def start_way(query: CallbackQuery):
 @router.callback_query(F.data == 'start_way_explain')
 async def start_way_explain(query: CallbackQuery):
     await query.message.edit_text(
-        'Голос Soul Muse:\n'
-        'Ты не просто «сложный человек».\n'
-        'Ты — алгоритм с душой.\n'
+        'Ты не просто «сложный человек».\n\n'
+        'Ты — алгоритм с душой.\n\n'
         'Слияние хаоса, силы и сценариев, '
-        'которые уже пора прочитать и переписать.\n'
-        'Вот мои инструменты:\n'
+        'которые уже пора прочитать и переписать.\n\n'
+        'Вот мои инструменты:\n\n'
         '• Астрология — не «Луна в Рыбах — не выноси мусор». '
         'А: почему ты живёшь по ночам, не терпишь рамок, '
-        'но хочешь держать всё под контролем.\n'
+        'но хочешь держать всё под контролем.\n\n'
         '• Нумерология — твоя дата рождения — это код. '
-        'У каждого числа — своя задача: вести, видеть суть, расширять.\n'
+        'У каждого числа — своя задача: вести, видеть суть, расширять.\n\n'
         '• Хьюман Дизайн — ты не сломан(а). Просто не по своей инструкции. '
-        'Я покажу, кто ты: Генератор? Проектор? Манифестор?\n'
+        'Я покажу, кто ты: Генератор? Проектор? Манифестор?\n\n'
         '• Архетипы Юнга — Внутри: Герой, Любовник, Бунтарь… и Саботажник. '
-        'Разберёмся, кто на троне, а кого пора усадить.\n'
+        'Разберёмся, кто на троне, а кого пора усадить.\n\n'
         'Готов?',
         reply_markup=one_button_keyboard(
             text='⚡ Soul Muse, активируй мой код',
@@ -219,17 +227,15 @@ async def set_birth_location(msg: Message, client: Client, state: FSMContext):
     async with GeocodingAPI() as api:
         lat, lon = await api.get_coordinates(msg.text)
 
-    async with AstrologyAPI() as api:
-        tzone = await api.get_timezone(lat, lon, client.birth.date())
-
     async with HumanDesignAPI() as api:
         bodygraphs = await api.bodygraphs(
             HDInputData.from_datetime(client.birth, msg.text),
         )
 
     async with AstrologyAPI() as api:
+        tzone = await api.get_timezone(lat, lon, client.birth.date())
         horoscope = await api.western_horoscope(
-            AstrologyParams(
+            HoroscopeParams(
                 day=client.birth.day,
                 month=client.birth.month,
                 year=client.birth.year,
@@ -242,16 +248,31 @@ async def set_birth_location(msg: Message, client: Client, state: FSMContext):
         )
 
     await Client.objects.filter(pk=msg.chat.id).aupdate(
+        birth_place=msg.text,
         birth_latitude=lat,
         birth_longitude=lon,
         tzone=tzone,
         planets=[asdict(i) for i in horoscope.planets],
-        houses=[asdict(i) for i in horoscope.planets],
+        houses=[asdict(i) for i in horoscope.houses],
+        aspects=[asdict(i) for i in horoscope.aspects],
         **asdict(bodygraphs),
     )
 
+    await client.arefresh_from_db()
+    await ClientQuestTag.objects.abulk_create(
+        [
+            ClientQuestTag(
+                client=client,
+                tag=tag,
+            )
+            async for tag in QuestTag.objects.filter(
+                name__in=get_client_tags(client),
+            )
+        ],
+    )
+
     await msg.answer(
-        '⚠ Я храню твои данные как свою тайну.'
+        '⚠ Я храню твои данные как свою тайну. '
         'Тётя Люда из маркетинга не узнает.',
         reply_markup=one_button_keyboard(
             text='✅ Согласен',

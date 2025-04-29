@@ -45,7 +45,7 @@ class Bodygraphs:
 
 
 @dataclass
-class AstrologyParams:
+class HoroscopeParams:
     day: int
     month: int
     year: int
@@ -89,6 +89,19 @@ class House:
 
 
 @dataclass
+class Aspect:
+    aspecting_planet: str
+    aspected_planet: str
+    aspecting_planet_id: int
+    aspected_planet_id: int
+    aspect_type: int
+    type: str
+    orb: float
+    diff: float
+
+
+@dataclass
 class WesternHoroscope:
     planets: list[Planet]
     houses: list[House]
+    aspects: list[Aspect]

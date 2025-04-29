@@ -6,8 +6,6 @@ from bot.keyboards.inline.quests import get_weekly_quest_kb
 from bot.keyboards.utils import keyboard_from_queryset, one_button_keyboard
 from core.models import Client, ClientWeeklyQuest, WeeklyQuest
 
-# TODO: Кастомизация и теги
-
 router = Router()
 
 
@@ -38,8 +36,6 @@ async def weekly_quests_list(msg: Message | CallbackQuery, client: Client):
             ),
         )
         return
-
-    # TODO: Доделать сообщения в практиках для роста
 
     answer_func = (
         msg.answer if isinstance(msg, Message) else msg.message.edit_text

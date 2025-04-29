@@ -1,14 +1,13 @@
 import base64
 
-from aiohttp import ClientSession
-
+from bot.api.base import APIClient
 from bot.loader import logger
 from bot.settings import settings
 
 
-class SpeechKit:
+class SpeechKit(APIClient):
     def __init__(self, **session_kwargs):
-        self.session = ClientSession(
+        super().__init__(
             'https://tts.api.cloud.yandex.net/',
             headers=self.headers,
             **session_kwargs,
@@ -17,12 +16,6 @@ class SpeechKit:
     @property
     def headers(self):
         return {'Authorization': f'Api-Key {settings.YANDEX_API_KEY}'}
-
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.session.close()
 
     async def synthesize_v3(self, text: str) -> bytes:
         async with self.session.post(

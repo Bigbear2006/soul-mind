@@ -1,26 +1,19 @@
 import json
 from dataclasses import asdict
 
-from aiohttp import ClientSession
-
+from bot.api.base import APIClient
 from bot.loader import logger
 from bot.schemas import Bodygraphs, HDInputData
 from bot.settings import settings
 
 
-class HumanDesignAPI:
+class HumanDesignAPI(APIClient):
     def __init__(self, **session_kwargs):
-        self.session = ClientSession(
+        super().__init__(
             'https://api.humandesignapi.nl/v1/',
             headers=self.headers,
             **session_kwargs,
         )
-
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.session.close()
 
     @property
     def headers(self):
@@ -36,7 +29,7 @@ class HumanDesignAPI:
             data=json.dumps(asdict(data)),
         ) as rsp:
             data = await rsp.json()
-            logger.info(data)
+            logger.debug(data)
             return Bodygraphs(
                 type=data['type'],
                 profile=data['profile'],

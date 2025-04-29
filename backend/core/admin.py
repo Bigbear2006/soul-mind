@@ -18,6 +18,10 @@ class WeeklyQuestTagInline(admin.TabularInline):
     model = models.WeeklyQuestTag
 
 
+class ClientQuestTagInline(admin.TabularInline):
+    model = models.ClientQuestTag
+
+
 class MiniConsultTopicInline(admin.TabularInline):
     model = models.MiniConsultTopic
 
@@ -35,6 +39,7 @@ class WeeklyQuestAdmin(admin.ModelAdmin):
 @admin.register(models.Client)
 class ClientAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at',)
+    inlines = [ClientQuestTagInline]
 
 
 @admin.register(models.ClientDailyQuest)

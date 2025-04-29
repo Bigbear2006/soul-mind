@@ -55,5 +55,18 @@ def get_fate_number(
     return fullname_to_number(fullname, lambda x: x, master_numbers)
 
 
+def get_karmic_number(fullname: str) -> int | None:
+    try:
+        return list(
+            set(range(1, 10))
+            - {
+                pythagorean_matrix[i]
+                for i in re.sub(r'[^а-яА-ЯёЁ]', '', fullname).upper()
+            },
+        )[0]
+    except IndexError:
+        return None
+
+
 def get_power_day(birth_date: date):
     return get_life_path_number(birth_date) + date.today().month

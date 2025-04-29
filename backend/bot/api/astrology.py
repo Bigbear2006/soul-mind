@@ -1,16 +1,23 @@
 import datetime
 from dataclasses import asdict
 
-from aiohttp import BasicAuth, ClientSession
+from aiohttp import BasicAuth
 
+from bot.api.base import APIClient
 from bot.loader import logger
-from bot.schemas import AstrologyParams, House, Planet, WesternHoroscope
+from bot.schemas import (
+    Aspect,
+    HoroscopeParams,
+    House,
+    Planet,
+    WesternHoroscope,
+)
 from bot.settings import settings
 
 
-class AstrologyAPI:
+class AstrologyAPI(APIClient):
     def __init__(self, **session_kwargs):
-        self.session = ClientSession(
+        super().__init__(
             'https://json.astrologyapi.com/v1/',
             headers=self.headers,
             auth=self.auth,
@@ -30,12 +37,6 @@ class AstrologyAPI:
             settings.ASTROLOGY_API_KEY,
         )
 
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.session.close()
-
     @staticmethod
     def degree_to_gate(norm_degree) -> int:
         return int(norm_degree // 5.2) + 1
@@ -48,17 +49,18 @@ class AstrologyAPI:
 
     async def western_horoscope(
         self,
-        data: AstrologyParams,
+        data: HoroscopeParams,
     ) -> WesternHoroscope:
         async with self.session.post(
             'western_horoscope',
             json=asdict(data),
         ) as rsp:
             data = await rsp.json()
-            logger.info(data)
+            logger.debug(data) if data.get('planets') else logger.info(data)
         return WesternHoroscope(
             planets=[Planet(**i) for i in data['planets']],
             houses=[House(**i) for i in data['houses']],
+            aspects=[Aspect(**i) for i in data['aspects']],
         )
 
     async def get_timezone(
@@ -76,21 +78,5 @@ class AstrologyAPI:
             },
         ) as rsp:
             data = await rsp.json()
-            logger.info(data)
+            logger.debug(data) if data.get('timezone') else logger.info(data)
         return float(data['timezone'])
-
-
-# from bot.api.astrology import AstrologyAPI
-# from bot.schemas import AstrologyParams
-# async with AstrologyAPI() as api:
-#     p = AstrologyParams(**{
-#       'day': 6,
-#       'month': 1,
-#       'year': 2000,
-#       'hour': 7,
-#       'min': 45,
-#       'lat': 19.132,
-#       'lon': 72.342,
-#       'tzone': 5.5,
-#     })
-#     print(await api.western_horoscope(p))

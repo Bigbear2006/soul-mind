@@ -24,7 +24,7 @@ menu_kb = ReplyKeyboardMarkup(
         ],
         [
             KeyboardButton(text='🤝 Пригласить друга'),
-            KeyboardButton(text='👤 Личный кабинет'),
+            KeyboardButton(text='👤 Soul Space'),
         ],
         [
             KeyboardButton(text='VIP-Услуги'),

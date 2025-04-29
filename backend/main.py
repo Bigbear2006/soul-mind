@@ -15,6 +15,7 @@ async def main():
         destiny_guide,
         friday_gift,
         invite_friend,
+        load_media,
         menu,
         month_with_soul_muse,
         personal_account,
@@ -49,6 +50,7 @@ async def main():
         personal_account.router,
         vip_services.router,
         quests.router,
+        load_media.router,
     )
     dp.message.middleware(WithClientMiddleware())
     dp.callback_query.middleware(WithClientMiddleware())

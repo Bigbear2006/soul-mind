@@ -45,3 +45,7 @@ class MiniConsultState(StatesGroup):
     question = State()
     answer_consult = State()
     comment = State()
+
+
+class FridayGiftState(StatesGroup):
+    insight = State()

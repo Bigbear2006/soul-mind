@@ -265,7 +265,7 @@ async def send_question_to_expert(
     client: Client,
 ):
     data = await state.get_data()
-    topics_ids = data['topics']
+    topics_ids = data.get('topics', [])
     consult = await MiniConsult.objects.acreate(
         client=client,
         text=msg.text or '',
@@ -293,8 +293,22 @@ async def send_question_to_expert(
         f'Намерение: {Intentions(data["intention"]).label}\n'
         f'Уже сталкивался: {ExperienceTypes(data["experience_type"]).label}\n'
         f'Ощущения: {FeelingsTypes(data["feelings_type"]).label}\n'
-        f'Метки: {", ".join(topics)}'
+        f'Метки: {", ".join(topics)}\n\n'
     )
+    if data['expert_type'] in (
+        ExpertTypes.ASTROLOGIST,
+        ExpertTypes.HD_ANALYST,
+    ):
+        text += (
+            f'Дата рождения: {client.birth.strftime(settings.DATE_FMT)}\n'
+            f'Место рождения: {client.birth_place}'
+        )
+    if data['expert_type'] == ExpertTypes.NUMEROLOGIST:
+        text += (
+            f'Дата рождения: {client.birth.strftime(settings.DATE_FMT)}\n'
+            f'ФИО: {client.fullname}'
+        )
+
     kb = one_button_keyboard(
         text='Ответить',
         callback_data=f'answer_consult:{consult.pk}',

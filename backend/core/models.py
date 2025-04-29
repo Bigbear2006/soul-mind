@@ -30,6 +30,11 @@ class User(AbstractUser):
     pass
 
 
+################
+### MANAGERS ###
+################
+
+
 class ClientManager(models.Manager):
     async def from_tg_user(self, user: types.User) -> 'Client':
         return await self.acreate(
@@ -124,7 +129,7 @@ class Client(models.Model):
     is_premium = models.BooleanField('Есть премиум', default=False)
     invited_by = models.ForeignKey(
         'self',
-        models.CASCADE,
+        models.SET_NULL,
         'invited_friends',
         verbose_name='Кем приглашен',
         null=True,
@@ -152,6 +157,11 @@ class Client(models.Model):
     birth = models.DateTimeField(
         'Дата и время рождения',
         null=True,
+        blank=True,
+    )
+    birth_place = models.CharField(
+        'Место рождения',
+        max_length=255,
         blank=True,
     )
     birth_latitude = models.FloatField('Широта', null=True)
@@ -191,6 +201,12 @@ class Client(models.Model):
     )
     houses = models.JSONField(
         verbose_name='Дома',
+        default=list,
+        null=True,
+        blank=True,
+    )
+    aspects = models.JSONField(
+        verbose_name='Аспекты',
         default=list,
         null=True,
         blank=True,
@@ -487,10 +503,36 @@ class DailyQuestTag(models.Model):
     quest = models.ForeignKey(DailyQuest, models.CASCADE, 'tags')
     tag = models.ForeignKey(QuestTag, models.CASCADE, 'daily_quests')
 
+    class Meta:
+        verbose_name = 'Тег ежедневного квеста'
+        verbose_name_plural = 'Теги ежедневных квестов'
+
+    def __str__(self):
+        return f'Тег ежедневного квеста ({self.pk})'
+
 
 class WeeklyQuestTag(models.Model):
     quest = models.ForeignKey(WeeklyQuest, models.CASCADE, 'tags')
     tag = models.ForeignKey(QuestTag, models.CASCADE, 'weekly_quests')
+
+    class Meta:
+        verbose_name = 'Тег еженедельного квеста'
+        verbose_name_plural = 'Теги еженедельных квестов'
+
+    def __str__(self):
+        return f'Тег еженедельного квеста ({self.pk})'
+
+
+class ClientQuestTag(models.Model):
+    client = models.ForeignKey(Client, models.CASCADE, 'tags')
+    tag = models.ForeignKey(QuestTag, models.CASCADE, 'clients')
+
+    class Meta:
+        verbose_name = 'Тег пользователя'
+        verbose_name_plural = 'Теги пользователей'
+
+    def __str__(self):
+        return f'Тег пользователя ({self.pk})'
 
 
 class SoulMuseQuestion(models.Model):
@@ -550,12 +592,12 @@ class MiniConsult(models.Model):
         ordering = ['-date']
 
     def __str__(self):
-        return f'{self.client} - {self.date}'
+        return f'{self.client} - {self.date.strftime(settings.DATE_FMT)}'
 
 
 class Topic(models.Model):
     name = models.CharField('Метка', max_length=50, unique=True)
-    is_global = models.BooleanField('Виден всем', default=False)
+    is_global = models.BooleanField('Видна всем', default=False)
 
     def __str__(self):
         return self.name
@@ -592,7 +634,7 @@ class MiniConsultFeedback(models.Model):
         ordering = ['-date']
 
     def __str__(self):
-        return f'{self.consult} - {MiniConsultFeedbackRatings(self.rating)}'
+        return f'{self.consult} - {MiniConsultFeedbackRatings(self.rating).label}'
 
 
 class ExpertAnswer(models.Model):
@@ -649,6 +691,11 @@ class FridayGift(models.Model):
             title += f' - {self.text[:50]}'
         return title
 
+    def to_button_text(self):
+        if self.text:
+            return self.text[:25]
+        return f'Аудио от {self.created_at.strftime(settings.DATE_FMT)}'
+
 
 class Insight(models.Model):
     client = models.ForeignKey(
@@ -677,3 +724,8 @@ class Insight(models.Model):
         if self.text:
             title += f' - {self.text[:50]}'
         return title
+
+    def to_button_text(self):
+        if self.text:
+            return self.text[:25]
+        return f'Аудио от {self.created_at.strftime(settings.DATE_FMT)}'
