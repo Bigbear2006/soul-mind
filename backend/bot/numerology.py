@@ -2,6 +2,8 @@ import re
 from collections.abc import Callable, Sequence
 from datetime import date
 
+from django.utils.timezone import now
+
 from bot.templates.base import pythagorean_matrix
 
 
@@ -66,6 +68,14 @@ def get_karmic_number(fullname: str) -> int | None:
         )[0]
     except IndexError:
         return None
+
+
+def get_month_number(birth_date: date) -> int:
+    current_date = now()
+    return calculate_number(
+        birth_date.day + current_date.month + current_date.year,
+        (),
+    )
 
 
 def get_power_day(birth_date: date):

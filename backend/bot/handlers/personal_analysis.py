@@ -1,7 +1,8 @@
 from aiogram import F, Router, flags
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, BufferedInputFile
 
 from bot.keyboards.inline.personal_analysis import back_to_personal_analysis_kb
+from bot.pdf import generate_pdf
 from bot.templates.career_and_finance import (
     get_career_and_finance_intro,
     get_career_and_finance_text,
@@ -46,10 +47,15 @@ async def destiny_mystery(query: CallbackQuery, client: Client):
 @router.callback_query(F.data == 'show_destiny_mystery')
 @flags.with_client
 async def show_destiny_mystery(query: CallbackQuery, client: Client):
-    await query.message.edit_text(
-        get_destiny_mystery_text(client),
-        reply_markup=back_to_personal_analysis_kb,
-    )
+    text = get_destiny_mystery_text(client)
+    if len(text) > 4000:
+        await query.message.edit_text(text[:4000])
+        await query.message.answer(
+            text[4000:],
+            reply_markup=back_to_personal_analysis_kb,
+        )
+    else:
+        await query.message.edit_text(text, reply_markup=back_to_personal_analysis_kb)
 
 
 @router.callback_query(F.data == 'career_and_finance')
@@ -62,10 +68,15 @@ async def career_and_finance(query: CallbackQuery, client: Client):
 @router.callback_query(F.data == 'show_career_and_finance')
 @flags.with_client
 async def show_career_and_finance(query: CallbackQuery, client: Client):
-    await query.message.edit_text(
-        get_career_and_finance_text(client),
-        reply_markup=back_to_personal_analysis_kb,
-    )
+    text = get_career_and_finance_text(client)
+    if len(text) > 4000:
+        await query.message.edit_text(text[:4000])
+        await query.message.answer(
+            text[4000:],
+            reply_markup=back_to_personal_analysis_kb,
+        )
+    else:
+        await query.message.edit_text(text, reply_markup=back_to_personal_analysis_kb)
 
 
 @router.callback_query(F.data == 'love_code')
@@ -78,10 +89,15 @@ async def love_code(query: CallbackQuery, client: Client):
 @router.callback_query(F.data == 'show_love_code')
 @flags.with_client
 async def show_love_code(query: CallbackQuery, client: Client):
-    await query.message.edit_text(
-        get_love_code_text(client),
-        reply_markup=back_to_personal_analysis_kb,
-    )
+    text = get_love_code_text(client)
+    if len(text) > 4000:
+        await query.message.edit_text(text[:4000])
+        await query.message.answer(
+            text[4000:],
+            reply_markup=back_to_personal_analysis_kb,
+        )
+    else:
+        await query.message.edit_text(text, reply_markup=back_to_personal_analysis_kb)
 
 
 @router.callback_query(F.data == 'superpower')
@@ -94,10 +110,15 @@ async def superpower(query: CallbackQuery, client: Client):
 @router.callback_query(F.data == 'show_superpower')
 @flags.with_client
 async def show_superpower(query: CallbackQuery, client: Client):
-    await query.message.edit_text(
-        get_superpower_text(client),
-        reply_markup=back_to_personal_analysis_kb,
-    )
+    text = get_superpower_text(client)
+    if len(text) > 4000:
+        await query.message.edit_text(text[:4000])
+        await query.message.answer(
+            text[4000:],
+            reply_markup=back_to_personal_analysis_kb,
+        )
+    else:
+        await query.message.edit_text(text, reply_markup=back_to_personal_analysis_kb)
 
 
 @router.callback_query(F.data == 'full_profile')
@@ -111,9 +132,7 @@ async def full_profile(query: CallbackQuery, client: Client):
 @flags.with_client
 async def show_full_profile(query: CallbackQuery, client: Client):
     intro, content, conclusion = get_full_profile_text(client)
-    await query.message.edit_text(intro, reply_markup=None)
-    [await query.message.answer(i) for i in content]
-    await query.message.answer(
-        conclusion,
-        reply_markup=back_to_personal_analysis_kb,
+    text = '\n\n'.join([intro, *content, conclusion])
+    await query.message.answer_document(
+        BufferedInputFile(generate_pdf(text), 'full_profile.pdf')
     )

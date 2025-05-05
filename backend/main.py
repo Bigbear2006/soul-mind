@@ -28,7 +28,6 @@ async def main():
         subscribe,
         universe_advice,
         vip_services,
-        weekly_quests,
     )
     from bot.middlewares import WithClientMiddleware
 
@@ -39,7 +38,7 @@ async def main():
         personal_analysis.router,
         compatability_energy.router,
         soul_muse_question.router,
-        weekly_quests.router,
+        quests.router,
         universe_advice.router,
         personal_day.router,
         destiny_guide.router,
@@ -49,7 +48,6 @@ async def main():
         invite_friend.router,
         personal_account.router,
         vip_services.router,
-        quests.router,
         load_media.router,
     )
     dp.message.middleware(WithClientMiddleware())

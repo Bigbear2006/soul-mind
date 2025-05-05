@@ -51,9 +51,14 @@ universe_advice = {
             ),
         ],
     },
-    'reply_markup': one_button_keyboard(
-        text='🌟 Получить совет от Вселенной',
-    ),
+    'reply_markup': {
+        'weekday': one_button_keyboard(
+            text='🌟 Получить совет от Вселенной',
+        ),
+        'weekend': one_button_keyboard(
+            text='🌟 Открыть послание',
+        ),
+    }
 }
 
 universe_advice_reminder = {

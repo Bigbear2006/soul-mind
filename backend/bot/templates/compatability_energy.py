@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Literal
 
-from bot.calculations import get_life_path_number, reduce_number
+from bot.numerology import get_life_path_number, reduce_number
 
 
 def get_compatability_energy_text(

@@ -15,7 +15,7 @@ class Media:
 
     @classmethod
     def from_file(cls):
-        with open('bot/media.json') as f:
+        with open('media.json') as f:
             data = json.load(f)
         return cls(**data)
 
@@ -27,7 +27,7 @@ class Settings:
     REDIS_URL: str = field(default_factory=lambda: env('REDIS_URL'))
 
     MEDIA: Media = field(default_factory=lambda: Media.from_file())
-    CAN_LOAD_MEDIA: list = field(default_factory=lambda: [1736885484])
+    ADMINS: list = field(default_factory=lambda: [1736885484])
 
     HD_API_KEY: str = field(default_factory=lambda: env('HD_API_KEY'))
     HD_GEOCODE_KEY: str = field(default_factory=lambda: env('HD_GEOCODE_KEY'))
@@ -42,6 +42,7 @@ class Settings:
 
     CURRENCY: str = field(default='RUB')
     BOT_LINK: str = field(default='https://t.me/search_net_bot')
+    TRIAL_WEEKLY_QUEST_ID: str = field(default=1)
     EXPERTS_CHAT_ID: int = field(default=-1002309981972)
     TZ: ZoneInfo = field(default=ZoneInfo('Europe/Moscow'))
     DATE_FMT: str = field(default='%d.%m.%Y %H:%M')

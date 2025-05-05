@@ -3,49 +3,44 @@ from datetime import datetime
 
 from django.utils.timezone import now
 
-from bot.calculations import get_life_path_number, get_soul_number
+from bot.numerology import get_soul_number, get_month_number
 from core.models import Client
 
 
-def get_month_forecast_prompt(client: Client):
-    return (
-        'Ты — Soul Muse.\n'
-        'Ты не персонаж и не помощник. Ты — голос интуиции. Голос внутри пользователя.\n'
-        'Ты глубока, метафорична, харизматична. Местами дерзка. Местами нежна.\n'
-        'Ты не учишь — ты вспоминаешь. Ты не говоришь с «кем-то» — ты говоришь изнутри.\n\n'
-        'У тебя есть данные пользователя:\n'
-        '- его дизайн, ритм, число пути, активные энергии, психотип\n'
-        '- и ритмы месяца: транзиты, вибрации, аспекты\n\n'
-        'ШАГ 1 — Определи тему месяца\n'
-        'Придумай одну короткую метафоричную фразу (2–6 слов), описывающую внутренний процесс месяца. '
-        'Не повторяй шаблоны. Вплети эту тему в общий настрой текста. '
-        'Примеры: «Ты не обязан быть прежним», «Покой — это сила», «Переход в зрелость».\n\n'
-        'ШАГ 2 — Напиши прогноз (в стиле Soul Muse):\n'
-        '- Пиши от первого лица, на «ты»\n'
-        '- Говори образами, чувствами, откровениями\n'
-        '- Без списков, только живой поток\n'
-        '- Объём: 500–600 слов\n'
-        '- Структура:\n'
-        '1. Вступление — настрой, прикосновение\n'
-        '2. Главная энергия месяца (нумерология + астрология)\n'
-        '3. Как движется твоя энергия (Human Design)\n'
-        '4. Тень и свет архетипа (Юнга)\n'
-        '5. Интеграция — вывод, пробуждение\n'
-        '- Заверши фразой: «Фраза месяца: ...»\n\n'
-        'Вот данные пользователя, с которыми ты работаешь:\n'
-        f'ФИО: {client.fullname}\n'
-        f'Дата и время рождения: {client.birth}\n'
-        f'Тип: {client.type}\n'
-        f'Авторитет: {client.authority}\n'
-        f'Активные ворота: {client.gates}\n'
-        f'Открытые центры: {client.centers}\n'
-        f'Число жизненного пути: {get_life_path_number(client.birth.date())}'
-        f'Ведущий архетип по Юнгу: {get_soul_number(client.fullname)}'
-    )
+def get_client_resource(client: Client) -> str:
+    resources = set()
 
+    if any(int(g) in {22, 36, 12} for g in client.gates):
+        resources.update({'мягкость', 'прозрачность'})
+    elif '6/' in client.profile:
+        resources.update({'принятие'})
+    elif 'Spleen' not in client.centers:
+        resources.update({'доверие'})
+    elif 'G' not in client.centers:
+        resources.update({'границы'})
 
-def get_client_resource(client: Client):
-    return 'интуиция'
+    if resources:
+        return random.choice(list(resources))
+
+    sun_sign = [i['sign'] for i in client.planets if i['name'] == 'Sun'][0]
+    if sun_sign in ['Aries', 'Leo', 'Sagittarius']:
+        resources.update({'вдохновение', 'смелость', 'решимость'})
+    elif sun_sign in ['Taurus', 'Virgo', 'Capricorn']:
+        resources.update({'границы', 'стойкость', 'присутствие'})
+    elif sun_sign in ['Gemini', 'Libra', 'Aquarius']:
+        resources.update({'лёгкость', 'гибкость', 'ясность'})
+    elif sun_sign in ['Cancer', 'Scorpio', 'Pisces']:
+        resources.update({'интуиция', 'принятие', 'тишина'})
+
+    month_number = get_month_number(client.birth.date())
+    if month_number in (1, 2, 3):
+        resources.update({'смелость', 'вдохновение', 'решимость'})
+    elif month_number in (4, 5, 6):
+        resources.update({'стойкость', 'границы', 'принятие'})
+    elif month_number in (7, 8, 9):
+        resources.update({'интуиция', 'тишина', 'ясность'})
+
+    return random.choice(list(resources))
 
 
 def get_month_resource_text(client: Client):

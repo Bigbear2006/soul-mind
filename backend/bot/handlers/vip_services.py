@@ -30,6 +30,8 @@ from bot.keyboards.utils import (
     one_button_keyboard,
 )
 from bot.pdf import generate_pdf
+from bot.prompts.personal_report import get_personal_report_prompt
+from bot.prompts.vip_compatability import get_vip_compatability_prompt
 from bot.schemas import Bodygraphs, HDInputData
 from bot.settings import settings
 from bot.states import (
@@ -38,10 +40,6 @@ from bot.states import (
     VIPCompatabilityState,
 )
 from bot.templates.base import connection_types
-from bot.templates.vip_services import (
-    get_personal_report_prompt,
-    get_vip_compatability_prompt,
-)
 from core.choices import (
     ExperienceTypes,
     ExpertTypes,
@@ -750,9 +748,9 @@ async def vip_compatability_report(
             'vip_compatability.pdf',
         ),
     )
-    # await query.message.answer_audio(
-    #     BufferedInputFile(
-    #         await synthesize(compatability),
-    #         'vip_compatability.wav',
-    #     ),
-    # )
+    await query.message.answer_audio(
+        BufferedInputFile(
+            await synthesize(compatability),
+            'vip_compatability.wav',
+        ),
+    )

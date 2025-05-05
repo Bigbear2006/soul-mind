@@ -1,15 +1,16 @@
 from aiogram import F, Router, flags
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import BufferedInputFile, CallbackQuery, Message
 
 from bot.api.soul_muse import SoulMuse
+from bot.api.speechkit import synthesize
 from bot.keyboards.inline.base import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
 )
 from bot.keyboards.inline.month_with_soul_muse import month_with_soul_muse_kb
 from bot.keyboards.utils import one_button_keyboard
+from bot.prompts.month_forecast import get_month_forecast_prompt
 from bot.templates.month_with_soul_muse import (
-    get_month_forecast_prompt,
     get_month_resource_text,
     get_month_script_text,
 )
@@ -158,18 +159,18 @@ async def show_month_resource(query: CallbackQuery, client: Client):
         ),
     )
 
-    # if resource:
-    #     await query.message.answer_audio(resource.audio_file_id)
-    # else:
-    #     audio_msg = await query.message.answer_audio(
-    #         BufferedInputFile(await synthesize(text), 'main_resource.wav'),
-    #     )
-    #     await MonthText.objects.acreate(
-    #         text=text,
-    #         audio_file_id=audio_msg.audio.file_id,
-    #         client=client,
-    #         type=MonthTextTypes.MONTH_MAIN_RESOURCE,
-    #     )
+    if resource:
+        await query.message.answer_audio(resource.audio_file_id)
+    else:
+        audio_msg = await query.message.answer_audio(
+            BufferedInputFile(await synthesize(text), 'main_resource.wav'),
+        )
+        await MonthText.objects.acreate(
+            text=text,
+            audio_file_id=audio_msg.audio.file_id,
+            client=client,
+            type=MonthTextTypes.MONTH_MAIN_RESOURCE,
+        )
 
 
 ####################

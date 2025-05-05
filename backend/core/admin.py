@@ -45,6 +45,7 @@ class ClientAdmin(admin.ModelAdmin):
 @admin.register(models.ClientDailyQuest)
 class ClientDailyQuestAdmin(admin.ModelAdmin):
     list_select_related = ('client', 'quest')
+    readonly_fields = ('created_at',)
 
 
 @admin.register(models.WeeklyQuestTask)
@@ -55,6 +56,7 @@ class WeeklyQuestTaskAdmin(admin.ModelAdmin):
 @admin.register(models.ClientWeeklyQuestTask)
 class ClientWeeklyQuestTaskAdmin(admin.ModelAdmin):
     list_select_related = ('client', 'quest', 'quest__quest')
+    readonly_fields = ('created_at',)
 
 
 @admin.register(models.MonthText)

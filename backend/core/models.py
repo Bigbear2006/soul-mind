@@ -116,6 +116,11 @@ class FridayGiftManager(models.Manager):
             return None
 
 
+##############
+### MODELS ###
+##############
+
+
 class Client(models.Model):
     id = models.PositiveBigIntegerField('Телеграм ID', primary_key=True)
     first_name = models.CharField('Имя', max_length=255)
@@ -307,8 +312,8 @@ class QuestTag(models.Model):
 
 
 class DailyQuest(models.Model):
-    title = models.CharField('Название', max_length=255)
-    description = models.TextField('Описание')
+    title = models.CharField('Заголовок', max_length=255)
+    text = models.TextField('Текст')
     is_active = models.BooleanField('Активен', default=True)
 
     class Meta:
@@ -350,7 +355,7 @@ class ClientDailyQuest(models.Model):
 
 
 class WeeklyQuest(models.Model):
-    title = models.CharField('Название', max_length=255)
+    title = models.CharField('Заголовок', max_length=255)
     description = models.TextField('Описание')
     is_active = models.BooleanField('Активен', default=True)
 
@@ -363,6 +368,8 @@ class WeeklyQuest(models.Model):
 
 
 class WeeklyQuestTask(models.Model):
+    title = models.CharField('Заголовок', max_length=255)
+    text = models.TextField('Текст')
     quest = models.ForeignKey(
         WeeklyQuest,
         models.CASCADE,
@@ -374,7 +381,7 @@ class WeeklyQuestTask(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(7)],
         default=1,
     )
-    text = models.TextField('Задание')
+    is_active = models.BooleanField('Активен', default=True)
 
     def __str__(self):
         return f'[{self.day} день] {self.quest}'
@@ -634,7 +641,9 @@ class MiniConsultFeedback(models.Model):
         ordering = ['-date']
 
     def __str__(self):
-        return f'{self.consult} - {MiniConsultFeedbackRatings(self.rating).label}'
+        return (
+            f'{self.consult} - {MiniConsultFeedbackRatings(self.rating).label}'
+        )
 
 
 class ExpertAnswer(models.Model):

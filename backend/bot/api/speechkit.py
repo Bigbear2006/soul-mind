@@ -26,7 +26,7 @@ class SpeechKit(APIClient):
             },
         ) as rsp:
             data = await rsp.json()
-            logger.info(data)
+            logger.debug(data)
             result = data['result']
 
         logger.info(f'Synthesized text ({result.get("lengthMs")} ms)')
@@ -37,7 +37,7 @@ class SpeechKit(APIClient):
         async with self.session.post(
             'speech/v1/tts:synthesize',
             data={
-                'text': text,
+                'text': text[:5000],
                 'voice': 'filipp',
                 'emotion': 'friendly',
                 'lang': 'ru-RU',

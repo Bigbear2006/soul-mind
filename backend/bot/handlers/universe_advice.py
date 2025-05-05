@@ -1,10 +1,12 @@
 from aiogram import F, Router, flags
 from aiogram.types import CallbackQuery, Message
+from django.utils.timezone import now
 
 from bot.keyboards.inline.base import get_to_registration_kb
 from bot.keyboards.utils import one_button_keyboard
 from bot.templates.universe_advice import universe_advices
-from core.models import Client
+from core.choices import Actions
+from core.models import Client, ClientAction
 
 router = Router()
 
@@ -44,7 +46,8 @@ async def universe_advice(query: CallbackQuery, client: Client):
             'К сожалению, на сегодняшний день совета нет.',
         ),
     )
-    # await ClientAction.objects.acreate(
-    #     client=client,
-    #     action=Actions.UNIVERSE_ANSWER,
-    # )
+    await ClientAction.objects.aget_or_create(
+        client=client,
+        action=Actions.UNIVERSE_ANSWER,
+        date__day=now().day,
+    )

@@ -1,18 +1,18 @@
 from aiogram import F, Router, flags
 from aiogram.types import CallbackQuery, Message
+from django.utils.timezone import now
 
-from bot.calculations import calculate_number
 from bot.keyboards.inline.base import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
 )
 from bot.keyboards.utils import one_button_keyboard
+from bot.numerology import calculate_number
 from bot.templates.personal_day import moon_phases, personal_day_messages
-from core.models import Client
+from core.choices import Actions
+from core.models import Client, ClientAction
 
 router = Router()
-
-# TODO: подсвечивать внутри бота, что Совет Вселенной или Твой личный  день не открыт
 
 
 @router.message(F.text == '📆 Твой личный день')
@@ -73,7 +73,8 @@ async def personal_day(query: CallbackQuery, client: Client):
     await query.message.edit_text(
         personal_day_messages[phase][number],
     )
-    # await ClientAction.objects.acreate(
-    #     client=client,
-    #     action=Actions.PERSONAL_DAY,
-    # )
+    await ClientAction.objects.aget_or_create(
+        client=client,
+        action=Actions.PERSONAL_DAY,
+        date__day=now().day,
+    )

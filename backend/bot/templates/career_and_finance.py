@@ -1,11 +1,11 @@
 from aiogram.types import InlineKeyboardMarkup
 
-from bot.calculations import get_fate_number
 from bot.keyboards.inline.base import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
 )
 from bot.keyboards.utils import one_button_keyboard
+from bot.numerology import get_fate_number
 from bot.templates.base import hd_types_translation
 from core.models import Client
 
@@ -45,7 +45,6 @@ def get_career_and_finance_intro(
         )
 
 
-# TODO: выводить не только описание стратегий, авторитетов и тд, но и само их название
 def get_career_and_finance_text(
     client: Client,
 ) -> str:

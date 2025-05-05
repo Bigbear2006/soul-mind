@@ -1,12 +1,14 @@
+from datetime import timedelta
+
 from aiogram import F, Router, flags
 from aiogram.types import CallbackQuery, Message
+from django.utils.timezone import now
 
 from bot.keyboards.inline.base import get_to_registration_kb
 from bot.keyboards.utils import one_button_keyboard
 from bot.templates.destiny_guide import astro_events, important_days
-from core.models import Client
-
-# TODO: подсвечивать внутри бота, что Путеводитель на этой неделе еще не открыт
+from core.choices import Actions
+from core.models import Client, ClientAction
 
 router = Router()
 
@@ -77,11 +79,19 @@ async def destiny_guide(query: CallbackQuery, client: Client):
         astro_events.get('05.2025'),
         reply_markup=reply_markup,
     )
+    date = now()
+    first_week_day = now() - timedelta(days=date.weekday())
+    last_week_day = now() + timedelta(days=6)
+    await ClientAction.objects.aget_or_create(
+        client=client,
+        action=Actions.DESTINY_GUIDE,
+        date__day__gte=first_week_day,
+        date__day__lte=last_week_day,
+    )
 
 
 @router.callback_query(F.data == 'important_days')
-@flags.with_client
-async def important_days_handler(query: CallbackQuery, client: Client):
+async def important_days_handler(query: CallbackQuery):
     await query.message.edit_text(
         # for prod: date.today().strftime('%m.%Y')
         important_days.get('05.2025'),
@@ -90,7 +100,3 @@ async def important_days_handler(query: CallbackQuery, client: Client):
             callback_data='destiny_guide',
         ),
     )
-    # await ClientAction.objects.acreate(
-    #     client=client,
-    #     action=Actions.DESTINY_GUIDE,
-    # )

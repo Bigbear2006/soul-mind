@@ -21,13 +21,11 @@ from bot.keyboards.inline.soul_muse_question import (
 )
 from bot.keyboards.inline.vip_services import get_payment_choices_kb
 from bot.loader import logger
+from bot.prompts.answer_question import get_answer_question_prompt
+from bot.prompts.categorize_question import get_categorize_question_prompt
 from bot.settings import settings
 from bot.states import SoulMuseQuestionState
-from bot.templates.soul_muse_question import (
-    get_answer_prompt,
-    get_categorize_question_prompt,
-    inappropriate_questions_answers,
-)
+from bot.templates.soul_muse_question import inappropriate_questions_answers
 from core.models import (
     Actions,
     Client,
@@ -42,7 +40,7 @@ router = Router()
 
 @router.message(F.text == '🤖 Спроси у Soul Muse')
 @flags.with_client
-async def soul_muse_question(msg: Message, state: FSMContext, client: Client):
+async def soul_muse_question(msg: Message, client: Client):
     if not client.is_registered():
         await msg.answer(
             '🤖 Спроси у Soul Muse\n'
@@ -259,7 +257,7 @@ async def soul_muse_answer(msg: Message, state: FSMContext, client: Client):
 
     if category == 'deep_personal':
         answer = await muse.answer(
-            get_answer_prompt(msg.text[:250]),
+            get_answer_question_prompt(msg.text[:250]),
             max_output_tokens=270,
         )
         await msg.answer(answer)

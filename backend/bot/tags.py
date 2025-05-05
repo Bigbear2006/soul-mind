@@ -1,4 +1,4 @@
-from bot.calculations import (
+from bot.numerology import (
     get_fate_number,
     get_karmic_number,
     get_personality_number,

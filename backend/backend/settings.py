@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from celery.schedules import crontab
 from environs import Env
 
 env = Env()
@@ -185,3 +186,18 @@ CELERY_BROKER_URL = env('CELERY_BROKER_URL')
 CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND')
 
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = False
+
+CELERY_BEAT_SCHEDULE = {
+    # 'send_daily_quests': {
+    #     'task': 'core.tasks.send_daily_quests',
+    #     'schedule': crontab(minute='*/10', hour='*'),
+    # },
+    # 'send_weekly_quests_tasks': {
+    #     'task': 'core.tasks.send_weekly_quests_tasks',
+    #     'schedule': crontab(minute='*/10', hour='*'),
+    # },
+    'send_quests_reminders': {
+        'task': 'core.tasks.send_quests_reminders',
+        'schedule': crontab(minute='*/10', hour='*'),
+    },
+}

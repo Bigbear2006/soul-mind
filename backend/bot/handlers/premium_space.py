@@ -3,13 +3,13 @@ import random
 from aiogram import F, Router, flags
 from aiogram.types import CallbackQuery, Message
 
-from bot.calculations import get_life_path_number, get_power_day
 from bot.keyboards.inline.base import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
 )
 from bot.keyboards.inline.premium_space import premium_space_kb
 from bot.keyboards.utils import one_button_keyboard
+from bot.numerology import get_life_path_number, get_power_day
 from bot.templates.premium_space import (
     power_days_descriptions,
     universe_answers,

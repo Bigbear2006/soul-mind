@@ -1,11 +1,11 @@
 from aiogram.types import InlineKeyboardMarkup
 
-from bot.calculations import get_fate_number, get_soul_number
 from bot.keyboards.inline.base import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
 )
 from bot.keyboards.utils import one_button_keyboard
+from bot.numerology import get_fate_number, get_soul_number
 from core.models import Client
 
 
