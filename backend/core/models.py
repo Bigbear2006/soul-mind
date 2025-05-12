@@ -1,16 +1,20 @@
-from datetime import datetime, timedelta
+import re
+from datetime import date, datetime, timedelta
 from typing import Optional
 
 from aiogram import types
+from aiogram.types import InlineKeyboardMarkup, Message
 from django.contrib.auth.models import AbstractUser
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models.functions import ExtractMonth, ExtractYear
 from django.utils.timezone import now
 
 from bot.loader import logger
 from bot.settings import settings
+from bot.templates.friday_gift import friday_gifts_preambles
 from core.choices import (
     Actions,
     ExperienceTypes,
@@ -65,6 +69,24 @@ class ClientManager(models.Manager):
         except ObjectDoesNotExist:
             return await self.from_tg_user(user), True
 
+    def annotate_actions(self, today: date):
+        return self.annotate(
+            universe_advice_count=models.Count(
+                'actions',
+                filter=models.Q(
+                    actions__action=Actions.UNIVERSE_ADVICE,
+                    actions__date__date=today,
+                ),
+            ),
+            personal_day_count=models.Count(
+                'actions',
+                filter=models.Q(
+                    actions__action=Actions.PERSONAL_DAY,
+                    actions__date__date=today,
+                ),
+            ),
+        )
+
 
 class MonthTextManager(models.Manager):
     async def get_month_text(
@@ -87,22 +109,15 @@ class FridayGiftManager(models.Manager):
         self,
         client: 'Client',
     ) -> Optional['FridayGift']:
-        today = now()
+        today = now().date()
         first_week_day = today - timedelta(days=today.weekday())
-        first_week_day = first_week_day.replace(
-            hour=0,
-            minute=0,
-            second=0,
-            microsecond=0,
-        )
         last_week_day = first_week_day + timedelta(days=6)
-        last_week_day = last_week_day.replace(hour=23, minute=59, second=59)
         try:
-            return await self.aget(
+            return await self.filter(
                 client=client,
-                created_at__gte=first_week_day,
-                created_at__lte=last_week_day,
-            )
+                created_at__date__gte=first_week_day,
+                created_at__date__lte=last_week_day,
+            ).alatest('created_at')
         except ObjectDoesNotExist:
             return None
 
@@ -259,24 +274,68 @@ class Client(models.Model):
     def is_registered(self) -> bool:
         return self.houses is not None
 
+    async def get_unused_purchases(self, action: Actions):
+        usages = (
+            await ClientAction.objects.annotate(
+                year=ExtractYear('date'),
+                month=ExtractMonth('date'),
+            )
+            .filter(
+                client=self,
+                action=action,
+            )
+            .values('year', 'month')
+            .annotate(count=models.Count('id'))
+        )
+        usages_dict = {(i['month'], i['year']): i['count'] for i in usages}
+
+        purchases = (
+            await ClientActionBuying.objects.annotate(
+                year=ExtractYear('date'),
+                month=ExtractMonth('date'),
+            )
+            .filter(
+                client=self,
+                action=action,
+            )
+            .values('year', 'month')
+            .annotate(count=models.Count('id'))
+        )
+        purchases_dict = {
+            (i['month'], i['year']): i['count'] for i in purchases
+        }
+
+        unused_purchases = 0
+        for k, month_purchases in purchases_dict.items():
+            month_usages = usages_dict.get(k, 0)
+            if month_purchases > month_usages:
+                unused_purchases += month_purchases - month_usages
+            elif month_purchases < month_usages:
+                pass
+        return unused_purchases
+
     async def get_remaining_usages(self, action: Actions) -> int:
+        today = now().date()
         usages = await ClientAction.objects.filter(
             client=self,
             action=action,
-            date__month=now().month,
+            date__month=today.month,
+            date__year=today.year,
         ).acount()
 
         purchased = (
             await ClientActionBuying.objects.filter(
                 client=self,
                 action=action,
+                date__month=today.month,
+                date__year=today.year,
             ).aaggregate(total_count=models.Sum('count', default=0))
         )['total_count']
 
         if action == Actions.COMPATABILITY_ENERGY:
             if self.subscription_is_active():
                 if self.subscription_plan == SubscriptionPlans.PREMIUM:
-                    return 1  # unlimited
+                    return 999  # unlimited
                 else:
                     return 3 - usages + purchased
             elif self.has_trial():
@@ -295,7 +354,17 @@ class Client(models.Model):
             else:
                 return 0
 
+        elif action == Actions.SOUL_MUSE_VIP_ANSWER:
+            return 1 - usages
+
         return 1
+
+    def genderize(self, text: str) -> str:
+        def replace(match: re.Match[str]) -> str:
+            male, female = match.group(1).split(',')
+            return male if self.gender == Genders.MALE else female
+
+        return re.sub(r'{gender:([^}]+)}', replace, text)
 
 
 class QuestTag(models.Model):
@@ -390,6 +459,12 @@ class WeeklyQuestTask(models.Model):
         unique_together = ('quest', 'day')
         verbose_name = 'Задача еженедельного квеста'
         verbose_name_plural = 'Задачи еженедельных квестов'
+
+    def to_message_text(self):
+        return (
+            f'{self.quest.title} (день {self.day})\n\n'
+            f'{self.title}\n{self.text}'
+        )
 
 
 class ClientWeeklyQuest(models.Model):
@@ -696,14 +771,35 @@ class FridayGift(models.Model):
         title = (
             f'[{self.created_at.strftime(settings.DATE_FMT)}] {self.client}'
         )
-        if self.text:
+        if self.type == FridayGiftTypes.CARDS:
+            title += f' - {self.text.split(".")[0]}'
+        elif self.text:
             title += f' - {self.text[:50]}'
         return title
 
     def to_button_text(self):
-        if self.text:
+        if self.type == FridayGiftTypes.CARDS:
+            return self.text.split('.')[0]
+        elif self.text:
             return self.text[:25]
         return f'Аудио от {self.created_at.strftime(settings.DATE_FMT)}'
+
+    async def send(self, msg: Message, reply_markup: InlineKeyboardMarkup):
+        preamble = friday_gifts_preambles[self.type]
+        if self.type == FridayGiftTypes.SYMBOLS:
+            await msg.answer(self.text, reply_markup=reply_markup)
+        elif self.type == FridayGiftTypes.CARDS:
+            await msg.answer_photo(
+                self.audio_file_id,
+                preamble,
+                reply_markup=reply_markup,
+            )
+        elif self.type == FridayGiftTypes.INSIGHT_PHRASES:
+            await msg.answer_audio(
+                self.audio_file_id,
+                preamble,
+                reply_markup=reply_markup,
+            )
 
 
 class Insight(models.Model):

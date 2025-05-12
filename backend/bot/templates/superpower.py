@@ -102,11 +102,9 @@ def get_superpower_text(client: Client) -> str:
     elif client.has_trial():
         return (
             '⚡ Твоя суперсила\n\n'
-            'Солнце\n'
             'Когда ты перестаёшь прятаться — включается свет.\n'
             'Солнце показывает: в чём твоя суть, и как ты вдохновляешь просто тем, что есть.\n'
             f'{sun_signs_descriptions_trial[sun_sign]}\n\n'
-            'Марс\n'
             'У тебя свой стиль действия.\n'
             'Марс — про то, как ты идёшь вперёд, как проявляешь силу и включаешь «огонь».\n'
             f'{mars_signs_descriptions_trial[mars_sign]}\n\n'
@@ -115,11 +113,9 @@ def get_superpower_text(client: Client) -> str:
             'Стабильный. Надёжный. Настроенный.\n'
             'Эти опоры не надо придумывать — они в тебе уже встроены.\n'
             f'{centers_descriptions_trial[client.centers[0]]}\n\n'
-            'Ведущий архетип (Юнг)\n'
             'Ты несёшь в этот мир определённую вибрацию.\n'
             'Это не маска. Это энергия, через которую ты влияешь.\n'
             f'{soul_numbers_descriptions_trial[soul_number]}\n\n'
-            'Число Судьбы (нумерология)\n'
             'У твоей силы есть направление.\n'
             'Число Судьбы — про то, зачем ты здесь, и что ты можешь изменить своим присутствием.\n'
             f'{fate_numbers_descriptions_trial[fate_number]}\n\n'

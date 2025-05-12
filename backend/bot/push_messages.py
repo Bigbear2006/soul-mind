@@ -1,4 +1,4 @@
-from bot.keyboards.inline.push_messages import universe_advice_extended_kb
+from bot.keyboards.inline.push_messages import get_universe_advice_extended_kb
 from bot.keyboards.utils import one_button_keyboard
 
 new_weekly_quest_is_available = {
@@ -58,7 +58,7 @@ universe_advice = {
         'weekend': one_button_keyboard(
             text='🌟 Открыть послание',
         ),
-    }
+    },
 }
 
 universe_advice_reminder = {
@@ -142,7 +142,16 @@ universe_advice_extended = {
             ),
         ],
     },
-    'reply_markup': universe_advice_extended_kb,
+    'reply_markup': {
+        'weekday': get_universe_advice_extended_kb(
+            '🌟 Совет дня',
+            '📆 Личный прогноз',
+        ),
+        'weekend': get_universe_advice_extended_kb(
+            '🌟 Открыть совет',
+            '📆 Узнать свой день',
+        ),
+    },
 }
 
 universe_advice_extended_reminder = {
@@ -171,7 +180,10 @@ universe_advice_extended_reminder = {
             'Они просто ждут тебя.'
         ),
     ],
-    'reply_markup': universe_advice_extended_kb,
+    'reply_markup': get_universe_advice_extended_kb(
+        '🌟 Прочитать совет',
+        '📆 Узнать свой день',
+    ),
 }
 
 destiny_guide = {
@@ -263,10 +275,8 @@ friday_gift = {
     ],
 }
 
-two_days_before_power_day = {
-    'text': (
-        'Через два дня — твой День силы.'
-        'Хочешь, чтобы он стал точкой поворота?'
-        'Подумай, на что ты хочешь направить энергию.'
-    ),
-}
+two_days_before_power_day = (
+    'Через два дня — твой День силы.\n'
+    'Хочешь, чтобы он стал точкой поворота?\n'
+    'Подумай, на что ты хочешь направить энергию.'
+)

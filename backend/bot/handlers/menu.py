@@ -15,5 +15,9 @@ async def to_menu_message_handler(msg: Message, state: FSMContext):
 
 
 @router.callback_query(F.data == 'to_menu')
-async def to_menu_callback_query_handler(query: CallbackQuery):
+async def to_menu_callback_query_handler(
+    query: CallbackQuery,
+    state: FSMContext,
+):
+    await state.clear()
     await query.message.answer('Главное меню', reply_markup=menu_kb)

@@ -9,9 +9,11 @@ from bot.keyboards.inline.base import (
     get_to_subscription_plans_kb,
 )
 from bot.keyboards.inline.quests import (
+    get_quest_statuses_kb,
     get_weekly_quest_kb,
+    get_weekly_quests_kb,
 )
-from bot.keyboards.utils import keyboard_from_queryset, one_button_keyboard
+from bot.keyboards.utils import one_button_keyboard
 from bot.settings import settings
 from bot.templates.quests import daily_praises, weekly_praises
 from core.models import (
@@ -60,10 +62,7 @@ async def weekly_quests_list(msg: Message | CallbackQuery, client: Client):
     )
     await answer_func(
         'Выбери, в каком челлендже ты хочешь участвовать',
-        reply_markup=await keyboard_from_queryset(
-            WeeklyQuest,
-            'weekly_quest',
-        ),
+        reply_markup=await get_weekly_quests_kb(client),
     )
 
 
@@ -77,8 +76,8 @@ async def weekly_quest_detail(query: CallbackQuery):
 
 
 @router.callback_query(
-    F.data.startswith('participate_in_weekly_quest') | F.data
-    == 'start_trial_challenge',
+    F.data.startswith('participate_in_weekly_quest')
+    | (F.data == 'start_trial_challenge'),
 )
 @flags.with_client
 async def participate_in_weekly_quest(query: CallbackQuery, client: Client):
@@ -89,13 +88,24 @@ async def participate_in_weekly_quest(query: CallbackQuery, client: Client):
     )
     try:
         quest = await WeeklyQuest.objects.aget(pk=pk)
+        task = await WeeklyQuestTask.objects.select_related('quest').aget(
+            quest=quest,
+            day=1,
+        )
         await ClientWeeklyQuest.objects.acreate(client=client, quest=quest)
         await query.message.edit_text(
             f'Теперь ты участвуешь в челлендже {quest.title}!\n'
             f'Я буду присылать тебе новое задание каждый день.',
         )
+        await query.message.answer(
+            task.to_message_text(),
+            reply_markup=get_quest_statuses_kb(client, 'weekly', task.pk),
+        )
     except IntegrityError:
-        await query.message.edit_text('Ты уже участвуешь в этом челлендже.')
+        await query.message.edit_text(
+            'Ты уже участвуешь в этом челлендже.\n'
+            'Я буду присылать тебе новое задание каждый день.',
+        )
 
 
 @router.callback_query(F.data.startswith('quest'))
@@ -130,12 +140,15 @@ async def quest_handler(query: CallbackQuery):
     if status == QuestStatuses.COMPLETED and quest_type == 'weekly':
         weekly_quest_task = await WeeklyQuestTask.objects.select_related(
             'quest',
-        ).aget(quest_id=quest_id)
+        ).aget(id=quest_id)
         if weekly_quest_task.day == 7:
             astropoints += 10
             await query.message.edit_text(random.choice(weekly_praises))
 
-        if weekly_quest_task.pk == settings.TRIAL_WEEKLY_QUEST_ID:
+        if (
+            weekly_quest_task.pk == settings.TRIAL_WEEKLY_QUEST_ID
+            and weekly_quest_task.day == 3
+        ):
             astropoints += 10
             await query.message.edit_text(
                 '“Ты сделал(а) три шага внутрь. Это не всё. Это только начало.”\n\n'
@@ -164,28 +177,3 @@ async def quest_handler(query: CallbackQuery):
         await Client.objects.filter(pk=query.message.chat.id).aupdate(
             astropoints=models.F('astropoints') + astropoints,
         )
-
-
-# @router.message(Command('daily_quest'))
-# async def send_daily_quest_handler(msg: Message):
-#     quests_ids = await sync_to_async(list)(
-#         DailyQuest.objects.values_list('id', flat=True),
-#     )
-#     quest = await DailyQuest.objects.aget(pk=random.choice(quests_ids))
-#     await msg.answer(
-#         f'Ежедневный челлендж\n\n{quest.text}',
-#         reply_markup=get_quest_statuses_kb('daily', quest.pk),
-#     )
-#
-#
-# @router.message(Command('weekly_quest'))
-# async def send_weekly_quest_handler(msg: Message):
-#     quest = (
-#         await WeeklyQuestTask.objects.filter(day=7)
-#         .select_related('quest')
-#         .afirst()
-#     )
-#     await msg.answer(
-#         f'{quest.quest.title} (день {quest.day})\n\n{quest.text}',
-#         reply_markup=get_quest_statuses_kb('weekly', quest.pk),
-#     )

@@ -8,6 +8,7 @@ from aiogram.types import CallbackQuery, Message
 from bot.keyboards.inline.personal_account import get_personal_account_kb
 from bot.keyboards.utils import keyboard_from_queryset, one_button_keyboard
 from bot.settings import settings
+from core.choices import Actions
 from core.models import Client, FridayGift, Insight, SubscriptionPlans
 
 router = Router()
@@ -23,7 +24,18 @@ async def personal_account_handler(
     answers_func = (
         msg.answer if isinstance(msg, Message) else msg.message.edit_text
     )
-    text = f'Астробаллы: {client.astropoints}\n'
+
+    compatability = await client.get_remaining_usages(
+        Actions.COMPATABILITY_ENERGY,
+    )
+    if compatability >= 999:
+        compatability = 'Безлимит'
+    questions = await client.get_remaining_usages(Actions.SOUL_MUSE_QUESTION)
+    text = (
+        f'Астробаллы: {client.astropoints}\n'
+        f'Осталось совместимостей: {compatability}\n'
+        f'Осталось вопросов к Soul Muse: {questions}\n\n'
+    )
 
     if client.subscription_end:
         sub_plan = SubscriptionPlans(client.subscription_plan)
@@ -40,15 +52,20 @@ async def personal_account_handler(
         subscription_text = 'Оформить подписку'
 
     await answers_func(
-        text,
+        text=text,
         reply_markup=get_personal_account_kb(subscription_text),
     )
+
+
+@router.callback_query(F.data == 'delete_this_message')
+async def delete_this_message(query: CallbackQuery):
+    await query.message.delete()
 
 
 @router.callback_query(F.data == 'personal_gifts')
 async def personal_gifts_handler(query: CallbackQuery):
     await query.message.edit_text(
-        'Твои подарки',
+        'Твои пятничные подарки',
         reply_markup=await keyboard_from_queryset(
             FridayGift,
             'friday_gift',
@@ -61,11 +78,11 @@ async def personal_gifts_handler(query: CallbackQuery):
 @router.callback_query(F.data.startswith('friday_gift'))
 async def friday_gift_detail(query: CallbackQuery):
     gift = await FridayGift.objects.aget(pk=query.data.split(':')[1])
-    await query.message.edit_text(
-        gift.text,
-        reply_markup=one_button_keyboard(
+    await gift.send(
+        query.message,
+        one_button_keyboard(
             text='Назад',
-            callback_data='personal_gifts',
+            callback_data='delete_this_message',
         ),
     )
 

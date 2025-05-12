@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, timedelta
 
 from aiogram import F, Router, flags
 from aiogram.types import CallbackQuery, Message
@@ -75,26 +75,24 @@ async def destiny_guide(query: CallbackQuery, client: Client):
             callback_data='important_days',
         )
     await query.message.edit_text(
-        # for prod: date.today().strftime('%m.%Y')
-        astro_events.get('05.2025'),
+        astro_events.get(date.today().strftime('%m.%Y')),
         reply_markup=reply_markup,
     )
-    date = now()
-    first_week_day = now() - timedelta(days=date.weekday())
+    current_date = now()
+    first_week_day = now() - timedelta(days=current_date.weekday())
     last_week_day = now() + timedelta(days=6)
     await ClientAction.objects.aget_or_create(
         client=client,
         action=Actions.DESTINY_GUIDE,
-        date__day__gte=first_week_day,
-        date__day__lte=last_week_day,
+        date__gte=first_week_day,
+        date__lte=last_week_day,
     )
 
 
 @router.callback_query(F.data == 'important_days')
 async def important_days_handler(query: CallbackQuery):
     await query.message.edit_text(
-        # for prod: date.today().strftime('%m.%Y')
-        important_days.get('05.2025'),
+        important_days.get(date.today().strftime('%m.%Y')),
         reply_markup=one_button_keyboard(
             text='🌘 Смотреть астрособытия месяца',
             callback_data='destiny_guide',

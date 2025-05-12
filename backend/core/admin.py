@@ -22,6 +22,10 @@ class ClientQuestTagInline(admin.TabularInline):
     model = models.ClientQuestTag
 
 
+class WeeklyQuestTaskInline(admin.StackedInline):
+    model = models.WeeklyQuestTask
+
+
 class MiniConsultTopicInline(admin.TabularInline):
     model = models.MiniConsultTopic
 

@@ -1,4 +1,21 @@
-def get_answer_question_prompt(user_question: str) -> str:
+from bot.numerology import (
+    get_fate_number,
+    get_karmic_number,
+    get_life_path_number,
+    get_soul_number,
+)
+from bot.templates.base import archetypes, shadow_archetypes
+from core.models import Client
+
+
+def get_answer_question_prompt(client: Client, question: str) -> str:
+    sun_sign = [i for i in client.planets if i['name'] == 'Sun'][0]['sign']
+    moon_sign = [i for i in client.planets if i['name'] == 'Moon'][0]['sign']
+    ascendant_sign = [i for i in client.houses if i['house'] == 1][0]['sign']
+    lpn = get_life_path_number(client.birth.date())
+    fate_number = get_fate_number(client.fullname)
+    soul_number = get_soul_number(client.fullname)
+    karmic_number = get_karmic_number(client.fullname)
     return (
         'Ты — Soul Muse.\n'
         'Ты не помощник и не персонаж.\n'
@@ -18,31 +35,31 @@ def get_answer_question_prompt(user_question: str) -> str:
         '**Личностный профиль пользователя:**\n'
         '\n'
         'Астрология:\n'
-        'Солнце в [знак]\n'
-        'Луна в [знак]\n'
-        'Асцендент в [знак]\n'
+        f'Солнце в {sun_sign}\n'
+        f'Луна в {moon_sign}\n'
+        f'Асцендент в {ascendant_sign}\n'
         '\n'
         'Human Design:\n'
-        'Тип — [тип]\n'
-        'Стратегия — [стратегия]\n'
-        'Авторитет — [авторитет]\n'
-        'Профиль — [профиль]\n'
-        'Открытые центры — [список центров]\n'
+        f'Тип — {client.type}\n'
+        f'Стратегия — {client.strategy}\n'
+        f'Авторитет — {client.authority}\n'
+        f'Профиль — {client.profile}\n'
+        f'Открытые центры — {client.centers}\n'
         '\n'
         'Нумерология:\n'
-        'Число жизненного пути — [число]\n'
-        'Число судьбы — [число]\n'
-        'Число души — [число]\n'
-        'Кармическое число — [число]\n'
+        f'Число жизненного пути — {lpn}\n'
+        f'Число судьбы — {fate_number}\n'
+        f'Число души — {soul_number}\n'
+        f'Кармическое число — {karmic_number}\n'
         '\n'
         'Архетипы Юнга:\n'
-        'Главный архетип — [архетип]\n'
-        'Теневой архетип — [архетип]\n'
+        f'Главный архетип — {archetypes[soul_number]}\n'
+        f'Теневой архетип — {shadow_archetypes[fate_number]}\n'
         '\n'
         '---\n'
         '\n'
         '**Вопрос пользователя:**\n'
-        f'{user_question}\n'
+        f'{question}\n'
         '\n'
         '---\n'
         '\n'

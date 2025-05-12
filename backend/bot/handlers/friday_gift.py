@@ -3,8 +3,9 @@ import random
 from aiogram import F, Router, flags
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import BufferedInputFile, CallbackQuery, Message
 
+from bot.api.speechkit import synthesize
 from bot.keyboards.inline.base import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
@@ -42,11 +43,13 @@ async def friday_gift_intro(msg: Message, client: Client):
         )
     elif client.subscription_is_active():
         await msg.answer(
-            '🎁 Пятничный подарок от Soul Muse\n\n'
-            'Каждую пятницу Soul Muse вытягивает тебе знак.\n'
-            'Иногда это карта. Иногда — образ. Иногда — фраза, которую ты давно ждал(а).\n'
-            'Это не прогноз. Это приглашение прислушаться.\n\n'
-            'Открой — если готов(а) услышать.',
+            client.genderize(
+                '🎁 Пятничный подарок от Soul Muse\n\n'
+                'Каждую пятницу Soul Muse вытягивает тебе знак.\n'
+                'Иногда это карта. Иногда — образ. Иногда — фраза, которую ты давно {gender:ждал,ждала}.\n'
+                'Это не прогноз. Это приглашение прислушаться.\n\n'
+                'Открой — если {gender:готов,готова} услышать.',
+            ),
             reply_markup=one_button_keyboard(
                 text='🎁 Получить подарок недели',
                 callback_data='friday_gift',
@@ -65,10 +68,12 @@ async def friday_gift_intro(msg: Message, client: Client):
         )
     else:
         await msg.answer(
-            '🎁 Пятничный подарок от Soul Muse\n\n'
-            'Ты уже получил(а) подарок.\n'
-            'Но Muse не даёт один раз.\n'
-            'Каждую пятницу — новый знак. Новый смысл. Новая ты.',
+            client.genderize(
+                '🎁 Пятничный подарок от Soul Muse\n\n'
+                'Ты уже {gender:получил,получила} подарок.\n'
+                'Но Muse не даёт один раз.\n'
+                'Каждую пятницу — новый знак. Новый смысл. Новая ты.',
+            ),
             reply_markup=get_to_subscription_plans_kb(
                 text='🔒 Оформи подписку и получай каждую неделю',
             ),
@@ -77,15 +82,10 @@ async def friday_gift_intro(msg: Message, client: Client):
 
 @router.callback_query(F.data == 'friday_gift')
 @flags.with_client
-async def friday_gift_handler(
-    query: CallbackQuery,
-    state: FSMContext,
-    client: Client,
-):
+async def friday_gift_handler(query: CallbackQuery, client: Client):
     gift = await FridayGift.objects.get_current_week_gift(client)
     if gift:
-        await state.update_data(friday_gift_id=gift.pk)
-        await query.message.edit_text(gift.text, reply_markup=friday_gift_kb)
+        await gift.send(query.message, friday_gift_kb)
         return
 
     latest_gift = await FridayGift.objects.get_latest_gift(client)
@@ -94,45 +94,65 @@ async def friday_gift_handler(
     else:
         gift_type = random.choice(list(FridayGiftTypes.values))
 
-    preamble = friday_gifts_preambles[gift_type]
+    preamble = client.genderize(friday_gifts_preambles[gift_type])
     if gift_type == FridayGiftTypes.INSIGHT_PHRASES:
-        text = preamble + random.choice(insight_phrases)
-        await query.message.edit_text(text, reply_markup=friday_gift_kb)
+        text = ''
+        sent_msg = await query.message.answer_audio(
+            BufferedInputFile(
+                await synthesize(
+                    client.genderize(random.choice(insight_phrases)),
+                ),
+                'Инсайт.wav',
+            ),
+            caption=preamble,
+            reply_markup=friday_gift_kb,
+        )
+        audio_file_id = sent_msg.audio.file_id
     elif gift_type == FridayGiftTypes.CARDS:
         card = random.choice(cards)
-        text = f'{card["card"]}\n\n{card["text"]}'
-        await query.message.edit_text(text, reply_markup=friday_gift_kb)
+        text = f'Карта «{card["card"].capitalize()}».jpg'
+        sent_msg = await query.message.answer_photo(
+            BufferedInputFile.from_file('assets/cards/' + text),
+            caption=preamble,
+            reply_markup=friday_gift_kb,
+        )
+        audio_file_id = sent_msg.photo[-1].file_id
     elif gift_type == FridayGiftTypes.SYMBOLS:
-        text = preamble + random.choice(symbols)
+        text = client.genderize(f'{preamble}\n\n{random.choice(symbols)}')
         await query.message.edit_text(text, reply_markup=friday_gift_kb)
+        audio_file_id = None
     else:
         logger.info(f'Invalid gift_type {gift_type!r}')
         return
 
-    friday_gift = await FridayGift.objects.acreate(
+    await FridayGift.objects.acreate(
         client=client,
         type=gift_type,
         text=text,
+        audio_file_id=audio_file_id,
     )
-    await state.update_data(friday_gift_id=friday_gift.pk)
 
 
 @router.callback_query(F.data == 'respond_to_friday_gift')
 async def respond_to_friday_gift(query: CallbackQuery, state: FSMContext):
-    pk = await state.get_value('friday_gift_id')
-    gift = await FridayGift.objects.aget(
-        pk=pk,
-    )
     await state.set_state(FridayGiftState.insight)
-    await query.message.edit_text(
-        f'{gift.text}\n\n'
+    await query.message.answer(
         'Хочешь оставить отклик этому образу? '
         'Проговори. Или напиши себе — и спрячь на неделю.',
         reply_markup=one_button_keyboard(
             text='Назад',
-            callback_data='friday_gift',
+            callback_data='delete_this_message_and_clear_state',
         ),
     )
+
+
+@router.callback_query(F.data == 'delete_this_message_and_clear_state')
+async def delete_this_message_and_clear_state(
+    query: CallbackQuery,
+    state: FSMContext,
+):
+    await state.clear()
+    await query.message.delete()
 
 
 @router.message(F.text | F.voice, StateFilter(FridayGiftState.insight))

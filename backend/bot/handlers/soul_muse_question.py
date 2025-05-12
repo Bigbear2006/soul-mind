@@ -20,6 +20,7 @@ from bot.keyboards.inline.soul_muse_question import (
     get_soul_muse_question_kb,
 )
 from bot.keyboards.inline.vip_services import get_payment_choices_kb
+from bot.keyboards.utils import one_button_keyboard
 from bot.loader import logger
 from bot.prompts.answer_question import get_answer_question_prompt
 from bot.prompts.categorize_question import get_categorize_question_prompt
@@ -38,12 +39,12 @@ from core.models import (
 router = Router()
 
 
-@router.message(F.text == '🤖 Спроси у Soul Muse')
+@router.message(F.text == '👩🏽 Спроси у Soul Muse')
 @flags.with_client
 async def soul_muse_question(msg: Message, client: Client):
     if not client.is_registered():
         await msg.answer(
-            '🤖 Спроси у Soul Muse\n'
+            '👩🏽 Спроси у Soul Muse\n'
             'У тебя есть вопрос.\n'
             'Но я не могу услышать, пока ты не представился(ась).\n\n'
             'Пройди регистрацию — и тогда я отвечу. Не из ума. Из глубины.',
@@ -60,7 +61,7 @@ async def soul_muse_question(msg: Message, client: Client):
         remaining_usages_str = f'* У тебя осталось {remaining_usages} вопросов'
         if client.subscription_plan == SubscriptionPlans.PREMIUM:
             await msg.answer(
-                '🤖 Спроси у Soul Muse\n'
+                '👩🏽 Спроси у Soul Muse\n'
                 'У тебя есть пространство для настоящих вопросов.\n'
                 'Пятнадцать шагов к себе — через ответы.\n\n'
                 'Когда почувствуешь — просто задай. А я скажу, что ты давно знал(а), '
@@ -72,7 +73,7 @@ async def soul_muse_question(msg: Message, client: Client):
             )
         elif client.subscription_plan == SubscriptionPlans.STANDARD:
             await msg.answer(
-                '🤖 Спроси у Soul Muse\n'
+                '👩🏽 Спроси у Soul Muse\n'
                 'Иногда один вопрос — открывает целый пласт.\n'
                 'Ты можешь задать до 4 вопросов. А потом — расширить доступ.\n\n'
                 'Готов(а)? Я отвечаю из тишины. Но попадаю в самое точное.\n\n'
@@ -83,7 +84,7 @@ async def soul_muse_question(msg: Message, client: Client):
             )
         else:
             await msg.answer(
-                '🤖 Спроси у Soul Muse\n'
+                '👩🏽 Спроси у Soul Muse\n'
                 'Ты носишь в себе вопрос?\n'
                 'О себе. О чувствах. О пути.\n'
                 'Задай — и я отвечу. Точно, глубоко, без шаблонов.\n\n'
@@ -98,7 +99,7 @@ async def soul_muse_question(msg: Message, client: Client):
     if await client.get_remaining_usages(Actions.SOUL_MUSE_QUESTION) <= 0:
         if client.subscription_is_active():
             await msg.answer(
-                '🤖 Спроси у Soul Muse\n'
+                '👩🏽 Спроси у Soul Muse\n'
                 'Ты уже использовал(а) все включённые вопросы.\n\n'
                 'Хочешь продолжить исследовать себя?\n\n'
                 'Можешь докупить доступ и задать ещё.\n'
@@ -107,7 +108,7 @@ async def soul_muse_question(msg: Message, client: Client):
             )
         else:
             await msg.answer(
-                '🤖 Спроси у Soul Muse\n'
+                '👩🏽 Спроси у Soul Muse\n'
                 'Ты уже почувствовал(а), как звучит мой голос.\n'
                 'Но сейчас я молчу — пока ты не вернёшься.\n\n'
                 'Оформи доступ — и я снова услышу твой вопрос.',
@@ -235,11 +236,12 @@ async def ask_soul_muse(query: CallbackQuery, state: FSMContext):
 
 @router.message(F.text, StateFilter(SoulMuseQuestionState.question))
 @flags.with_client
-async def soul_muse_answer(msg: Message, state: FSMContext, client: Client):
+async def soul_muse_answer(msg: Message, client: Client):
     if len(msg.text) > 250:
         await msg.answer(
             'Максимальная длина вопроса - 250 символов. Текст будет обрезан.',
         )
+    soul_muse_face_msg = await msg.answer_photo(settings.MEDIA.soul_muse)
 
     muse = SoulMuse()
     data = await muse.answer(
@@ -255,21 +257,21 @@ async def soul_muse_answer(msg: Message, state: FSMContext, client: Client):
         action=Actions.SOUL_MUSE_QUESTION,
     )
 
+    kb = one_button_keyboard(text='В меню', callback_data='to_menu')
     if category == 'deep_personal':
         answer = await muse.answer(
-            get_answer_question_prompt(msg.text[:250]),
+            get_answer_question_prompt(client, msg.text[:250]),
             max_output_tokens=270,
         )
-        await msg.answer(answer)
+        await msg.answer(answer, reply_markup=kb)
     else:
         answer = inappropriate_questions_answers[category]
-        await msg.answer(answer)
+        await msg.answer(answer, reply_markup=kb)
 
+    await soul_muse_face_msg.delete()
     await SoulMuseQuestion.objects.acreate(
         category=category,
         reason=reason,
         question=msg.text[:250],
         answer=answer,
     )
-
-    await state.clear()

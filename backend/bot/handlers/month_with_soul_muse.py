@@ -163,7 +163,10 @@ async def show_month_resource(query: CallbackQuery, client: Client):
         await query.message.answer_audio(resource.audio_file_id)
     else:
         audio_msg = await query.message.answer_audio(
-            BufferedInputFile(await synthesize(text), 'main_resource.wav'),
+            BufferedInputFile(
+                await synthesize(text),
+                'Главный ресурс месяца.wav',
+            ),
         )
         await MonthText.objects.acreate(
             text=text,

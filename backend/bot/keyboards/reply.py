@@ -7,7 +7,7 @@ menu_kb = ReplyKeyboardMarkup(
             KeyboardButton(text='💞 Энергия вашей совместимости'),
         ],
         [
-            KeyboardButton(text='🤖 Спроси у Soul Muse'),
+            KeyboardButton(text='👩🏽 Спроси у Soul Muse'),
             KeyboardButton(text='🧩 Практики для роста'),
         ],
         [

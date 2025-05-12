@@ -1,9 +1,9 @@
 import random
-from datetime import datetime
+from datetime import date, datetime
 
 from django.utils.timezone import now
 
-from bot.numerology import get_soul_number, get_month_number
+from bot.numerology import get_month_number, get_soul_number
 from core.models import Client
 
 
@@ -64,10 +64,10 @@ def get_active_hd_gate(date_str=None):
 
     today_dt = datetime.strptime(today, '%d.%m.%Y')
     active_date = None
-    for date in sorted(hd_gates_descriptions.keys(), reverse=True):
-        gate_date = datetime.strptime(date, '%d.%m.%Y')
+    for hd_date in sorted(hd_gates_descriptions.keys(), reverse=True):
+        gate_date = datetime.strptime(hd_date, '%d.%m.%Y')
         if gate_date <= today_dt:
-            active_date = date
+            active_date = hd_date
             break
 
     if active_date:
@@ -76,13 +76,30 @@ def get_active_hd_gate(date_str=None):
         return None
 
 
+def get_nearest_sun_aspect(client: Client) -> tuple[str, str]:
+    aspects_to_sun = [
+        asp
+        for asp in client.aspects
+        if asp['aspected_planet'] == 'Sun' and asp['aspecting_planet'] != 'Sun'
+    ]
+    if not aspects_to_sun:
+        return '', ''
+    nearest_aspect = min(aspects_to_sun, key=lambda x: x['orb'])
+    return nearest_aspect['aspecting_planet'], nearest_aspect['type']
+
+
 def get_month_script_text(client: Client):
-    # for prod: date.today().strftime('%m.%Y')
-    current_date = '05.2025'
+    current_date = date.today().strftime('%m.%Y')
     script_number = now().month % 6 + 1
     hd_gate = get_active_hd_gate('10.05.2025')
     soul_number = get_soul_number(client.fullname)
     moon = moon_phases_descriptions[current_date]
+    aspect_planet, aspect_type = get_nearest_sun_aspect(client)
+    aspect_text = (
+        planets_aspects_descriptions[aspect_planet][aspect_type]
+        if aspect_planet
+        else 'Этот месяц — про внутренние процессы.'
+    )
     return scripts[script_number].format(
         hd_gate=hd_gate['gate'],
         hd_topic=hd_gate['theme'],
@@ -93,7 +110,7 @@ def get_month_script_text(client: Client):
         archetype_of_the_month=month_archetypes_descriptions[current_date][
             'archetype'
         ],
-        aspect_text='{тут должен быть текст аспекта, но я не понял, как его получить}',
+        aspect_text=aspect_text,
         balance_tip=random.choice(balance_tips_descriptions[soul_number]),
     )
 

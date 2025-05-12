@@ -1,18 +1,23 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-universe_advice_extended_kb = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text='🌟 Открыть совет',
-                callback_data='university_advice',
-            ),
+
+def get_universe_advice_extended_kb(
+    universe_advice_text: str,
+    personal_day_text: str,
+) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=universe_advice_text,
+                    callback_data='universe_advice',
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text=personal_day_text,
+                    callback_data='personal_day',
+                ),
+            ],
         ],
-        [
-            InlineKeyboardButton(
-                text='📆 Узнать свой день',
-                callback_data='personal_day',
-            ),
-        ],
-    ],
-)
+    )

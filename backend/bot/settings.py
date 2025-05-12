@@ -12,6 +12,8 @@ env.read_env()
 class Media:
     privacy_policy: str
     public_offer: str
+    soul_mind: str
+    soul_muse: str
 
     @classmethod
     def from_file(cls):

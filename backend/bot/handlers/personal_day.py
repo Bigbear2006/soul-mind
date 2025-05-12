@@ -1,3 +1,5 @@
+from datetime import date
+
 from aiogram import F, Router, flags
 from aiogram.types import CallbackQuery, Message
 from django.utils.timezone import now
@@ -67,8 +69,7 @@ async def personal_day_preview(msg: Message, client: Client):
 @router.callback_query(F.data == 'personal_day')
 @flags.with_client
 async def personal_day(query: CallbackQuery, client: Client):
-    # for prod: date.today().strftime('%d.%m.%Y')
-    phase = moon_phases['10.05.2025']
+    phase = moon_phases[date.today().strftime('%d.%m.%Y')]
     number = calculate_number(str(client.birth.date()), ())
     await query.message.edit_text(
         personal_day_messages[phase][number],
@@ -76,5 +77,5 @@ async def personal_day(query: CallbackQuery, client: Client):
     await ClientAction.objects.aget_or_create(
         client=client,
         action=Actions.PERSONAL_DAY,
-        date__day=now().day,
+        date__date=now().date(),
     )

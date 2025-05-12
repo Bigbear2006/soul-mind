@@ -1,3 +1,5 @@
+from datetime import date
+
 from aiogram import F, Router, flags
 from aiogram.types import CallbackQuery, Message
 from django.utils.timezone import now
@@ -39,15 +41,14 @@ async def universe_advice_intro(msg: Message, client: Client):
 @router.callback_query(F.data == 'universe_advice')
 @flags.with_client
 async def universe_advice(query: CallbackQuery, client: Client):
-    # for prod: date.today().strftime('%d.%m.%Y')
     await query.message.edit_text(
         universe_advices.get(
-            '10.05.2025',
+            date.today().strftime('%d.%m.%Y'),
             'К сожалению, на сегодняшний день совета нет.',
         ),
     )
     await ClientAction.objects.aget_or_create(
         client=client,
-        action=Actions.UNIVERSE_ANSWER,
-        date__day=now().day,
+        action=Actions.UNIVERSE_ADVICE,
+        date__date=now().date(),
     )

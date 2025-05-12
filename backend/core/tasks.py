@@ -1,19 +1,35 @@
 import asyncio
+import calendar
 import functools
 import random
-from datetime import timedelta
+from collections.abc import AsyncIterable
+from datetime import datetime, timedelta
 
 from aiogram.exceptions import TelegramBadRequest, TelegramRetryAfter
+from aiogram.types import InlineKeyboardMarkup
 from asgiref.sync import sync_to_async
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.contrib.postgres.aggregates import ArrayAgg
-from django.db.models import Count, Exists, Max, OuterRef
+from django.db.models import Count, Exists, Max, OuterRef, Q
 from django.utils.timezone import now
 
 from bot.keyboards.inline.quests import get_quest_statuses_kb
 from bot.loader import bot
+from bot.numerology import get_power_day
+from bot.push_messages import (
+    destiny_guide,
+    friday_gift,
+    new_weekly_quest_is_available,
+    two_days_before_power_day,
+    universe_advice,
+    universe_advice_extended,
+    universe_advice_extended_reminder,
+    universe_advice_reminder,
+)
+from bot.settings import settings
 from bot.templates.quests import quest_reminder
+from core.choices import Actions
 from core.models import (
     Client,
     ClientDailyQuest,
@@ -62,6 +78,19 @@ async def asyncio_wait(
     return await asyncio.wait(fs, timeout=timeout, return_when=return_when)
 
 
+async def dispatch_messages(
+    clients_ids: AsyncIterable[int],
+    text: str,
+    **kwargs,
+):
+    await asyncio_wait(
+        [
+            asyncio.create_task(safe_send_message(cid, text, **kwargs))
+            async for cid in clients_ids
+        ],
+    )
+
+
 def async_shared_task(func):
     @shared_task
     @functools.wraps(func)
@@ -74,7 +103,11 @@ def async_shared_task(func):
     return decorator
 
 
-async def send_daily_quest(client_id: int, quests_ids: set, sent_quests_ids):
+async def send_daily_quest(
+    client: Client,
+    quests_ids: set,
+    sent_quests_ids: list,
+):
     try:
         quest = await DailyQuest.objects.aget(
             pk=random.choice(list(set(quests_ids) - set(sent_quests_ids))),
@@ -83,13 +116,13 @@ async def send_daily_quest(client_id: int, quests_ids: set, sent_quests_ids):
         return
 
     await safe_send_message(
-        client_id,
+        client.pk,
         '🧩 Задание дня от Soul Muse\n'
         'Сегодня — маленький шаг к себе.\n'
         'Быстрый. Точный. Не ради галочки, а ради фокуса.\n\n'
         'Хочешь почувствовать, что день не просто начался, а начался по-твоему?\n'
         f'Вот задание:\n\n{quest.text}',
-        reply_markup=get_quest_statuses_kb('daily', quest.pk),
+        reply_markup=get_quest_statuses_kb(client, 'daily', quest.pk),
     )
 
 
@@ -100,104 +133,111 @@ async def send_daily_quests():
     )()
 
     quests = (
-        ClientDailyQuest.objects.filter(
+        ClientDailyQuest.objects.select_related('client')
+        .filter(
             created_at__gte=now() - timedelta(days=30),
             client__notifications_enabled=True,
             quest__is_active=True,
         )
-        .values('client_id')
         .annotate(sent_quests_ids=ArrayAgg('quest_id'))
-        .order_by('client_id')
     )
     await asyncio_wait(
         [
             asyncio.create_task(
                 send_daily_quest(
-                    quest['client_id'],
+                    quest.client,
                     quests_ids,
-                    quest['sent_quests_ids'],
+                    quest.sent_quests_ids,
                 ),
             )
             async for quest in quests
         ],
     )
 
-    clients_ids = (
-        Client.objects.annotate(sent_quests_count=Count('daily_quests'))
+    clients = (
+        Client.objects.only('id', 'gender')
+        .annotate(sent_quests_count=Count('daily_quests'))
         .filter(
             sent_quests_count=0,
             notifications_enabled=True,
         )
-        .values_list('id', flat=True)
     )
     await asyncio_wait(
         [
             asyncio.create_task(
                 send_daily_quest(
-                    client_id,
+                    client,
                     quests_ids,
-                    {},
+                    [],
                 ),
             )
-            async for client_id in clients_ids
+            async for client in clients
         ],
     )
 
 
-async def send_weekly_quest_task(client_id: int, quest_task_id: int, day: int):
+async def send_weekly_quest_task(client: Client, quest_task_id: int, day: int):
     quest = await WeeklyQuestTask.objects.select_related('quest').aget(
         quest_id=quest_task_id,
         day=day,
     )
     await safe_send_message(
-        client_id,
-        f'{quest.quest.title} (день {quest.day})\n\n'
-        f'{quest.title}\n{quest.text}',
-        reply_markup=get_quest_statuses_kb('weekly', quest.pk),
+        client.pk,
+        quest.to_message_text(),
+        reply_markup=get_quest_statuses_kb(client, 'weekly', quest.pk),
     )
 
 
 @async_shared_task
 async def send_weekly_quests_tasks():
     tasks = (
-        ClientWeeklyQuestTask.objects.annotate(last_task_day=Max('quest__day'))
+        ClientWeeklyQuestTask.objects.select_related('client')
+        .annotate(last_task_day=Max('quest__day'))
         .filter(
-            notifications_enabled=True,
-            last_task_day__lt=7,
+            (
+                Q(last_task_day__lt=7)
+                & ~Q(quest__quest_id=settings.TRIAL_WEEKLY_QUEST_ID)
+            )
+            | Q(
+                last_task_day__lt=3,
+                quest__quest_id=settings.TRIAL_WEEKLY_QUEST_ID,
+            ),
+            quest__is_active=True,
+            client__notifications_enabled=True,
+            last_task_day__gte=1,
         )
-        .values('client_id', 'quest_id')
     )
     await asyncio_wait(
         [
             asyncio.create_task(
                 send_weekly_quest_task(
-                    task['client_id'],
-                    task['quest__quest_id'],
-                    task['last_task_day'] + 1,
+                    task.client,
+                    task.quest_id,
+                    task.last_task_day + 1,
                 ),
             )
             async for task in tasks
         ],
     )
 
-    clients = (
-        ClientWeeklyQuest.objects.filter(client__notifications_enabled=True)
-        .exclude(
-            Exists(
-                ClientWeeklyQuestTask.objects.filter(
-                    quest__quest_id=OuterRef('quest_id'),
-                    client_id=OuterRef('client_id'),
-                ),
+    clients = (ClientWeeklyQuest.objects.select_related('client')
+    .filter(
+        quest__is_active=True,
+        client__notifications_enabled=True,
+    ).exclude(
+        Exists(
+            ClientWeeklyQuestTask.objects.filter(
+                quest__quest_id=OuterRef('quest_id'),
+                client_id=OuterRef('client_id'),
             ),
-        )
-        .values_list('client_id', 'quest__quest_id')
-    )
+        ),
+    ))
     await asyncio_wait(
         [
             asyncio.create_task(
                 send_weekly_quest_task(
-                    client['client_id'],
-                    client['quest_id'],
+                    client.client,
+                    client.quest_id,
                     1,
                 ),
             )
@@ -212,49 +252,150 @@ async def send_quests_reminders():
         Client.objects.filter(notifications_enabled=True)
         .exclude(
             id__in=ClientDailyQuest.objects.filter(
-                created_at__day=now().day,
+                created_at__date=now().date(),
             ).values_list('client_id', flat=True),
         )
         .values_list('id', flat=True)
     )
-    await asyncio_wait(
-        [
-            asyncio.create_task(safe_send_message(client_id, quest_reminder))
-            async for client_id in clients_ids
-        ],
+    await dispatch_messages(clients_ids, quest_reminder)
+
+
+@async_shared_task
+async def send_new_weekly_quest_is_available():
+    date = now()
+    clients = Client.objects.filter(
+        notifications_enabled=True,
+        created_at__lte=date - timedelta(days=3),
+        subscription_end__lte=date,
+    ).values_list('id', flat=True)
+
+    await dispatch_messages(
+        clients,
+        new_weekly_quest_is_available['text'],
+        reply_markup=new_weekly_quest_is_available['reply_markup'],
+    )
+
+
+def get_universe_advice_text_and_kb(
+    today: datetime,
+    *,
+    extended: bool,
+) -> tuple[str, InlineKeyboardMarkup]:
+    day_type = 'weekday' if today.weekday() < 5 else 'weekend'
+    advice = universe_advice_extended if extended else universe_advice
+    reminder = (
+        universe_advice_extended_reminder
+        if extended
+        else universe_advice_reminder
+    )
+
+    if today.hour < 11:  # UTC
+        return (
+            random.choice(advice['text'][day_type]),
+            advice['reply_markup'][day_type],
+        )
+
+    return (
+        random.choice(reminder['text']),
+        reminder['reply_markup'],
     )
 
 
 @async_shared_task
-async def send_university_advice_messages():
-    pass
-
-
-@async_shared_task
-async def send_university_advice_reminders():
-    pass
+async def send_universe_advice_messages():
+    today = now()
+    clients = (
+        Client.objects.filter(
+            notifications_enabled=True,
+            created_at__lte=today - timedelta(days=3),
+            subscription_end__lte=today,
+        )
+        .exclude(
+            actions__action=Actions.UNIVERSE_ADVICE,
+            actions__date__date=today.date(),
+        )
+        .distinct()
+        .values_list('id', flat=True)
+    )
+    text, kb = get_universe_advice_text_and_kb(today, extended=False)
+    await dispatch_messages(clients, text, reply_markup=kb)
 
 
 @async_shared_task
 async def send_university_advice_extended_messages():
-    pass
-
-
-@async_shared_task
-async def send_university_advice_extended_reminders():
-    pass
+    today = now()
+    clients = (
+        Client.objects.annotate_actions(today.date())
+        .filter(
+            Q(created_at__gte=today - timedelta(days=3))
+            | Q(subscription_end__gte=today),
+            notifications_enabled=True,
+            universe_advice_count=0,
+            personal_day_count=0,
+        )
+        .distinct()
+        .values_list('id', flat=True)
+    )
+    text, kb = get_universe_advice_text_and_kb(today, extended=True)
+    await dispatch_messages(clients, text, reply_markup=kb)
 
 
 @async_shared_task
 async def send_destiny_guide_messages():
-    pass
+    today = now().date()
+    first_week_day = now() - timedelta(days=today.weekday())
+    last_week_day = now() + timedelta(days=6)
+    clients = (
+        Client.objects.filter(notifications_enabled=True)
+        .exclude(
+            actions__action=Actions.DESTINY_GUIDE,
+            actions__date__date__gte=first_week_day,
+            actions__date__date__lte=last_week_day,
+        )
+        .distinct()
+        .values_list('id', flat=True)
+    )
+    n = random.randint(0, 3)
+    await dispatch_messages(
+        clients,
+        destiny_guide['text'][n],
+        reply_markup=destiny_guide['reply_markup'][n],
+    )
 
 
 @async_shared_task
 async def send_friday_gift_messages():
-    pass
+    clients = (
+        Client.objects.filter(notifications_enabled=True)
+        .distinct()
+        .values_list('id', flat=True)
+    )
+    n = random.randint(0, 3)
+    await dispatch_messages(
+        clients,
+        friday_gift['text'][n],
+        reply_markup=friday_gift['reply_markup'][n],
+    )
 
 
 @async_shared_task
 async def send_power_day_messages():
-    pass
+    today = now().date()
+    clients = Client.objects.filter(notifications_enabled=True)
+    days_in_month = calendar.monthrange(today.year, today.month)[1]
+    clients_ids = []
+    async for client in clients:
+        day = get_power_day(client.birth.date())
+        if day > days_in_month:
+            day -= days_in_month
+        if day - 2 == today.day:
+            clients_ids.append(client.pk)
+
+    await asyncio_wait(
+        [
+            asyncio.create_task(
+                safe_send_message(cid, two_days_before_power_day),
+            )
+            for cid in clients_ids
+        ],
+    )
