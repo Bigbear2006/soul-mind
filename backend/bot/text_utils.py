@@ -1,3 +1,8 @@
+import re
+
+from core.choices import Genders
+
+
 def plural(n: int, forms: tuple[str, str, str]) -> str:
     n = abs(n) % 100
     n1 = n % 10
@@ -37,8 +42,16 @@ def split_text(
         if not text_chunks:
             text_chunks.append(i)
             continue
-        if len(text_chunks[-1]) + (len(i)) < max_length:
+        if len(text_chunks[-1]) + len(sep) + (len(i)) < max_length:
             text_chunks[-1] = f'{text_chunks[-1]}{sep}{i}'
         else:
             text_chunks.append(i)
     return text_chunks
+
+
+def genderize(text: str, *, gender: str, prefix: str = 'gender') -> str:
+    def replace(match: re.Match[str]) -> str:
+        male, female = match.group(1).split(',')
+        return male if gender == Genders.MALE else female
+
+    return re.sub(rf'{{{prefix}:([^}}]+)}}', replace, text)

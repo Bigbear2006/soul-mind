@@ -22,6 +22,7 @@ from bot.keyboards.inline.compatability_energy import (
 from bot.keyboards.inline.vip_services import get_payment_choices_kb
 from bot.settings import settings
 from bot.states import CompatabilityEnergyState
+from bot.templates.base import astropoints_not_enough
 from bot.templates.compatability_energy import get_compatability_energy_text
 from bot.text_utils import compatability_plural
 from core.choices import SubscriptionPlans
@@ -132,7 +133,10 @@ async def choose_compatability_payment_type(
 
     if query.data == 'astropoints':
         if client.astropoints < astropoints:
-            await query.message.answer('Не хватает астробаллов')
+            await query.message.edit_text(
+                astropoints_not_enough,
+                reply_markup=get_payment_choices_kb(None, '159 ₽' if buy_count == 'one' else '399 ₽')
+            )
             return
 
         await ClientActionBuying.objects.acreate(

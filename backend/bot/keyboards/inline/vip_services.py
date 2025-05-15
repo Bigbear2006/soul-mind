@@ -59,14 +59,16 @@ connection_types_kb = InlineKeyboardMarkup(
 
 
 def get_payment_choices_kb(
-    astropoints: str,
-    money: str,
+    astropoints: str | None,
+    money: str | None,
     *,
     back_button_data: str | None = None,
 ) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text=astropoints, callback_data='astropoints')
-    kb.button(text=money, callback_data='money')
+    if astropoints:
+        kb.button(text=astropoints, callback_data='astropoints')
+    if money:
+        kb.button(text=money, callback_data='money')
     if back_button_data:
         kb.button(text='Назад', callback_data=back_button_data)
     return kb.adjust(1).as_markup()

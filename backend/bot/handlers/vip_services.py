@@ -40,7 +40,7 @@ from bot.states import (
     PersonalReportState,
     VIPCompatabilityState,
 )
-from bot.templates.base import connection_types
+from bot.templates.base import connection_types, astropoints_not_enough
 from bot.templates.vip_services import (
     personal_report_audio_closures,
     personal_report_intro,
@@ -137,7 +137,10 @@ async def choose_mini_consult_payment_type(
 ):
     if query.data == 'astropoints':
         if client.astropoints < 1500:
-            await query.message.answer('Не хватает астробаллов')
+            await query.message.edit_text(
+                astropoints_not_enough,
+                reply_markup=get_payment_choices_kb(None, '999 ₽')
+            )
             return
         client.astropoints -= 1500
         await client.asave()
@@ -487,7 +490,10 @@ async def choose_personal_report_payment_type(
 ):
     if query.data == 'astropoints':
         if client.astropoints < 2000:
-            await query.message.answer('Не хватает астробаллов')
+            await query.message.edit_text(
+                astropoints_not_enough,
+                reply_markup=get_payment_choices_kb(None, '1299 ₽')
+            )
             return
         client.astropoints -= 2000
         await client.asave()
@@ -588,7 +594,10 @@ async def buy_compatibility(
 ):
     if query.data == 'astropoints':
         if client.astropoints < 2500:
-            await query.message.answer('Не хватает астробаллов')
+            await query.message.edit_text(
+                astropoints_not_enough,
+                reply_markup=get_payment_choices_kb(None, '1599 ₽')
+            )
             return
         client.astropoints -= 2500
         await client.asave()

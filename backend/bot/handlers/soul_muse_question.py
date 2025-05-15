@@ -26,6 +26,7 @@ from bot.prompts.answer_question import get_answer_question_prompt
 from bot.prompts.categorize_question import get_categorize_question_prompt
 from bot.settings import settings
 from bot.states import SoulMuseQuestionState
+from bot.templates.base import astropoints_not_enough
 from bot.templates.soul_muse_question import inappropriate_questions_answers
 from bot.text_utils import questions_plural
 from core.models import (
@@ -178,7 +179,10 @@ async def choose_extra_questions_payment_type(
 
     if query.data == 'astropoints':
         if client.astropoints < astropoints:
-            await query.message.answer('Не хватает астробаллов')
+            await query.message.edit_text(
+                astropoints_not_enough,
+                reply_markup=get_payment_choices_kb(None, '129 ₽' if buy_count == 'one' else '599 ₽')
+            )
             return
 
         await ClientActionBuying.objects.acreate(

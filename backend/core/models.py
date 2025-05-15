@@ -1,4 +1,3 @@
-import re
 from datetime import date, datetime, timedelta
 from typing import Optional
 
@@ -16,6 +15,7 @@ from bot.loader import logger
 from bot.settings import settings
 from bot.templates.base import all_centers_ordered
 from bot.templates.friday_gift import friday_gifts_preambles
+from bot.text_utils import genderize
 from core.choices import (
     Actions,
     ExperienceTypes,
@@ -361,11 +361,7 @@ class Client(models.Model):
         return 1
 
     def genderize(self, text: str) -> str:
-        def replace(match: re.Match[str]) -> str:
-            male, female = match.group(1).split(',')
-            return male if self.gender == Genders.MALE else female
-
-        return re.sub(r'{gender:([^}]+)}', replace, text)
+        return genderize(text, gender=self.gender, prefix='gender')
 
     def get_priority_center(self) -> str:
         return sorted(
