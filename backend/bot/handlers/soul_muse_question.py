@@ -27,6 +27,7 @@ from bot.prompts.categorize_question import get_categorize_question_prompt
 from bot.settings import settings
 from bot.states import SoulMuseQuestionState
 from bot.templates.soul_muse_question import inappropriate_questions_answers
+from bot.text_utils import questions_plural
 from core.models import (
     Actions,
     Client,
@@ -44,10 +45,12 @@ router = Router()
 async def soul_muse_question(msg: Message, client: Client):
     if not client.is_registered():
         await msg.answer(
-            '👩🏽 Спроси у Soul Muse\n'
-            'У тебя есть вопрос.\n'
-            'Но я не могу услышать, пока ты не представился(ась).\n\n'
-            'Пройди регистрацию — и тогда я отвечу. Не из ума. Из глубины.',
+            client.genderize(
+                '👩🏽 Спроси у Soul Muse\n'
+                'У тебя есть вопрос.\n'
+                'Но я не могу услышать, пока ты не {gender:представился,представилась}.\n\n'
+                'Пройди регистрацию — и тогда я отвечу. Не из ума. Из глубины.',
+            ),
             reply_markup=get_to_registration_kb(
                 text='🔓 Разблокировать доступ к вопросу',
             ),
@@ -58,26 +61,34 @@ async def soul_muse_question(msg: Message, client: Client):
         remaining_usages = await client.get_remaining_usages(
             Actions.SOUL_MUSE_QUESTION,
         )
-        remaining_usages_str = f'* У тебя осталось {remaining_usages} вопросов'
+        remaining_usages_str = (
+            f'* У тебя осталось {remaining_usages} '
+            f'{questions_plural(remaining_usages)}'
+        )
         if client.subscription_plan == SubscriptionPlans.PREMIUM:
             await msg.answer(
-                '👩🏽 Спроси у Soul Muse\n'
-                'У тебя есть пространство для настоящих вопросов.\n'
-                'Пятнадцать шагов к себе — через ответы.\n\n'
-                'Когда почувствуешь — просто задай. А я скажу, что ты давно знал(а), '
-                'но боялся(ась) услышать.\n\n'
-                f'{remaining_usages_str}',
+                client.genderize(
+                    '👩🏽 Спроси у Soul Muse\n'
+                    'У тебя есть пространство для настоящих вопросов.\n'
+                    'Пятнадцать шагов к себе — через ответы.\n\n'
+                    'Когда почувствуешь — просто задай. '
+                    'А я скажу, что ты давно {gender:знал,знала}, '
+                    'но {gender:боялся,боялась} услышать.\n\n'
+                    f'{remaining_usages_str}',
+                ),
                 reply_markup=get_soul_muse_question_kb(
                     buy_extra_questions_btn=False,
                 ),
             )
         elif client.subscription_plan == SubscriptionPlans.STANDARD:
             await msg.answer(
-                '👩🏽 Спроси у Soul Muse\n'
-                'Иногда один вопрос — открывает целый пласт.\n'
-                'Ты можешь задать до 4 вопросов. А потом — расширить доступ.\n\n'
-                'Готов(а)? Я отвечаю из тишины. Но попадаю в самое точное.\n\n'
-                f'{remaining_usages_str}',
+                client.genderize(
+                    '👩🏽 Спроси у Soul Muse\n'
+                    'Иногда один вопрос — открывает целый пласт.\n'
+                    'Ты можешь задать до 4 вопросов. А потом — расширить доступ.\n\n'
+                    '{gender:Готов,Готова}? Я отвечаю из тишины. Но попадаю в самое точное.\n\n'
+                    f'{remaining_usages_str}',
+                ),
                 reply_markup=get_soul_muse_question_kb(
                     buy_extra_questions_btn=False,
                 ),
@@ -99,19 +110,23 @@ async def soul_muse_question(msg: Message, client: Client):
     if await client.get_remaining_usages(Actions.SOUL_MUSE_QUESTION) <= 0:
         if client.subscription_is_active():
             await msg.answer(
-                '👩🏽 Спроси у Soul Muse\n'
-                'Ты уже использовал(а) все включённые вопросы.\n\n'
-                'Хочешь продолжить исследовать себя?\n\n'
-                'Можешь докупить доступ и задать ещё.\n'
-                'Я рядом.',
+                client.genderize(
+                    '👩🏽 Спроси у Soul Muse\n'
+                    'Ты уже {gender:использовал,использовала} все включённые вопросы.\n\n'
+                    'Хочешь продолжить исследовать себя?\n\n'
+                    'Можешь докупить доступ и задать ещё.\n'
+                    'Я рядом.',
+                ),
                 reply_markup=get_soul_muse_question_kb(ask_question_btn=False),
             )
         else:
             await msg.answer(
-                '👩🏽 Спроси у Soul Muse\n'
-                'Ты уже почувствовал(а), как звучит мой голос.\n'
-                'Но сейчас я молчу — пока ты не вернёшься.\n\n'
-                'Оформи доступ — и я снова услышу твой вопрос.',
+                client.genderize(
+                    '👩🏽 Спроси у Soul Muse\n'
+                    'Ты уже {gender:почувствовал,почувствовала}, как звучит мой голос.\n'
+                    'Но сейчас я молчу — пока ты не вернёшься.\n\n'
+                    'Оформи доступ — и я снова услышу твой вопрос.',
+                ),
                 reply_markup=get_to_subscription_plans_kb(),
             )
 
@@ -178,7 +193,8 @@ async def choose_extra_questions_payment_type(
             Actions.SOUL_MUSE_QUESTION,
         )
         await query.message.edit_text(
-            f'Теперь у тебя {remaining_usages} вопросов!',
+            f'Теперь у тебя {remaining_usages} '
+            f'{questions_plural(remaining_usages)}!',
         )
         await state.clear()
     else:
@@ -216,7 +232,10 @@ async def on_extra_questions_buying(
     remaining_usages = await client.get_remaining_usages(
         Actions.SOUL_MUSE_QUESTION,
     )
-    await msg.answer(f'Теперь у тебя {remaining_usages} вопросов!')
+    await msg.answer(
+        f'Теперь у тебя {remaining_usages} '
+        f'{questions_plural(remaining_usages)}!',
+    )
     await state.clear()
 
 
@@ -252,11 +271,6 @@ async def soul_muse_answer(msg: Message, client: Client):
     category = data['category']
     reason = data['reason']
 
-    await ClientAction.objects.acreate(
-        client=client,
-        action=Actions.SOUL_MUSE_QUESTION,
-    )
-
     kb = one_button_keyboard(text='В меню', callback_data='to_menu')
     if category == 'deep_personal':
         answer = await muse.answer(
@@ -264,6 +278,10 @@ async def soul_muse_answer(msg: Message, client: Client):
             max_output_tokens=270,
         )
         await msg.answer(answer, reply_markup=kb)
+        await ClientAction.objects.acreate(
+            client=client,
+            action=Actions.SOUL_MUSE_QUESTION,
+        )
     else:
         answer = inappropriate_questions_answers[category]
         await msg.answer(answer, reply_markup=kb)

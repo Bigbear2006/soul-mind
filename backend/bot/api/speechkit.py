@@ -1,8 +1,13 @@
+import asyncio
 import base64
+import io
+
+from pydub import AudioSegment
 
 from bot.api.base import APIClient
 from bot.loader import logger
 from bot.settings import settings
+from bot.text_utils import split_text
 
 
 class SpeechKit(APIClient):
@@ -22,22 +27,24 @@ class SpeechKit(APIClient):
             'tts/v3/utteranceSynthesis',
             json={
                 'text': text,
-                'hints': [{'voice': 'zhanar'}, {'role': 'friendly'}],
+                'hints': [{'voice': 'jane'}, {'role': 'good'}],
             },
         ) as rsp:
             data = await rsp.json()
             logger.debug(data)
+            if not data.get('result'):
+                logger.info(data)
             result = data['result']
 
-        logger.info(f'Synthesized text ({result.get("lengthMs")} ms)')
+        logger.debug(f'Synthesized text ({result.get("lengthMs")} ms)')
         return base64.b64decode(result['audioChunk']['data'])
 
     async def synthesize_v1(self, text: str) -> bytes:
-        logger.info(f'Text length: {len(text)}')
+        logger.debug(f'Text length: {len(text)}')
         async with self.session.post(
             'speech/v1/tts:synthesize',
             data={
-                'text': text[:5000],
+                'text': text[:4999],
                 'voice': 'filipp',
                 'emotion': 'friendly',
                 'lang': 'ru-RU',
@@ -49,5 +56,12 @@ class SpeechKit(APIClient):
 
 async def synthesize(text: str) -> bytes:
     async with SpeechKit() as sk:
-        audio = await sk.synthesize_v1(text)
-    return audio
+        audio_chunks = await asyncio.gather(
+            *[sk.synthesize_v3(chunk) for chunk in split_text(text)],
+        )
+    audio = AudioSegment.empty()
+    for chunk in audio_chunks:
+        audio += AudioSegment.from_wav(
+            io.BytesIO(chunk),
+        )
+    return audio.export(format='wav').read()

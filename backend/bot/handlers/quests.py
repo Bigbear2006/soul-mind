@@ -15,7 +15,11 @@ from bot.keyboards.inline.quests import (
 )
 from bot.keyboards.utils import one_button_keyboard
 from bot.settings import settings
-from bot.templates.quests import daily_praises, weekly_praises
+from bot.templates.quests import (
+    daily_praises,
+    trial_quest_praise,
+    weekly_praises,
+)
 from core.models import (
     Client,
     ClientDailyQuest,
@@ -42,8 +46,15 @@ async def weekly_quests_list(msg: Message | CallbackQuery, client: Client):
             reply_markup=get_to_registration_kb(),
         )
         return
-
-    if client.has_trial():
+    elif client.subscription_is_active():
+        answer_func = (
+            msg.answer if isinstance(msg, Message) else msg.message.edit_text
+        )
+        await answer_func(
+            'Выбери, в каком челлендже ты хочешь участвовать',
+            reply_markup=await get_weekly_quests_kb(client),
+        )
+    elif client.has_trial():
         await msg.answer(
             '🧩 Практики для роста\n\n'
             'Я приготовила для тебя короткий путь внутрь.\n'
@@ -55,15 +66,11 @@ async def weekly_quests_list(msg: Message | CallbackQuery, client: Client):
                 callback_data='start_trial_challenge',
             ),
         )
-        return
-
-    answer_func = (
-        msg.answer if isinstance(msg, Message) else msg.message.edit_text
-    )
-    await answer_func(
-        'Выбери, в каком челлендже ты хочешь участвовать',
-        reply_markup=await get_weekly_quests_kb(client),
-    )
+    else:
+        await msg.answer(
+            '🧩 Практики для роста доступны в подписке.',
+            reply_markup=get_to_subscription_plans_kb(),
+        )
 
 
 @router.callback_query(F.data.startswith('weekly_quest'))
@@ -109,7 +116,8 @@ async def participate_in_weekly_quest(query: CallbackQuery, client: Client):
 
 
 @router.callback_query(F.data.startswith('quest'))
-async def quest_handler(query: CallbackQuery):
+@flags.with_client
+async def quest_handler(query: CallbackQuery, client: Client):
     _, quest_type, quest_id, status = query.data.split(':')
     astropoints = 5 if quest_type == 'daily' else 10
     QuestModel = (
@@ -151,23 +159,7 @@ async def quest_handler(query: CallbackQuery):
         ):
             astropoints += 10
             await query.message.edit_text(
-                '“Ты сделал(а) три шага внутрь. Это не всё. Это только начало.”\n\n'
-                'Ты почувствовал(а), каково это — быть с собой.\n'
-                'Не снаружи. А внутри.\n'
-                'Без давления. Без роли.\n'
-                'Ты не начал(а) путь самопознания — ты вернулся(лась) к себе.\n'
-                'А дальше?..\n'
-                'Дальше — глубже. Точнее. Свободнее.\n'
-                'SoulMind приготовил для тебя десятки векторов:\n'
-                'эмоциональный интеллект, осознанность, энергия…\n'
-                'Что дальше?\n'
-                'Внутри тебя ждёт:\n'
-                '— 300+ практик по твоим внутренним точкам роста\n'
-                '— 23 темы: от самоценности и границ до отпускания и завершения\n'
-                '— Челленджи, собранные под твой уникальный путь\n'
-                'Это не “мотивация”. Это SoulMind.\n'
-                'Ты готов(а)? Тогда заходи глубже.\n'
-                '“Я не скажу тебе, кто ты. Я помогу тебе вспомнить.” — Soul Muse',
+                client.genderize(trial_quest_praise),
                 reply_markup=get_to_subscription_plans_kb(
                     text='Оформить подписку',
                 ),

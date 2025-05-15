@@ -46,13 +46,14 @@ def get_client_resource(client: Client) -> str:
 def get_month_resource_text(client: Client):
     sun_sign = [i['sign'] for i in client.planets if i['name'] == 'Sun'][0]
     resource = get_client_resource(client)
-    return (
-        f'{client.fullname}, твоя энергия в этом месяце раскрывается через {resource}.\n'
+    return client.genderize(
+        f'{client.fullname.split()[1]}, '
+        f'твоя энергия в этом месяце раскрывается через {resource}.\n'
         f'{sun_signs_descriptions[sun_sign]}.\n'
         'Но сейчас ты входишь в новое состояние.\n'
-        '*Вот что просит твоя душа услышать:*\n'
+        'Вот что просит твоя душа услышать:\n'
         f'{random.choice(resources_descriptions[resource])}\n'
-        'Ты не должен спешить. Достаточно — быть. И помнить.'
+        'Ты не {gender:должен,должна} спешить. Достаточно — быть. И помнить.',
     )
 
 
@@ -90,7 +91,7 @@ def get_nearest_sun_aspect(client: Client) -> tuple[str, str]:
 
 def get_month_script_text(client: Client):
     current_date = date.today().strftime('%m.%Y')
-    script_number = now().month % 6 + 1
+    script_number = now().month % 6
     hd_gate = get_active_hd_gate('10.05.2025')
     soul_number = get_soul_number(client.fullname)
     moon = moon_phases_descriptions[current_date]

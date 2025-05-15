@@ -23,6 +23,7 @@ from bot.keyboards.inline.vip_services import get_payment_choices_kb
 from bot.settings import settings
 from bot.states import CompatabilityEnergyState
 from bot.templates.compatability_energy import get_compatability_energy_text
+from bot.text_utils import compatability_plural
 from core.choices import SubscriptionPlans
 from core.models import Actions, Client, ClientAction, ClientActionBuying
 
@@ -38,26 +39,30 @@ async def compatability_energy(
 ):
     if not client.is_registered():
         await msg.answer(
-            'Ты хочешь понять вас,\n'
-            'но ещё не заглянул(а) в себя?\n\n'
-            'Пройди регистрацию — и я покажу, как сплетается ваша энергия.',
+            client.genderize(
+                'Ты хочешь понять вас,\n'
+                'но ещё не {gender:заглянул,заглянула} в себя?\n\n'
+                'Пройди регистрацию — и я покажу, как сплетается ваша энергия.',
+            ),
             reply_markup=get_to_registration_kb(),
         )
         return
 
     if await client.get_remaining_usages(Actions.COMPATABILITY_ENERGY) <= 0:
         await msg.answer(
-            'Твоя энергия не ограничена тремя людьми.\n'
-            'Каждая новая связь — это отражение тебя.\n\n'
-            'Разблокируй ещё совместимости\n\n'
-            '🔹 1 совместимость → 159 ₽ или 250 астробаллов\n'
-            '🔹 3 совместимости → 399 ₽ или 650 астробаллов\n'
-            '🔹 VIP-анализ совместимости\n\n'
-            'Ты готов(а) к настоящей глубине?\n'
-            'Это больше, чем просто “подходите вы друг другу или нет”.\n'
-            'Это разбор, после которого вы оба увидите себя иначе.\n\n'
-            'Пара. Семья. Команда. Друзья.\n'
-            'Выбирай формат — и ныряем вглубь.\n\n',
+            client.genderize(
+                'Твоя энергия не ограничена тремя людьми.\n'
+                'Каждая новая связь — это отражение тебя.\n\n'
+                'Разблокируй ещё совместимости\n\n'
+                '🔹 1 совместимость → 159 ₽ или 250 астробаллов\n'
+                '🔹 3 совместимости → 399 ₽ или 650 астробаллов\n'
+                '🔹 VIP-анализ совместимости\n\n'
+                'Ты {gender:готов,готова} к настоящей глубине?\n'
+                'Это больше, чем просто “подходите вы друг другу или нет”.\n'
+                'Это разбор, после которого вы оба увидите себя иначе.\n\n'
+                'Пара. Семья. Команда. Друзья.\n'
+                'Выбирай формат — и ныряем вглубь.\n\n',
+            ),
             reply_markup=buy_compatability_kb,
         )
         return
@@ -67,16 +72,19 @@ async def compatability_energy(
             Actions.COMPATABILITY_ENERGY,
         )
         remaining_usages_str = (
-            f'* У тебя осталось {remaining_usages} совместимостей'
+            f'* У тебя осталось {remaining_usages} '
+            f'{compatability_plural(remaining_usages)}'
             if client.subscription_plan != SubscriptionPlans.PREMIUM
             else ''
         )
         await state.set_state(CompatabilityEnergyState.connection_type)
         await msg.answer(
-            'Случайных встреч не бывает.\n'
-            'Я покажу, почему этот человек рядом — и чему вы учите друг друга.\n\n'
-            'Ты готов(а) взглянуть на вашу связь по-настоящему?\n\n'
-            f'{remaining_usages_str}',
+            client.genderize(
+                'Случайных встреч не бывает.\n'
+                'Я покажу, почему этот человек рядом — и чему вы учите друг друга.\n\n'
+                'Ты {gender:готов,готова} взглянуть на вашу связь по-настоящему?\n\n'
+                f'{remaining_usages_str}',
+            ),
             reply_markup=compatability_energy_kb,
         )
     else:
@@ -139,7 +147,8 @@ async def choose_compatability_payment_type(
             Actions.COMPATABILITY_ENERGY,
         )
         await query.message.edit_text(
-            f'Теперь у тебя {remaining_usages} совместимостей!',
+            f'Теперь у тебя {remaining_usages} '
+            f'{compatability_plural(remaining_usages)}!',
         )
         await state.clear()
     else:
@@ -177,7 +186,10 @@ async def on_extra_compatability_buying(
     remaining_usages = await client.get_remaining_usages(
         Actions.COMPATABILITY_ENERGY,
     )
-    await msg.answer(f'Теперь у тебя {remaining_usages} совместимостей!')
+    await msg.answer(
+        f'Теперь у тебя {remaining_usages} '
+        f'{compatability_plural(remaining_usages)}!',
+    )
     await state.clear()
 
 
@@ -217,7 +229,7 @@ async def get_first_person_birth_date(
     await msg.answer(
         get_compatability_energy_text(
             await state.get_value('connection_type'),
-            client.birth.date(),
+            client,
             birth_date_2,
         ),
         reply_markup=show_connection_depth,

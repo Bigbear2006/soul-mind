@@ -192,11 +192,11 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'core.tasks.send_daily_quests',
         'schedule': crontab(minute='0', hour='8'),
     },
-    # 'send_weekly_quests_tasks': {
-    #     'task': 'core.tasks.send_weekly_quests_tasks',
-    #     'schedule': crontab(minute='0', hour='8'),
-    # },
-    'send_quests_reminders': {  # it works
+    'send_weekly_quests_tasks': {
+        'task': 'core.tasks.send_weekly_quests_tasks',
+        'schedule': crontab(minute='0', hour='8'),
+    },
+    'send_quests_reminders': {
         'task': 'core.tasks.send_quests_reminders',
         'schedule': crontab(minute='0', hour='16'),
     },
@@ -206,29 +206,29 @@ CELERY_BEAT_SCHEDULE = {
     },
     'send_universe_advice_messages': {
         'task': 'core.tasks.send_universe_advice_messages',
-        'schedule': crontab(minute='0', hour='10,14'),
+        'schedule': crontab(minute='0', hour='10,14', day_of_week='1-5'),
     },
-    'send_universe_advice_weekend_messages': {  # it works
+    'send_universe_advice_weekend_messages': {
         'task': 'core.tasks.send_universe_advice_messages',
-        'schedule': crontab(minute='0', hour='11,15'),
+        'schedule': crontab(minute='0', hour='11,15', day_of_week='6,0'),
     },
-    'send_university_advice_extended_messages': {  # it works
+    'send_university_advice_extended_messages': {
         'task': 'core.tasks.send_university_advice_extended_messages',
-        'schedule': crontab(minute='0', hour='10,14'),
+        'schedule': crontab(minute='0', hour='10,14', day_of_week='1-5'),
     },
-    'send_university_advice_extended_weekend_messages': {  # it works
+    'send_university_advice_extended_weekend_messages': {
         'task': 'core.tasks.send_university_advice_extended_messages',
-        'schedule': crontab(minute='0', hour='11,15'),
+        'schedule': crontab(minute='0', hour='11,15', day_of_week='6,0'),
     },
-    'send_destiny_guide_messages': {  # it works
+    'send_destiny_guide_messages': {
         'task': 'core.tasks.send_destiny_guide_messages',
         'schedule': crontab(minute='0', hour='19', day_of_week='0'),
     },
-    'send_friday_gift_messages': {  # it works
+    'send_friday_gift_messages': {
         'task': 'core.tasks.send_friday_gift_messages',
         'schedule': crontab(minute='0', hour='19', day_of_week='5'),
     },
-    'send_power_day_messages': {  # it works
+    'send_power_day_messages': {
         'task': 'core.tasks.send_power_day_messages',
         'schedule': crontab(minute='0', hour='10'),
     },

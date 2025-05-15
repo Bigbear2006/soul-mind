@@ -1,4 +1,5 @@
 import asyncio
+import random
 from dataclasses import asdict
 from datetime import datetime
 
@@ -40,6 +41,10 @@ from bot.states import (
     VIPCompatabilityState,
 )
 from bot.templates.base import connection_types
+from bot.templates.vip_services import (
+    personal_report_audio_closures,
+    personal_report_intro,
+)
 from core.choices import (
     ExperienceTypes,
     ExpertTypes,
@@ -517,11 +522,16 @@ async def on_successful_payment(
     )
     await state.clear()
     report = await SoulMuse().answer(get_personal_report_prompt(client))
+    pdf_text = personal_report_intro + report
+    audio_text = f'{report}\n{random.choice(personal_report_audio_closures)}'
     await msg.answer_document(
-        BufferedInputFile(generate_pdf(report), 'personal_report.pdf'),
+        BufferedInputFile(generate_pdf(pdf_text), 'Персональный отчёт.pdf'),
     )
     await msg.answer_audio(
-        BufferedInputFile(await synthesize(report), 'personal_report.wav'),
+        BufferedInputFile(
+            await synthesize(audio_text),
+            'Персональный отчёт.wav',
+        ),
     )
     await state.clear()
 
@@ -532,14 +542,17 @@ async def on_successful_payment(
 
 
 @router.callback_query(F.data == 'vip_compatibility')
-async def vip_compatibility(callback: CallbackQuery):
+@flags.with_client
+async def vip_compatibility(callback: CallbackQuery, client: Client):
     await callback.message.edit_text(
-        '❤️‍🔥 VIP-анализ совместимости\n\n'
-        'Ты готов(а) к настоящей глубине?\n'
-        'Это больше, чем просто “подходите вы друг другу или нет”.\n'
-        'Это разбор, после которого вы оба увидите себя иначе.\n\n'
-        'Пара. Семья. Команда. Друзья.\n'
-        'Выбирай формат — и ныряем вглубь.',
+        client.genderize(
+            '❤️‍🔥 VIP-анализ совместимости\n\n'
+            'Ты {gender:готов,готова} к настоящей глубине?\n'
+            'Это больше, чем просто “подходите вы друг другу или нет”.\n'
+            'Это разбор, после которого вы оба увидите себя иначе.\n\n'
+            'Пара. Семья. Команда. Друзья.\n'
+            'Выбирай формат — и ныряем вглубь.',
+        ),
         reply_markup=one_button_keyboard(
             text='1599 ₽ / 2500 астробаллов',
             callback_data='buy_compatibility',
@@ -580,7 +593,7 @@ async def buy_compatibility(
         client.astropoints -= 2500
         await client.asave()
         await query.message.edit_text(
-            'Выбери тип связи',
+            'Выбери тип связи, по которому ты хочешь получить совместимость',
             reply_markup=connection_types_kb,
         )
         await state.clear()
@@ -729,6 +742,17 @@ async def vip_compatability_report(
     client: Client,
 ):
     data = await state.get_data()
+    if data['connection_type'] == 'family' and len(data['persons']) < 2:
+        await query.message.answer(
+            'Для семьи надо ввести минимум трёх человек',
+        )
+        return
+
+    await query.message.edit_text(
+        'Создаю отчет и аудио...\nЭто может занять несколько минут...',
+    )
+    await state.set_state(None)
+
     person = asdict(Bodygraphs.from_client(client))
     person.update({'fullname': client.fullname})
     data['persons'].append(person)
@@ -739,20 +763,15 @@ async def vip_compatability_report(
         ),
     )
 
-    await query.message.edit_text(
-        'Создаю отчет и аудио...\nЭто может занять несколько минут...',
-    )
-    await state.clear()
-
     await query.message.answer_document(
         BufferedInputFile(
             generate_pdf(compatability),
-            'vip_compatability.pdf',
+            'VIP-анализ совместимости.pdf',
         ),
     )
     await query.message.answer_audio(
         BufferedInputFile(
             await synthesize(compatability),
-            'vip_compatability.wav',
+            'VIP-анализ совместимости.wav',
         ),
     )

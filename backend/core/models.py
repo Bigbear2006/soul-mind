@@ -14,6 +14,7 @@ from django.utils.timezone import now
 
 from bot.loader import logger
 from bot.settings import settings
+from bot.templates.base import all_centers_ordered
 from bot.templates.friday_gift import friday_gifts_preambles
 from core.choices import (
     Actions,
@@ -365,6 +366,12 @@ class Client(models.Model):
             return male if self.gender == Genders.MALE else female
 
         return re.sub(r'{gender:([^}]+)}', replace, text)
+
+    def get_priority_center(self) -> str:
+        return sorted(
+            self.centers,
+            key=lambda x: all_centers_ordered.index(x),
+        )[0]
 
 
 class QuestTag(models.Model):

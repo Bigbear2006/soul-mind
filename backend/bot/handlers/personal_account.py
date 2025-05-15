@@ -112,7 +112,7 @@ async def insight_detail(query: CallbackQuery, state: FSMContext):
     insight = await Insight.objects.aget(pk=query.data.split(':')[1])
     if insight.audio_file_id:
         await query.message.edit_text(
-            'Вы можете прослушать свой инсайт',
+            'Ты можешь прослушать свой инсайт',
             reply_markup=one_button_keyboard(
                 text='Назад',
                 callback_data='personal_insights',

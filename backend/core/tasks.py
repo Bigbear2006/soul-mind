@@ -29,7 +29,7 @@ from bot.push_messages import (
 )
 from bot.settings import settings
 from bot.templates.quests import quest_reminder
-from core.choices import Actions
+from core.choices import Actions, QuestStatuses
 from core.models import (
     Client,
     ClientDailyQuest,
@@ -128,6 +128,7 @@ async def send_daily_quest(
 
 @async_shared_task
 async def send_daily_quests():
+    today = now()
     quests_ids = await sync_to_async()(
         lambda: set(DailyQuest.objects.values_list('id', flat=True)),
     )()
@@ -135,8 +136,9 @@ async def send_daily_quests():
     quests = (
         ClientDailyQuest.objects.select_related('client')
         .filter(
-            created_at__gte=now() - timedelta(days=30),
+            # created_at__gte=now() - timedelta(days=30),
             client__notifications_enabled=True,
+            client__subscription_end__gte=today,
             quest__is_active=True,
         )
         .annotate(sent_quests_ids=ArrayAgg('quest_id'))
@@ -160,6 +162,7 @@ async def send_daily_quests():
         .filter(
             sent_quests_count=0,
             notifications_enabled=True,
+            sunscription_end__gte=today,
         )
     )
     await asyncio_wait(
@@ -192,7 +195,12 @@ async def send_weekly_quest_task(client: Client, quest_task_id: int, day: int):
 async def send_weekly_quests_tasks():
     tasks = (
         ClientWeeklyQuestTask.objects.select_related('client')
-        .annotate(last_task_day=Max('quest__day'))
+        .annotate(
+            last_task_day=Max(
+                'quest__day',
+                filter=Q(status=QuestStatuses.COMPLETED),
+            ),
+        )
         .filter(
             (
                 Q(last_task_day__lt=7)
@@ -204,7 +212,6 @@ async def send_weekly_quests_tasks():
             ),
             quest__is_active=True,
             client__notifications_enabled=True,
-            last_task_day__gte=1,
         )
     )
     await asyncio_wait(
@@ -220,18 +227,21 @@ async def send_weekly_quests_tasks():
         ],
     )
 
-    clients = (ClientWeeklyQuest.objects.select_related('client')
-    .filter(
-        quest__is_active=True,
-        client__notifications_enabled=True,
-    ).exclude(
-        Exists(
-            ClientWeeklyQuestTask.objects.filter(
-                quest__quest_id=OuterRef('quest_id'),
-                client_id=OuterRef('client_id'),
+    clients = (
+        ClientWeeklyQuest.objects.select_related('client')
+        .filter(
+            quest__is_active=True,
+            client__notifications_enabled=True,
+        )
+        .exclude(
+            Exists(
+                ClientWeeklyQuestTask.objects.filter(
+                    quest__quest_id=OuterRef('quest_id'),
+                    client_id=OuterRef('client_id'),
+                ),
             ),
-        ),
-    ))
+        )
+    )
     await asyncio_wait(
         [
             asyncio.create_task(
