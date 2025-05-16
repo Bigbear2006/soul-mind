@@ -25,12 +25,14 @@ async def personal_account_handler(
         msg.answer if isinstance(msg, Message) else msg.message.edit_text
     )
 
+    await client.refresh_limits()
     compatability = await client.get_remaining_usages(
         Actions.COMPATABILITY_ENERGY,
     )
-    if compatability >= 999:
+    if client.subscription_plan == SubscriptionPlans.PREMIUM:
         compatability = 'Безлимит'
     questions = await client.get_remaining_usages(Actions.SOUL_MUSE_QUESTION)
+
     text = (
         f'Астробаллы: {client.astropoints}\n'
         f'Осталось совместимостей: {compatability}\n'

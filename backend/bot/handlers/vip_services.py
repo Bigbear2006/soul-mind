@@ -40,7 +40,7 @@ from bot.states import (
     PersonalReportState,
     VIPCompatabilityState,
 )
-from bot.templates.base import connection_types, astropoints_not_enough
+from bot.templates.base import astropoints_not_enough, connection_types
 from bot.templates.vip_services import (
     personal_report_audio_closures,
     personal_report_intro,
@@ -139,7 +139,7 @@ async def choose_mini_consult_payment_type(
         if client.astropoints < 1500:
             await query.message.edit_text(
                 astropoints_not_enough,
-                reply_markup=get_payment_choices_kb(None, '999 ₽')
+                reply_markup=get_payment_choices_kb(None, '999 ₽'),
             )
             return
         client.astropoints -= 1500
@@ -219,13 +219,18 @@ async def choose_feelings_type(query: CallbackQuery, state: FSMContext):
 
 
 @router.callback_query(F.data.startswith('feelings'))
-async def choose_topics(query: CallbackQuery, state: FSMContext):
+@flags.with_client
+async def choose_topics(
+    query: CallbackQuery,
+    state: FSMContext,
+    client: Client,
+):
     await state.update_data(feelings_type=query.data.split(':')[1])
     await state.set_state(MiniConsultState.topics)
     await query.message.edit_text(
         'Выбери до трех меток, к которым относится твой вопрос.\n'
         'Если нужно метки нет в списке, то можешь написать ее.',
-        reply_markup=await get_topics_kb(),
+        reply_markup=await get_topics_kb(client),
     )
 
 
@@ -492,7 +497,7 @@ async def choose_personal_report_payment_type(
         if client.astropoints < 2000:
             await query.message.edit_text(
                 astropoints_not_enough,
-                reply_markup=get_payment_choices_kb(None, '1299 ₽')
+                reply_markup=get_payment_choices_kb(None, '1299 ₽'),
             )
             return
         client.astropoints -= 2000
@@ -596,7 +601,7 @@ async def buy_compatibility(
         if client.astropoints < 2500:
             await query.message.edit_text(
                 astropoints_not_enough,
-                reply_markup=get_payment_choices_kb(None, '1599 ₽')
+                reply_markup=get_payment_choices_kb(None, '1599 ₽'),
             )
             return
         client.astropoints -= 2500

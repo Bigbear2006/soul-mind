@@ -102,7 +102,7 @@ async def power_day_handler(query: CallbackQuery, client: Client):
         )
         return
 
-    if await client.get_remaining_usages(Actions.POWER_DAY) <= 0:
+    if await client.get_month_usages(Actions.POWER_DAY) >= 1000:
         await query.message.edit_text(
             '🚀 Твой День силы\n\n'
             'Твой День силы ещё не наступил — я сообщу тебе, когда придёт время.',
@@ -148,7 +148,7 @@ async def universe_answer_handler(query: CallbackQuery, client: Client):
         )
         return
 
-    if await client.get_remaining_usages(Actions.UNIVERSE_ANSWER) <= 0:
+    if await client.get_month_usages(Actions.UNIVERSE_ANSWER) >= 1000:
         await query.message.edit_text(
             client.genderize(
                 '✨ Ответ Вселенной\n\n'
@@ -204,7 +204,7 @@ async def soul_muse_vip_answer(query: CallbackQuery, client: Client):
         )
         return
 
-    if await client.get_remaining_usages(Actions.SOUL_MUSE_VIP_ANSWER) <= 0:
+    if await client.get_month_usages(Actions.SOUL_MUSE_VIP_ANSWER) >= 1:
         await query.message.edit_text(
             client.genderize(
                 '🔮 VIP-совет от Soul Muse\n\n'

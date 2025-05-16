@@ -1,3 +1,5 @@
+from django.utils.timezone import now
+
 from bot.templates.base import all_centers
 from bot.templates.vip_services import power_calendar
 from core.models import Client
@@ -26,6 +28,7 @@ def get_personal_report_prompt(client: Client):
         '5. Точка силы месяца\n'
         '4. Дни силы и предупреждения\n'
         'Основывайся на общий календарь астрособытий месяца и данные пользователя.\n'
+        f'В календаре астрособытий месяца показывай события только текущего месяца ({now().strftime("%m.%Y")}).\n'
         '5. Персональные рекомендации\n'
         'Что может поддержать именно тебя? Какие действия, практики, состояния стоит попробовать?\n'
         '6. Основной и Теневой архетип\n'

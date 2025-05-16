@@ -38,6 +38,7 @@ async def start(
     ) = await Client.objects.create_or_update_from_tg_user(
         msg.from_user,
     )
+    await client.refresh_limits()
 
     if created:
         logger.info(f'New client {client} id={client.pk} was created')

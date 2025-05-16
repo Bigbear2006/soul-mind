@@ -8,7 +8,6 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models.functions import ExtractMonth, ExtractYear
 from django.utils.timezone import now
 
 from bot.loader import logger
@@ -133,7 +132,7 @@ class FridayGiftManager(models.Manager):
 
 
 ##############
-### MODELS ###
+### CLIENT ###
 ##############
 
 
@@ -273,92 +272,116 @@ class Client(models.Model):
         return False
 
     def is_registered(self) -> bool:
-        return self.houses is not None
+        return self.aspects != []
 
-    async def get_unused_purchases(self, action: Actions):
-        usages = (
-            await ClientAction.objects.annotate(
-                year=ExtractYear('date'),
-                month=ExtractMonth('date'),
-            )
-            .filter(
-                client=self,
-                action=action,
-            )
-            .values('year', 'month')
-            .annotate(count=models.Count('id'))
-        )
-        usages_dict = {(i['month'], i['year']): i['count'] for i in usages}
-
-        purchases = (
-            await ClientActionBuying.objects.annotate(
-                year=ExtractYear('date'),
-                month=ExtractMonth('date'),
-            )
-            .filter(
-                client=self,
-                action=action,
-            )
-            .values('year', 'month')
-            .annotate(count=models.Count('id'))
-        )
-        purchases_dict = {
-            (i['month'], i['year']): i['count'] for i in purchases
-        }
-
-        unused_purchases = 0
-        for k, month_purchases in purchases_dict.items():
-            month_usages = usages_dict.get(k, 0)
-            if month_purchases > month_usages:
-                unused_purchases += month_purchases - month_usages
-            elif month_purchases < month_usages:
-                pass
-        return unused_purchases
-
-    async def get_remaining_usages(self, action: Actions) -> int:
-        today = now().date()
-        usages = await ClientAction.objects.filter(
+    async def get_month_usages(self, action: Actions):
+        today = now()
+        return await ClientAction.objects.filter(
             client=self,
             action=action,
             date__month=today.month,
             date__year=today.year,
         ).acount()
 
-        purchased = (
-            await ClientActionBuying.objects.filter(
-                client=self,
-                action=action,
-                date__month=today.month,
-                date__year=today.year,
-            ).aaggregate(total_count=models.Sum('count', default=0))
-        )['total_count']
+    async def get_remaining_usages(self, action: Actions) -> int:
+        client_action = await self.get_action(action)
+        return client_action.free_limit + client_action.extra_limit
 
+    async def get_action(self, action: Actions) -> 'ClientActionLimit':
+        return await ClientActionLimit.objects.aget(client=self, action=action)
+
+    def get_month_free_limit(self, action: Actions):
         if action == Actions.COMPATABILITY_ENERGY:
             if self.subscription_is_active():
                 if self.subscription_plan == SubscriptionPlans.PREMIUM:
                     return 999  # unlimited
                 else:
-                    return 3 - usages + purchased
+                    return 3
             elif self.has_trial():
-                return 2 - usages + purchased
+                return 2
             else:
                 return 0
 
         elif action == Actions.SOUL_MUSE_QUESTION:
             if self.subscription_is_active():
                 if self.subscription_plan == SubscriptionPlans.PREMIUM:
-                    return 15 - usages + purchased
+                    return 15
                 else:
-                    return 4 - usages + purchased
+                    return 4
             elif self.has_trial():
-                return 2 - usages + purchased
+                return 2
             else:
                 return 0
 
-        elif action == Actions.SOUL_MUSE_VIP_ANSWER:
-            return 1 - usages
+        return 0
 
-        return 1
+    async def update_limit(self, action: Actions):
+        return await ClientActionLimit.objects.filter(
+            client=self,
+            action=action,
+        ).aupdate(
+            free_limit=self.get_month_free_limit(action),
+            subscription_plan=self.subscription_plan,
+            updated_at=now(),
+        )
+
+    async def add_extra_usages(self, action: Actions, count: int):
+        return await ClientActionLimit.objects.filter(
+            client=self,
+            action=action,
+        ).aupdate(
+            extra_limit=models.F('extra_limit') + count,
+            updated_at=now(),
+        )
+
+    async def refresh_limit(self, action: Actions):
+        today = now()
+
+        try:
+            client_action = await self.get_action(action)
+        except ObjectDoesNotExist:
+            await ClientActionLimit.objects.acreate(
+                client=self,
+                action=action,
+                subscription_plan=self.subscription_plan,
+                free_limit=self.get_month_free_limit(action),
+                updated_at=today,
+            )
+            return
+
+        if (
+            (
+                today.month != client_action.updated_at.month
+                or today.year != client_action.updated_at.year
+            )
+            or (
+                (client_action.updated_at - self.created_at).days
+                < 3
+                < (today - self.created_at).days
+            )
+            or client_action.subscription_plan != self.subscription_plan
+            or not self.subscription_is_active()
+        ):
+            await self.update_limit(action)
+
+    async def refresh_limits(self):
+        await self.refresh_limit(Actions.SOUL_MUSE_QUESTION)
+        await self.refresh_limit(Actions.COMPATABILITY_ENERGY)
+
+    async def spend_usage(self, action: Actions):
+        client_action = await self.get_action(action)
+
+        if client_action.free_limit > 0:
+            await ClientActionLimit.objects.filter(
+                client=self,
+                action=action,
+            ).aupdate(free_limit=models.F('free_limit') - 1)
+            return
+
+        await ClientActionLimit.objects.filter(
+            client=self,
+            action=action,
+        ).aupdate(extra_limit=models.F('extra_limit') - 1)
 
     def genderize(self, text: str) -> str:
         return genderize(text, gender=self.gender, prefix='gender')
@@ -370,17 +393,9 @@ class Client(models.Model):
         )[0]
 
 
-class QuestTag(models.Model):
-    name = models.CharField('Название', max_length=255)
-    description = models.CharField('Описание', max_length=255)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        verbose_name = 'Тег'
-        verbose_name_plural = 'Теги'
-        ordering = ['name']
+##############
+### QUESTS ###
+##############
 
 
 class DailyQuest(models.Model):
@@ -526,62 +541,17 @@ class ClientWeeklyQuestTask(models.Model):
         return f'{self.client} - {self.quest}'
 
 
-class ClientAction(models.Model):
-    client = models.ForeignKey(Client, models.CASCADE, 'actions')
-    action = models.CharField('Действие', max_length=100, choices=Actions)
-    date = models.DateTimeField('Дата', auto_now_add=True)
-
-    class Meta:
-        verbose_name = 'Действие пользователя'
-        verbose_name_plural = 'Действия пользователей'
-        ordering = ['-date']
+class QuestTag(models.Model):
+    name = models.CharField('Название', max_length=255)
+    description = models.CharField('Описание', max_length=255)
 
     def __str__(self):
-        return f'{self.client} - {Actions(self.action).label}'
-
-
-class ClientActionBuying(models.Model):
-    client = models.ForeignKey(Client, models.CASCADE, 'purchased_actions')
-    action = models.CharField('Действие', max_length=100, choices=Actions)
-    count = models.IntegerField('Количество')
-    date = models.DateTimeField('Дата', auto_now_add=True)
+        return self.name
 
     class Meta:
-        verbose_name = 'Покупка пользователя'
-        verbose_name_plural = 'Покупки пользователей'
-        ordering = ['-date']
-
-    def __str__(self):
-        return f'{self.client} - {Actions(self.action).label}'
-
-
-class MonthText(models.Model):
-    text = models.TextField('Текст')
-    audio_file_id = models.TextField(
-        'ID аудиофайла в телеграм',
-        null=True,
-        blank=True,
-    )
-    type = models.CharField('Тип', max_length=100, choices=MonthTextTypes)
-    client = models.ForeignKey(
-        Client,
-        models.CASCADE,
-        'forecasts',
-        verbose_name='Пользователь',
-    )
-    created_at = models.DateTimeField('Дата создания', auto_now_add=True)
-    objects = MonthTextManager()
-
-    class Meta:
-        verbose_name = 'Текст из "Месяц с Soul Muse"'
-        verbose_name_plural = 'Тексты из "Месяц с Soul Muse"'
-        ordering = ['-created_at']
-
-    def __str__(self):
-        return (
-            f'[{MonthTextTypes(self.type).label}] '
-            f'{self.client} - {self.text[:25]}'
-        )
+        verbose_name = 'Тег'
+        verbose_name_plural = 'Теги'
+        ordering = ['name']
 
 
 class DailyQuestTag(models.Model):
@@ -620,20 +590,54 @@ class ClientQuestTag(models.Model):
         return f'Тег пользователя ({self.pk})'
 
 
-class SoulMuseQuestion(models.Model):
-    category = models.CharField('Категория', max_length=50)
-    reason = models.TextField('Причина')
-    question = models.TextField('Вопрос')
-    answer = models.TextField('Ответ', blank=True)
+######################
+### CLIENT ACTIONS ###
+######################
+
+
+class ClientAction(models.Model):
+    client = models.ForeignKey(Client, models.CASCADE, 'actions')
+    action = models.CharField('Действие', max_length=100, choices=Actions)
     date = models.DateTimeField('Дата', auto_now_add=True)
 
     class Meta:
-        verbose_name = 'Вопрос к Soul Muse'
-        verbose_name_plural = 'Вопросы к Soul Muse'
+        verbose_name = 'Действие пользователя'
+        verbose_name_plural = 'Действия пользователей'
         ordering = ['-date']
 
     def __str__(self):
-        return f'[{self.category}] {self.question[:50]}'
+        return f'{self.client} - {Actions(self.action).label}'
+
+
+class ClientActionLimit(models.Model):
+    client = models.ForeignKey(Client, models.CASCADE, 'limits')
+    action = models.CharField('Действие', max_length=100, choices=Actions)
+    subscription_plan = models.CharField(
+        'Тип подписки',
+        choices=SubscriptionPlans,
+        max_length=50,
+        blank=True,
+    )
+    free_limit = models.PositiveIntegerField('Осталось')
+    extra_limit = models.PositiveIntegerField('Докуплено', default=0)
+    updated_at = models.DateTimeField('Последнее обновление лимитов')
+
+    class Meta:
+        unique_together = ('client', 'action')
+        verbose_name = 'Лимит пользователя'
+        verbose_name_plural = 'Лимиты пользователей'
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return (
+            f'{self.client} - {Actions(self.action).label} '
+            f'({self.free_limit + self.extra_limit})'
+        )
+
+
+####################
+### MINI CONSULT ###
+####################
 
 
 class MiniConsult(models.Model):
@@ -742,6 +746,56 @@ class ExpertAnswer(models.Model):
 
     def __str__(self):
         return f'{self.expert} - {self.consult}'
+
+
+#######################
+### TEXTS AND AUDIO ###
+#######################
+
+
+class SoulMuseQuestion(models.Model):
+    category = models.CharField('Категория', max_length=50)
+    reason = models.TextField('Причина')
+    question = models.TextField('Вопрос')
+    answer = models.TextField('Ответ', blank=True)
+    date = models.DateTimeField('Дата', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Вопрос к Soul Muse'
+        verbose_name_plural = 'Вопросы к Soul Muse'
+        ordering = ['-date']
+
+    def __str__(self):
+        return f'[{self.category}] {self.question[:50]}'
+
+
+class MonthText(models.Model):
+    text = models.TextField('Текст')
+    audio_file_id = models.TextField(
+        'ID аудиофайла в телеграм',
+        null=True,
+        blank=True,
+    )
+    type = models.CharField('Тип', max_length=100, choices=MonthTextTypes)
+    client = models.ForeignKey(
+        Client,
+        models.CASCADE,
+        'forecasts',
+        verbose_name='Пользователь',
+    )
+    created_at = models.DateTimeField('Дата создания', auto_now_add=True)
+    objects = MonthTextManager()
+
+    class Meta:
+        verbose_name = 'Текст из "Месяц с Soul Muse"'
+        verbose_name_plural = 'Тексты из "Месяц с Soul Muse"'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return (
+            f'[{MonthTextTypes(self.type).label}] '
+            f'{self.client} - {self.text[:25]}'
+        )
 
 
 class FridayGift(models.Model):

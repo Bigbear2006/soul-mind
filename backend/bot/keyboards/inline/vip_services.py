@@ -2,7 +2,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot.keyboards.utils import keyboard_from_queryset
-from core.models import Topic
+from core.models import Client, Topic
 
 vip_services_kb = InlineKeyboardMarkup(
     inline_keyboard=[
@@ -74,12 +74,13 @@ def get_payment_choices_kb(
     return kb.adjust(1).as_markup()
 
 
-async def get_topics_kb():
+async def get_topics_kb(client: Client):
     kb = InlineKeyboardBuilder.from_markup(
         await keyboard_from_queryset(
             Topic,
             prefix='topic',
             filters={'is_global': True},
+            str_func=lambda x: client.genderize(str(x)),
         ),
     )
     kb.button(text='Я выбрал нужные метки', callback_data='topic:done')

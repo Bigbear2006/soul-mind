@@ -26,7 +26,7 @@ from bot.templates.base import astropoints_not_enough
 from bot.templates.compatability_energy import get_compatability_energy_text
 from bot.text_utils import compatability_plural
 from core.choices import SubscriptionPlans
-from core.models import Actions, Client, ClientAction, ClientActionBuying
+from core.models import Actions, Client, ClientAction
 
 router = Router()
 
@@ -38,6 +38,8 @@ async def compatability_energy(
     state: FSMContext,
     client: Client,
 ):
+    await client.refresh_limit(Actions.COMPATABILITY_ENERGY)
+
     if not client.is_registered():
         await msg.answer(
             client.genderize(
@@ -135,12 +137,14 @@ async def choose_compatability_payment_type(
         if client.astropoints < astropoints:
             await query.message.edit_text(
                 astropoints_not_enough,
-                reply_markup=get_payment_choices_kb(None, '159 ₽' if buy_count == 'one' else '399 ₽')
+                reply_markup=get_payment_choices_kb(
+                    None,
+                    '159 ₽' if buy_count == 'one' else '399 ₽',
+                ),
             )
             return
 
-        await ClientActionBuying.objects.acreate(
-            client=client,
+        await client.add_extra_usages(
             action=Actions.COMPATABILITY_ENERGY,
             count=1 if await state.get_value('buy_count') == 'one' else 3,
         )
@@ -182,8 +186,7 @@ async def on_extra_compatability_buying(
     state: FSMContext,
     client: Client,
 ):
-    await ClientActionBuying.objects.acreate(
-        client=client,
+    await client.add_extra_usages(
         action=Actions.COMPATABILITY_ENERGY,
         count=1 if await state.get_value('buy_count') == 'one' else 3,
     )
@@ -242,4 +245,5 @@ async def get_first_person_birth_date(
         client=client,
         action=Actions.COMPATABILITY_ENERGY,
     )
+    await client.spend_usage(Actions.COMPATABILITY_ENERGY)
     await state.clear()

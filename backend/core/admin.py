@@ -63,15 +63,10 @@ class ClientWeeklyQuestTaskAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at',)
 
 
-@admin.register(models.MonthText)
-class MonthForecastAdmin(admin.ModelAdmin):
+@admin.register(models.ClientActionLimit)
+class ClientActionLimitAdmin(admin.ModelAdmin):
     list_select_related = ('client',)
-    readonly_fields = ('created_at',)
-
-
-@admin.register(SoulMuseQuestion)
-class SoulMuseQuestion(admin.ModelAdmin):
-    readonly_fields = ('date',)
+    readonly_fields = ('updated_at',)
 
 
 @admin.register(models.MiniConsult)
@@ -88,6 +83,17 @@ class MiniConsultFeedbackAdmin(admin.ModelAdmin):
 @admin.register(models.ExpertAnswer)
 class ExpertAnswerAdmin(admin.ModelAdmin):
     list_select_related = ('expert', 'consult')
+
+
+@admin.register(models.MonthText)
+class MonthForecastAdmin(admin.ModelAdmin):
+    list_select_related = ('client',)
+    readonly_fields = ('created_at',)
+
+
+@admin.register(SoulMuseQuestion)
+class SoulMuseQuestion(admin.ModelAdmin):
+    readonly_fields = ('date',)
 
 
 @admin.register(models.FridayGift)

@@ -33,7 +33,6 @@ from core.models import (
     Actions,
     Client,
     ClientAction,
-    ClientActionBuying,
     SoulMuseQuestion,
     SubscriptionPlans,
 )
@@ -44,6 +43,8 @@ router = Router()
 @router.message(F.text == '👩🏽 Спроси у Soul Muse')
 @flags.with_client
 async def soul_muse_question(msg: Message, client: Client):
+    await client.refresh_limit(Actions.SOUL_MUSE_QUESTION)
+
     if not client.is_registered():
         await msg.answer(
             client.genderize(
@@ -181,12 +182,14 @@ async def choose_extra_questions_payment_type(
         if client.astropoints < astropoints:
             await query.message.edit_text(
                 astropoints_not_enough,
-                reply_markup=get_payment_choices_kb(None, '129 ₽' if buy_count == 'one' else '599 ₽')
+                reply_markup=get_payment_choices_kb(
+                    None,
+                    '129 ₽' if buy_count == 'one' else '599 ₽',
+                ),
             )
             return
 
-        await ClientActionBuying.objects.acreate(
-            client=client,
+        await client.add_extra_usages(
             action=Actions.SOUL_MUSE_QUESTION,
             count=1 if await state.get_value('buy_count') == 'one' else 5,
         )
@@ -228,8 +231,7 @@ async def on_extra_questions_buying(
     state: FSMContext,
     client: Client,
 ):
-    await ClientActionBuying.objects.acreate(
-        client=client,
+    await client.add_extra_usages(
         action=Actions.SOUL_MUSE_QUESTION,
         count=1 if await state.get_value('buy_count') == 'one' else 5,
     )
@@ -286,6 +288,7 @@ async def soul_muse_answer(msg: Message, client: Client):
             client=client,
             action=Actions.SOUL_MUSE_QUESTION,
         )
+        await client.spend_usage(Actions.SOUL_MUSE_QUESTION)
     else:
         answer = inappropriate_questions_answers[category]
         await msg.answer(answer, reply_markup=kb)

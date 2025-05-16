@@ -117,11 +117,13 @@ async def send_daily_quest(
 
     await safe_send_message(
         client.pk,
-        '🧩 Задание дня от Soul Muse\n'
-        'Сегодня — маленький шаг к себе.\n'
-        'Быстрый. Точный. Не ради галочки, а ради фокуса.\n\n'
-        'Хочешь почувствовать, что день не просто начался, а начался по-твоему?\n'
-        f'Вот задание:\n\n{quest.text}',
+        client.genderize(
+            '🧩 Задание дня от Soul Muse\n'
+            'Сегодня — маленький шаг к себе.\n'
+            'Быстрый. Точный. Не ради галочки, а ради фокуса.\n\n'
+            'Хочешь почувствовать, что день не просто начался, а начался по-твоему?\n'
+            f'Вот задание:\n\n{quest.text}',
+        ),
         reply_markup=get_quest_statuses_kb(client, 'daily', quest.pk),
     )
 
@@ -162,7 +164,7 @@ async def send_daily_quests():
         .filter(
             sent_quests_count=0,
             notifications_enabled=True,
-            sunscription_end__gte=today,
+            subscription_end__gte=today,
         )
     )
     await asyncio_wait(
@@ -186,7 +188,7 @@ async def send_weekly_quest_task(client: Client, quest_task_id: int, day: int):
     )
     await safe_send_message(
         client.pk,
-        quest.to_message_text(),
+        client.genderize(quest.to_message_text()),
         reply_markup=get_quest_statuses_kb(client, 'weekly', quest.pk),
     )
 
@@ -228,7 +230,7 @@ async def send_weekly_quests_tasks():
     )
 
     clients = (
-        ClientWeeklyQuest.objects.select_related('client')
+        ClientWeeklyQuest.objects.prefetch_related('client')
         .filter(
             quest__is_active=True,
             client__notifications_enabled=True,
