@@ -27,13 +27,19 @@ class SpeechKit(APIClient):
             'tts/v3/utteranceSynthesis',
             json={
                 'text': text,
-                'hints': [{'voice': 'jane'}, {'role': 'good'}],
+                'hints': [
+                    {'voice': 'zhanar_ru'},
+                    {'role': 'friendly'},
+                    {'pitch_shift': -20.0},
+                    {'speed': 1.0},
+                ],
             },
         ) as rsp:
             data = await rsp.json()
             logger.debug(data)
             if not data.get('result'):
                 logger.info(data)
+                return b''
             result = data['result']
 
         logger.debug(f'Synthesized text ({result.get("lengthMs")} ms)')

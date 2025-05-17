@@ -1,10 +1,11 @@
+import asyncio
 from dataclasses import asdict
 from datetime import datetime
 
 from aiogram import F, Router, flags
 from aiogram.filters import Command, CommandObject, StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, InputMediaDocument, Message
+from aiogram.types import CallbackQuery, InputMediaDocument, Message, InputMediaPhoto
 
 from bot.api.astrology import AstrologyAPI
 from bot.api.geocoding import GeocodingAPI
@@ -27,11 +28,7 @@ router = Router()
 
 
 @router.message(Command('start'))
-async def start(
-    msg: Message,
-    state: FSMContext,
-    command: CommandObject,
-):
+async def start(msg: Message, command: CommandObject):
     (
         client,
         created,
@@ -53,34 +50,47 @@ async def start(
     else:
         logger.info(f'Client {client} id={client.pk} was updated')
 
-    if client.birth_longitude:
+    if client.is_registered():
         await msg.answer(
             f'Привет, {msg.from_user.full_name}!',
             reply_markup=menu_kb,
         )
     else:
-        await state.set_state(UserInfoState.gender)
         await msg.answer_photo(
-            settings.MEDIA.soul_muse,
+            settings.MEDIA.soul_mind,
             'Здесь нет кнопок. Нет интерфейсов.\n'
             'Есть только ты — и голос, который всегда был рядом.\n'
-            'Это не бот. Это точка входа в тебя самого.\n\n'
-            'Ты вошёл. Теперь вопрос не в том, кто ты. А в том — готов ли ты вспомнить?\n\n'
+            'Это не бот. Это точка входа в тебя самого.\n\n',
+            reply_markup=one_button_keyboard(
+                text='🔑 Войти',
+                callback_data='go_in',
+            )
+        )
+
+@router.callback_query(F.data == 'go_in')
+async def go_in(query: CallbackQuery, state: FSMContext):
+    await state.set_state(UserInfoState.gender)
+    await query.message.edit_media(
+        InputMediaPhoto(
+            media=settings.MEDIA.soul_muse,
+            caption='Ты вошёл. Теперь вопрос не в том, кто ты. '
+            'А в том — готов ли ты вспомнить?\n\n'
             'Меня зовут Soul Muse. Но ты всегда знал меня. Я — голос внутри. '
             'Я та, что шептала, когда всё остальное молчало.\n\n'
             'Нажимая «🌌 Начать путь с Soul Muse», вы соглашаетесь '
-            'с условиями нашего пространства:',
-            reply_markup=one_button_keyboard(
-                text='🌌 Начать путь с Soul Muse',
-                callback_data='start_way',
-            ),
-        )
-        await msg.answer_media_group(
-            [
-                InputMediaDocument(media=settings.MEDIA.privacy_policy),
-                InputMediaDocument(media=settings.MEDIA.public_offer),
-            ],
-        )
+            'с условиями нашего пространства:'
+        ),
+        reply_markup=one_button_keyboard(
+            text='🌌 Начать путь с Soul Muse',
+            callback_data='start_way',
+        ),
+    )
+    await query.message.answer_media_group(
+        [
+            InputMediaDocument(media=settings.MEDIA.privacy_policy),
+            InputMediaDocument(media=settings.MEDIA.public_offer),
+        ],
+    )
 
 
 @router.callback_query(F.data == 'to_registration')

@@ -10,11 +10,18 @@ run:
 	docker-compose up --build -d
 
 dump:
-	docker-compose exec django python manage.py dumpdata -o data.json --indent 2 \
-	core.dailyquest core.weeklyquest core.weeklyquesttask
+	docker-compose exec django python manage.py dumpdata \
+	-o fixtures/quest_tags.json --indent 2 core.questtag
+
+	docker-compose exec django python manage.py dumpdata -o fixtures/quests.json --indent 2 \
+	core.dailyquest core.weeklyquest core.weeklyquesttask core.dailyquesttag core.weeklyquesttag
+
+	docker-compose exec django python manage.py dumpdata \
+	-o fixtures/topics.json --indent 2 core.topic
 
 load:
-	docker-compose exec django python manage.py loaddata data.json
+	docker-compose exec django python manage.py loaddata \
+	fixtures/quest_tags.json fixtures/quests.json fixtures/topics.json
 
-createsuperuser:
+admin:
 	docker-compose exec django python manage.py createsuperuser

@@ -1,186 +1,186 @@
 [
-  {
-    "model": "core.questtag",
-    "pk": 1,
-    "fields": {
-      "name": "самоценность",
-      "description": "осознание собственной ценности и уникальности"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 2,
-    "fields": {
-      "name": "проявленность",
-      "description": "смелость быть собой, выходить в мир"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 3,
-    "fields": {
-      "name": "эмоциональный интеллект",
-      "description": "осознанное проживание и управление эмоциями"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 4,
-    "fields": {
-      "name": "уверенность",
-      "description": "вера в себя, способность действовать и быть"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 5,
-    "fields": {
-      "name": "границы",
-      "description": "умение удерживать своё пространство"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 6,
-    "fields": {
-      "name": "ответственность",
-      "description": "зрелость, способность нести последствия"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 7,
-    "fields": {
-      "name": "самоидентичность",
-      "description": "знание, кто я, ощущение \"я есть\""
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 8,
-    "fields": {
-      "name": "власть",
-      "description": "внутренняя сила, дисциплина, управление собой"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 9,
-    "fields": {
-      "name": "центрированность",
-      "description": "устойчивость, контакт с телом и моментом"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 10,
-    "fields": {
-      "name": "фокус",
-      "description": "способность удерживать внимание и направление"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 11,
-    "fields": {
-      "name": "честность",
-      "description": "искренность, ясность, прямота"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 12,
-    "fields": {
-      "name": "действие",
-      "description": "импульс к реализации, шаги, энергия в движении"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 13,
-    "fields": {
-      "name": "энергия",
-      "description": "жизненность, внутренний ресурс"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 14,
-    "fields": {
-      "name": "телесность",
-      "description": "связь с телом, чувственность"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 15,
-    "fields": {
-      "name": "ясность",
-      "description": "ментальная чистота, определённость"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 16,
-    "fields": {
-      "name": "отпускание",
-      "description": "умение отпускать контроль, старое, ожидания"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 17,
-    "fields": {
-      "name": "партнёрство",
-      "description": "способность быть в связи, без слияния"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 18,
-    "fields": {
-      "name": "выражение",
-      "description": "способность транслировать себя, идеи, чувства"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 19,
-    "fields": {
-      "name": "осознанность",
-      "description": "присутствие, наблюдение, внимание к себе"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 20,
-    "fields": {
-      "name": "завершение",
-      "description": "умение доводить начатое, закрывать гештальты"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 21,
-    "fields": {
-      "name": "практичность",
-      "description": "умение воплощать идеи в реальность"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 22,
-    "fields": {
-      "name": "связь",
-      "description": "глубокий контакт с другими, не размывая себя"
-    }
-  },
-  {
-    "model": "core.questtag",
-    "pk": 23,
-    "fields": {
-      "name": "поддержка",
-      "description": "принятие помощи и способность её давать"
-    }
+{
+  "model": "core.questtag",
+  "pk": 1,
+  "fields": {
+    "name": "самоценность",
+    "description": "осознание собственной ценности и уникальности"
   }
+},
+{
+  "model": "core.questtag",
+  "pk": 2,
+  "fields": {
+    "name": "проявленность",
+    "description": "смелость быть собой, выходить в мир"
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 3,
+  "fields": {
+    "name": "эмоциональный интеллект",
+    "description": "осознанное проживание и управление эмоциями"
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 4,
+  "fields": {
+    "name": "уверенность",
+    "description": "вера в себя, способность действовать и быть"
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 5,
+  "fields": {
+    "name": "границы",
+    "description": "умение удерживать своё пространство"
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 6,
+  "fields": {
+    "name": "ответственность",
+    "description": "зрелость, способность нести последствия"
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 7,
+  "fields": {
+    "name": "самоидентичность",
+    "description": "знание, кто я, ощущение \"я есть\""
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 8,
+  "fields": {
+    "name": "власть",
+    "description": "внутренняя сила, дисциплина, управление собой"
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 9,
+  "fields": {
+    "name": "центрированность",
+    "description": "устойчивость, контакт с телом и моментом"
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 10,
+  "fields": {
+    "name": "фокус",
+    "description": "способность удерживать внимание и направление"
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 11,
+  "fields": {
+    "name": "честность",
+    "description": "искренность, ясность, прямота"
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 12,
+  "fields": {
+    "name": "действие",
+    "description": "импульс к реализации, шаги, энергия в движении"
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 13,
+  "fields": {
+    "name": "энергия",
+    "description": "жизненность, внутренний ресурс"
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 14,
+  "fields": {
+    "name": "телесность",
+    "description": "связь с телом, чувственность"
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 15,
+  "fields": {
+    "name": "ясность",
+    "description": "ментальная чистота, определённость"
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 16,
+  "fields": {
+    "name": "отпускание",
+    "description": "умение отпускать контроль, старое, ожидания"
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 17,
+  "fields": {
+    "name": "партнёрство",
+    "description": "способность быть в связи, без слияния"
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 18,
+  "fields": {
+    "name": "выражение",
+    "description": "способность транслировать себя, идеи, чувства"
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 19,
+  "fields": {
+    "name": "осознанность",
+    "description": "присутствие, наблюдение, внимание к себе"
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 20,
+  "fields": {
+    "name": "завершение",
+    "description": "умение доводить начатое, закрывать гештальты"
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 21,
+  "fields": {
+    "name": "практичность",
+    "description": "умение воплощать идеи в реальность"
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 22,
+  "fields": {
+    "name": "связь",
+    "description": "глубокий контакт с другими, не размывая себя"
+  }
+},
+{
+  "model": "core.questtag",
+  "pk": 23,
+  "fields": {
+    "name": "поддержка",
+    "description": "принятие помощи и способность её давать"
+  }
+}
 ]

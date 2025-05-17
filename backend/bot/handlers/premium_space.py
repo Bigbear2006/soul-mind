@@ -2,6 +2,7 @@ import random
 from datetime import date
 
 from aiogram import F, Router, flags
+from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from django.utils.timezone import now
 
@@ -25,7 +26,8 @@ router = Router()
 @router.message(F.text == '💫 Премиум-пространство')
 @router.callback_query(F.data == 'premium_space')
 @flags.with_client
-async def premium_space(msg: Message | CallbackQuery, client: Client):
+async def premium_space(msg: Message | CallbackQuery, state: FSMContext, client: Client):
+    await state.set_state(None)
     answer_func = (
         msg.answer if isinstance(msg, Message) else msg.message.edit_text
     )
@@ -40,7 +42,7 @@ async def premium_space(msg: Message | CallbackQuery, client: Client):
                 text='🔒 Зарегистрируйся и загляни в Премиум-пространство',
             ),
         )
-    elif not client.has_trial() or not client.subscription_is_active():
+    elif not client.has_trial() and not client.subscription_is_active():
         await answer_func(
             client.genderize(
                 '💎 Премиум-пространство\n\n'
@@ -102,7 +104,7 @@ async def power_day_handler(query: CallbackQuery, client: Client):
         )
         return
 
-    if await client.get_month_usages(Actions.POWER_DAY) >= 1000:
+    if await client.get_month_usages(Actions.POWER_DAY) >= 1:
         await query.message.edit_text(
             '🚀 Твой День силы\n\n'
             'Твой День силы ещё не наступил — я сообщу тебе, когда придёт время.',
@@ -148,7 +150,7 @@ async def universe_answer_handler(query: CallbackQuery, client: Client):
         )
         return
 
-    if await client.get_month_usages(Actions.UNIVERSE_ANSWER) >= 1000:
+    if await client.get_month_usages(Actions.UNIVERSE_ANSWER) >= 1:
         await query.message.edit_text(
             client.genderize(
                 '✨ Ответ Вселенной\n\n'

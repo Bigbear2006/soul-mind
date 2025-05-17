@@ -272,7 +272,7 @@ class Client(models.Model):
         return False
 
     def is_registered(self) -> bool:
-        return self.aspects != []
+        return bool(self.aspects)
 
     async def get_month_usages(self, action: Actions):
         today = now()

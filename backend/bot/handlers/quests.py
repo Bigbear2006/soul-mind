@@ -74,10 +74,11 @@ async def weekly_quests_list(msg: Message | CallbackQuery, client: Client):
 
 
 @router.callback_query(F.data.startswith('weekly_quest'))
-async def weekly_quest_detail(query: CallbackQuery):
+@flags.with_client
+async def weekly_quest_detail(query: CallbackQuery, client: Client):
     quest = await WeeklyQuest.objects.aget(pk=query.data.split(':')[1])
     await query.message.edit_text(
-        quest.title,
+        client.genderize(f'{quest.title}\n\n{quest.description}'),
         reply_markup=await get_weekly_quest_kb(quest),
     )
 
@@ -136,7 +137,7 @@ async def quest_handler(query: CallbackQuery, client: Client):
 
     if status == QuestStatuses.COMPLETED:
         await query.message.edit_text(
-            random.choice(daily_praises),
+            client.genderize(random.choice(daily_praises)),
             reply_markup=None,
         )
     else:

@@ -45,7 +45,7 @@ class Settings:
     CURRENCY: str = field(default='RUB')
     BOT_LINK: str = field(default='https://t.me/search_net_bot')
     TRIAL_WEEKLY_QUEST_ID: str = field(default=1)
-    EXPERTS_CHAT_ID: int = field(default=-1002309981972)
+    EXPERTS_CHAT_ID: int = field(default=-1002505974664)
     TZ: ZoneInfo = field(default=ZoneInfo('Europe/Moscow'))
     DATE_FMT: str = field(default='%d.%m.%Y %H:%M')
 

@@ -155,7 +155,11 @@ async def delete_this_message_and_clear_state(
     await query.message.delete()
 
 
-@router.message(F.text | F.voice, StateFilter(FridayGiftState.insight))
+@router.message(
+    F.text | F.voice,
+    F.text != '💫 Премиум-пространство',
+    StateFilter(FridayGiftState.insight),
+)
 async def save_insight(msg: Message, state: FSMContext):
     await Insight.objects.acreate(
         client_id=msg.chat.id,
