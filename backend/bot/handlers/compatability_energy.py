@@ -24,9 +24,9 @@ from bot.settings import settings
 from bot.states import CompatabilityEnergyState
 from bot.templates.base import astropoints_not_enough
 from bot.templates.compatability_energy import get_compatability_energy_text
-from bot.text_utils import compatability_plural
-from core.choices import SubscriptionPlans
-from core.models import Actions, Client, ClientAction
+from bot.text_utils import compatability_plural, remaining_plural
+from core.choices import SubscriptionPlans, Genders
+from core.models import Actions, Client
 
 router = Router()
 
@@ -51,7 +51,11 @@ async def compatability_energy(
         )
         return
 
-    if await client.get_remaining_usages(Actions.COMPATABILITY_ENERGY) <= 0:
+    remaining_usages = await client.get_remaining_usages(
+        Actions.COMPATABILITY_ENERGY,
+    )
+
+    if remaining_usages <= 0:
         await msg.answer(
             client.genderize(
                 'Твоя энергия не ограничена тремя людьми.\n'
@@ -70,12 +74,9 @@ async def compatability_energy(
         )
         return
 
-    if client.subscription_is_active():
-        remaining_usages = await client.get_remaining_usages(
-            Actions.COMPATABILITY_ENERGY,
-        )
+    if client.subscription_is_active() or client.has_trial():
         remaining_usages_str = (
-            f'* У тебя осталось {remaining_usages} '
+            f'* У тебя {remaining_plural(remaining_usages, Genders.FEMALE)} {remaining_usages} '
             f'{compatability_plural(remaining_usages)}'
             if client.subscription_plan != SubscriptionPlans.PREMIUM
             else ''
@@ -240,10 +241,6 @@ async def get_first_person_birth_date(
             birth_date_2,
         ),
         reply_markup=show_connection_depth,
-    )
-    await ClientAction.objects.acreate(
-        client=client,
-        action=Actions.COMPATABILITY_ENERGY,
     )
     await client.spend_usage(Actions.COMPATABILITY_ENERGY)
     await state.clear()

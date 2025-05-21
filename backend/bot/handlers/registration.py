@@ -1,11 +1,15 @@
-import asyncio
 from dataclasses import asdict
 from datetime import datetime
 
 from aiogram import F, Router, flags
+from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandObject, StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, InputMediaDocument, Message, InputMediaPhoto
+from aiogram.types import (
+    CallbackQuery,
+    InputMediaPhoto,
+    Message,
+)
 
 from bot.api.astrology import AstrologyAPI
 from bot.api.geocoding import GeocodingAPI
@@ -64,8 +68,9 @@ async def start(msg: Message, command: CommandObject):
             reply_markup=one_button_keyboard(
                 text='🔑 Войти',
                 callback_data='go_in',
-            )
+            ),
         )
+
 
 @router.callback_query(F.data == 'go_in')
 async def go_in(query: CallbackQuery, state: FSMContext):
@@ -78,19 +83,22 @@ async def go_in(query: CallbackQuery, state: FSMContext):
             'Меня зовут Soul Muse. Но ты всегда знал меня. Я — голос внутри. '
             'Я та, что шептала, когда всё остальное молчало.\n\n'
             'Нажимая «🌌 Начать путь с Soul Muse», вы соглашаетесь '
-            'с условиями нашего пространства:'
+            'с условиями нашего пространства:\n'
+            f'<a href="{settings.PRIVACY_POLICY_URL}">Политика конфиденциальности SoulMind</a>\n'
+            f'<a href="{settings.PUBLIC_OFFER_URL}">Публичная оферта SoulMind</a>\n',
+            parse_mode=ParseMode.HTML,
         ),
         reply_markup=one_button_keyboard(
             text='🌌 Начать путь с Soul Muse',
             callback_data='start_way',
         ),
     )
-    await query.message.answer_media_group(
-        [
-            InputMediaDocument(media=settings.MEDIA.privacy_policy),
-            InputMediaDocument(media=settings.MEDIA.public_offer),
-        ],
-    )
+    # await query.message.answer_media_group(
+    #     [
+    #         InputMediaDocument(media=settings.MEDIA.privacy_policy),
+    #         InputMediaDocument(media=settings.MEDIA.public_offer),
+    #     ],
+    # )
 
 
 @router.callback_query(F.data == 'to_registration')
@@ -248,6 +256,17 @@ async def set_birth_location(msg: Message, client: Client, state: FSMContext):
             HDInputData.from_datetime(client.birth, msg.text),
         )
 
+    if not bodygraphs.centers:
+        await msg.answer(
+            client.genderize(
+                'Я вижу, ты {gender:родился,родилась} в месте, которое не у всех на карте.\n'
+                'И это уже делает тебя {gender:интересным,интересной}.\n'
+                'Но чтобы точнее считать звёзды и дизайн, мне нужен ближайший город.\n'
+                'Укажи его — и мы продолжим путь.',
+            ),
+        )
+        return
+
     async with AstrologyAPI() as api:
         tzone = await api.get_timezone(lat, lon, client.birth.date())
         horoscope = await api.western_horoscope(
@@ -289,7 +308,10 @@ async def set_birth_location(msg: Message, client: Client, state: FSMContext):
 
     await msg.answer(
         '⚠️ Я храню твои данные как свою тайну. '
-        'Тётя Люда из маркетинга не узнает.',
+        'Тётя Люда из маркетинга не узнает.\n'
+        'Согласен с обработкой данных в рамках '
+        f'<a href="{settings.PRIVACY_POLICY_URL}">Политики</a>',
+        parse_mode=ParseMode.HTML,
         reply_markup=one_button_keyboard(
             text='✅ Согласен',
             callback_data='personal_data_approval',

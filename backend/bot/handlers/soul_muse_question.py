@@ -28,11 +28,10 @@ from bot.settings import settings
 from bot.states import SoulMuseQuestionState
 from bot.templates.base import astropoints_not_enough
 from bot.templates.soul_muse_question import inappropriate_questions_answers
-from bot.text_utils import questions_plural
+from bot.text_utils import questions_plural, remaining_plural
 from core.models import (
     Actions,
     Client,
-    ClientAction,
     SoulMuseQuestion,
     SubscriptionPlans,
 )
@@ -59,12 +58,13 @@ async def soul_muse_question(msg: Message, client: Client):
         )
         return
 
-    if await client.get_remaining_usages(Actions.SOUL_MUSE_QUESTION) > 0:
-        remaining_usages = await client.get_remaining_usages(
-            Actions.SOUL_MUSE_QUESTION,
-        )
+    remaining_usages = await client.get_remaining_usages(
+        Actions.SOUL_MUSE_QUESTION,
+    )
+
+    if remaining_usages > 0:
         remaining_usages_str = (
-            f'* У тебя осталось {remaining_usages} '
+            f'* У тебя {remaining_plural(remaining_usages)} {remaining_usages} '
             f'{questions_plural(remaining_usages)}'
         )
         if client.subscription_plan == SubscriptionPlans.PREMIUM:
@@ -109,7 +109,7 @@ async def soul_muse_question(msg: Message, client: Client):
             )
         return
 
-    if await client.get_remaining_usages(Actions.SOUL_MUSE_QUESTION) <= 0:
+    if remaining_usages <= 0:
         if client.subscription_is_active():
             await msg.answer(
                 client.genderize(
@@ -284,10 +284,6 @@ async def soul_muse_answer(msg: Message, client: Client):
             max_output_tokens=270,
         )
         await msg.answer(answer, reply_markup=kb)
-        await ClientAction.objects.acreate(
-            client=client,
-            action=Actions.SOUL_MUSE_QUESTION,
-        )
         await client.spend_usage(Actions.SOUL_MUSE_QUESTION)
     else:
         answer = inappropriate_questions_answers[category]

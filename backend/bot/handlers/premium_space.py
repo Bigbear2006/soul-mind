@@ -26,7 +26,11 @@ router = Router()
 @router.message(F.text == '💫 Премиум-пространство')
 @router.callback_query(F.data == 'premium_space')
 @flags.with_client
-async def premium_space(msg: Message | CallbackQuery, state: FSMContext, client: Client):
+async def premium_space(
+    msg: Message | CallbackQuery,
+    state: FSMContext,
+    client: Client,
+):
     await state.set_state(None)
     answer_func = (
         msg.answer if isinstance(msg, Message) else msg.message.edit_text
@@ -62,6 +66,7 @@ async def premium_space(msg: Message | CallbackQuery, state: FSMContext, client:
             'Это Премиум-пространство. И оно ждёт.',
             reply_markup=get_to_subscription_plans_kb(
                 text='💎 Перейти на Премиум',
+                only_premium=True,
             ),
         )
     elif client.subscription_plan == SubscriptionPlans.PREMIUM:

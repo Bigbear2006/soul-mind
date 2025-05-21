@@ -6,9 +6,9 @@ from core.models import Client
 
 @dataclass
 class HDInputData:
-    birthdate: str = '05-Sep-90'
-    birthtime: str = '21:17'
-    location: str = 'Amsterdam'
+    birthdate: str
+    birthtime: str
+    location: str
 
     @classmethod
     def from_datetime(cls, birth: datetime, location: str):
@@ -76,9 +76,9 @@ class Planet:
     norm_degree: float
     speed: float
     is_retro: bool
-    sign_id: int
     sign: str
     house: int
+    sign_id: int | None = None
 
 
 @dataclass

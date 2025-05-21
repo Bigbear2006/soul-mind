@@ -25,6 +25,9 @@ class Media:
 @dataclass
 class Settings:
     BOT_TOKEN: str = field(default_factory=lambda: env('BOT_TOKEN'))
+    ADMINS_BOT_TOKEN: str = field(
+        default_factory=lambda: env('ADMINS_BOT_TOKEN'),
+    )
     PROVIDER_TOKEN: str = field(default_factory=lambda: env('PROVIDER_TOKEN'))
     REDIS_URL: str = field(default_factory=lambda: env('REDIS_URL'))
 
@@ -45,9 +48,11 @@ class Settings:
     CURRENCY: str = field(default='RUB')
     BOT_LINK: str = field(default='https://t.me/search_net_bot')
     TRIAL_WEEKLY_QUEST_ID: str = field(default=1)
-    EXPERTS_CHAT_ID: int = field(default=-1002505974664)
     TZ: ZoneInfo = field(default=ZoneInfo('Europe/Moscow'))
     DATE_FMT: str = field(default='%d.%m.%Y %H:%M')
+    PAGE_SIZE: int = field(default=1)
+    PRIVACY_POLICY_URL: str = field(default='https://google.com')
+    PUBLIC_OFFER_URL: str = field(default='https://google.com')
 
 
 settings = Settings()

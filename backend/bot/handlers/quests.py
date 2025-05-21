@@ -11,15 +11,16 @@ from bot.keyboards.inline.base import (
 from bot.keyboards.inline.quests import (
     get_quest_statuses_kb,
     get_weekly_quest_kb,
-    get_weekly_quests_kb,
+    get_weekly_quests_kb, get_quests_kb,
 )
 from bot.keyboards.utils import one_button_keyboard
 from bot.settings import settings
 from bot.templates.quests import (
     daily_praises,
     trial_quest_praise,
-    weekly_praises,
+    weekly_praises, get_daily_quest_text,
 )
+from core.choices import SubscriptionPlans
 from core.models import (
     Client,
     ClientDailyQuest,
@@ -50,10 +51,30 @@ async def weekly_quests_list(msg: Message | CallbackQuery, client: Client):
         answer_func = (
             msg.answer if isinstance(msg, Message) else msg.message.edit_text
         )
-        await answer_func(
-            'Выбери, в каком челлендже ты хочешь участвовать',
-            reply_markup=await get_weekly_quests_kb(client),
-        )
+        if client.subscription_plan == SubscriptionPlans.STANDARD:
+            await answer_func(
+                client.genderize(
+                    '🧩 Практики для роста\n'
+                    'Ты уже в игре.\n'
+                    'Каждый день — одно действие для фокуса.\n'
+                    'Каждый месяц — один челлендж, который собирает тебя по частям.\n'
+                    'И да, за это ты ещё получаешь астробаллы.\n\n'
+                    '{gender:Готов,Готова} вырасти в своём ритме?'
+                ),
+                reply_markup=get_quests_kb('⚡ Перейти к заданию дня', '▶ Открыть челлендж месяца')
+            )
+        else:
+            await answer_func(
+                client.genderize(
+                    '🧩 Практики для роста\n'
+                    'Ты в пространстве без ограничений.\n'
+                    'Хочешь идти медленно — иди.\n'
+                    'Хочешь глубже — выбирай любой челлендж, хоть сейчас.\n'
+                    'Баллы считаются за два в месяц — всё остальное только для души.\n\n'
+                    '{gender:Готов,Готова} к новому вызову?'
+                ),
+                reply_markup=get_quests_kb('⚡ Сегодняшнее задание', '▶ Выбрать челлендж'),
+            )
     elif client.has_trial():
         await msg.answer(
             '🧩 Практики для роста\n\n'
@@ -71,6 +92,33 @@ async def weekly_quests_list(msg: Message | CallbackQuery, client: Client):
             '🧩 Практики для роста доступны в подписке.',
             reply_markup=get_to_subscription_plans_kb(),
         )
+
+
+@router.callback_query(F.data == 'weekly_quests')
+@flags.with_client
+async def weekly_quests(query: CallbackQuery, client: Client):
+    await query.message.edit_text(
+        'Выбери, в каком челлендже ты хочешь участвовать',
+        reply_markup=await get_weekly_quests_kb(client),
+    )
+
+
+@router.callback_query(F.data == 'daily_quest')
+@flags.with_client
+async def daily_quest(query: CallbackQuery, client: Client):
+    quest = await client.get_today_quest()
+    if quest.status == QuestStatuses.COMPLETED:
+        await query.message.edit_text(
+            client.genderize(
+                'Сегодня ты уже {gender:выполнил,выполнила} ежедневное задание.\n'
+            ),
+        )
+        return
+
+    await query.message.edit_text(
+        get_daily_quest_text(client, quest.quest.text),
+        reply_markup=get_quest_statuses_kb(client, 'daily', quest.quest_id)
+    )
 
 
 @router.callback_query(F.data.startswith('weekly_quest'))
@@ -106,7 +154,7 @@ async def participate_in_weekly_quest(query: CallbackQuery, client: Client):
             f'Я буду присылать тебе новое задание каждый день.',
         )
         await query.message.answer(
-            task.to_message_text(),
+            client.genderize(task.to_message_text()),
             reply_markup=get_quest_statuses_kb(client, 'weekly', task.pk),
         )
     except IntegrityError:
@@ -125,15 +173,27 @@ async def quest_handler(query: CallbackQuery, client: Client):
         ClientDailyQuest if quest_type == 'daily' else ClientWeeklyQuestTask
     )
 
-    try:
-        await QuestModel.objects.acreate(
+    if quest_type == 'daily':
+        await QuestModel.objects.filter(
             client_id=query.message.chat.id,
             quest_id=quest_id,
+        ).aupdate(
             status=status,
         )
-    except IntegrityError:
-        await query.answer('Вы уже проходили это задание')
-        return
+    else:
+        try:
+            await QuestModel.objects.acreate(
+                client_id=query.message.chat.id,
+                quest_id=quest_id,
+                status=status,
+            )
+        except IntegrityError:
+            await query.answer(
+                client.genderize(
+                    'Ты уже {gender:проходил,проходила} это задание'
+                )
+            )
+            return
 
     if status == QuestStatuses.COMPLETED:
         await query.message.edit_text(

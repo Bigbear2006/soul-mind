@@ -7,16 +7,21 @@ from bot.keyboards.utils import keyboard_from_queryset
 from core.choices import QuestStatuses
 from core.models import Client, QuestTag, WeeklyQuest
 
+def get_quests_kb(daily_quests_text: str, weekly_quests_text: str):
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=daily_quests_text, callback_data='daily_quest')],
+            [InlineKeyboardButton(text=weekly_quests_text, callback_data='weekly_quests')],
+        ]
+    )
+
 
 async def get_weekly_quests_kb(client: Client):
     return await keyboard_from_queryset(
-        WeeklyQuest,
+        WeeklyQuest.objects.filter(
+            tags__tag__in=QuestTag.objects.filter(clients__client=client),
+        ),
         'weekly_quest',
-        filters={
-            'tags__tag__in': QuestTag.objects.filter(
-                clients__client=client,
-            ),
-        },
     )
 
 
@@ -32,7 +37,7 @@ async def get_weekly_quest_kb(quest: WeeklyQuest):
             [
                 InlineKeyboardButton(
                     text='Назад',
-                    callback_data='to_weekly_quests_list',
+                    callback_data='weekly_quests',
                 ),
             ],
         ],

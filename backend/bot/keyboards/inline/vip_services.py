@@ -1,8 +1,14 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from django.db.models import Case, IntegerField, Value, When
 
-from bot.keyboards.utils import keyboard_from_queryset
-from core.models import Client, Topic
+from bot.keyboards.utils import (
+    get_paginated_keyboard,
+    keyboard_from_queryset,
+    one_button_keyboard,
+)
+from core.choices import MiniConsultStatuses
+from core.models import Client, MiniConsult, Topic
 
 vip_services_kb = InlineKeyboardMarkup(
     inline_keyboard=[
@@ -77,9 +83,8 @@ def get_payment_choices_kb(
 async def get_topics_kb(client: Client):
     kb = InlineKeyboardBuilder.from_markup(
         await keyboard_from_queryset(
-            Topic,
+            Topic.objects.filter(is_global=True),
             prefix='topic',
-            filters={'is_global': True},
             str_func=lambda x: client.genderize(str(x)),
         ),
     )
@@ -95,3 +100,47 @@ def get_vip_compatability_report_kb(
         kb.button(text='Добавить человека', callback_data='add_person')
     kb.button(text='Получить отчет', callback_data='vip_compatability_report')
     return kb.adjust(1).as_markup()
+
+
+async def get_consults_list_kb(client: Client, page: int = 1):
+    return await get_paginated_keyboard(
+        lambda: (
+            MiniConsult.objects.filter(
+                status=MiniConsultStatuses.WAITING,
+                expert_type=client.expert_type,
+            )
+            .select_related('client')
+            .annotate(
+                sort_order=Case(
+                    When(client__subscription_plan='premium', then=Value(1)),
+                    When(client__subscription_plan='standard', then=Value(2)),
+                    When(client__subscription_plan='', then=Value(3)),
+                    default=Value(4),
+                    output_field=IntegerField(),
+                ),
+            )
+            .order_by('sort_order', 'date')
+        ),
+        prefix='mini_consult',
+        str_func=lambda x: x.to_button_text(),
+        page=page,
+    )
+
+
+def get_answer_consult_kb(
+    consult_id: int,
+    back_button_data: str | None = None,
+):
+    return one_button_keyboard(
+        text='Ответить',
+        callback_data=f'answer_consult:{consult_id}',
+        back_button_data=back_button_data,
+    )
+
+
+def get_end_consult_kb(consult_id: int, back_button_data: str | None = None):
+    return one_button_keyboard(
+        text='Завершить консультацию',
+        callback_data=f'end_consult:{consult_id}',
+        back_button_data=back_button_data,
+    )

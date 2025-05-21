@@ -13,6 +13,7 @@ async def main():
     from bot.handlers import (
         compatability_energy,
         destiny_guide,
+        experts,
         friday_gift,
         invite_friend,
         load_media,
@@ -49,7 +50,9 @@ async def main():
         personal_account.router,
         vip_services.router,
         load_media.router,
+        experts.router
     )
+
     dp.message.middleware(WithClientMiddleware())
     dp.callback_query.middleware(WithClientMiddleware())
 

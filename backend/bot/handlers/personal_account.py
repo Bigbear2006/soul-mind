@@ -69,7 +69,7 @@ async def personal_gifts_handler(query: CallbackQuery):
     await query.message.edit_text(
         'Твои пятничные подарки',
         reply_markup=await keyboard_from_queryset(
-            FridayGift,
+            FridayGift.objects.filter(client_id=query.message.chat.id),
             'friday_gift',
             str_func=lambda x: x.to_button_text(),
             back_button_data='soul_space',
@@ -101,7 +101,7 @@ async def personal_insights_handler(query: CallbackQuery, state: FSMContext):
     await query.message.edit_text(
         'Твои инсайты',
         reply_markup=await keyboard_from_queryset(
-            Insight,
+            Insight.objects.filter(client_id=query.message.chat.id),
             'insight',
             str_func=lambda x: x.to_button_text(),
             back_button_data='soul_space',
@@ -148,7 +148,7 @@ async def delete_insight(query: CallbackQuery):
         await query.message.edit_text(
             'Твои инсайты',
             reply_markup=await keyboard_from_queryset(
-                Insight,
+                Insight.objects.filter(client_id=query.message.chat.id),
                 'insight',
                 str_func=lambda x: x.to_button_text(),
                 back_button_data='soul_space',

@@ -19,6 +19,11 @@ def questions_plural(n: int):
     return plural(n, ('вопрос', 'вопроса', 'вопросов'))
 
 
+def remaining_plural(n: int, gender: Genders = Genders.MALE):
+    first_form = 'остался' if gender == Genders.MALE else 'осталась'
+    return plural(n, (first_form, 'осталось', 'осталось'))
+
+
 def compatability_plural(n: int):
     return plural(n, ('совместимость', 'совместимости', 'совместимостей'))
 
@@ -51,7 +56,10 @@ def split_text(
 
 def genderize(text: str, *, gender: str, prefix: str = 'gender') -> str:
     def replace(match: re.Match[str]) -> str:
-        male, female = match.group(1).split(',')
-        return male if gender == Genders.MALE else female
+        try:
+            male, female = match.group(1).split(',')
+            return male if gender == Genders.MALE else female
+        except ValueError:
+            return match.group(1)
 
     return re.sub(rf'{{{prefix}:([^}}]+)}}', replace, text)

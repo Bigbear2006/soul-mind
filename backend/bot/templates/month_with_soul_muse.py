@@ -1,9 +1,12 @@
 import random
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from django.utils.timezone import now
 
+from bot.api.astrology import AstrologyAPI
 from bot.numerology import get_month_number, get_soul_number
+from bot.schemas import HoroscopeParams, Planet
+from bot.templates.base import aspect_angles
 from core.models import Client
 
 
@@ -89,18 +92,79 @@ def get_nearest_sun_aspect(client: Client) -> tuple[str, str]:
     return nearest_aspect['aspecting_planet'], nearest_aspect['type']
 
 
-def get_month_script_text(client: Client):
+def get_aspect_date(sun: Planet, planet: Planet, aspect_type: str):
+    target_angle = aspect_angles.get(aspect_type)
+    if target_angle is None:
+        return None
+
+    sun_pos = sun.full_degree
+    sun_speed = sun.speed
+    planet_pos = planet.full_degree
+    planet_speed = planet.speed
+
+    # Разница между позициями (нормализованная в пределах 0-360)
+    current_diff = (planet_pos - sun_pos) % 360
+
+    # Если текущая разница близка к 360 - считаем как соединение
+    if aspect_type == 'Conjunction' and current_diff > 350:
+        current_diff = current_diff - 360
+
+    # Разница между текущим углом и целевым аспектом
+    angle_diff = (target_angle - current_diff) % 360
+
+    # Если разница > 180, двигаемся в обратном направлении
+    if angle_diff > 180:
+        angle_diff = angle_diff - 360
+
+    # Если аспект уже точный (допустима погрешность 0.01)
+    if abs(angle_diff) < 0.01:
+        return datetime.now()
+
+    # Если скорости равны, аспект никогда не наступит
+    speed_diff = planet_speed - sun_speed
+    if abs(speed_diff) < 0.0001:
+        return None
+
+    # Время до аспекта
+    days_needed = angle_diff / speed_diff
+    if days_needed < 0:
+        return None
+
+    return datetime.now() + timedelta(days=days_needed)
+
+
+async def get_month_script_text(client: Client):
     current_date = date.today().strftime('%m.%Y')
     script_number = now().month % 6
     hd_gate = get_active_hd_gate('10.05.2025')
     soul_number = get_soul_number(client.fullname)
     moon = moon_phases_descriptions[current_date]
+
     aspect_planet, aspect_type = get_nearest_sun_aspect(client)
+    if aspect_type:
+        async with AstrologyAPI() as api:
+            planets = {
+                p.name: p
+                for p in await api.get_tropical_planets(
+                    HoroscopeParams.from_client(client),
+                )
+            }
+        aspect_date = get_aspect_date(
+            planets['Sun'],
+            planets[aspect_planet],
+            aspect_type,
+        )
+    else:
+        aspect_date = None
+
     aspect_text = (
-        planets_aspects_descriptions[aspect_planet][aspect_type]
-        if aspect_planet
-        else 'Этот месяц — про внутренние процессы.'
+        planets_aspects_descriptions[aspect_planet][aspect_type].format(
+            date=aspect_date,
+        )
+        if aspect_date
+        else random.choice(aspect_fallback_texts)
     )
+
     return client.genderize(
         scripts[script_number].format(
             hd_gate=hd_gate['gate'],
@@ -843,3 +907,11 @@ month_archetypes_descriptions = {
         ],
     },
 }
+
+aspect_fallback_texts = [
+    'Иногда Солнце просто светит. Без драм. Без аспектов. Это тоже сила.',
+    'Нет яркого столкновения. Только тишина. Только ты и твой внутренний космос.',
+    'Солнце молчит. А значит — говорит тишина. Слушай внимательнее.',
+    'Никаких аспектов. Никаких зацепок. Идеальное время вспомнить, кто ты сам.',
+    'Иногда Вселенная не толкает — она наблюдает. И ждёт, когда ты сам сделаешь первый шаг.',
+]

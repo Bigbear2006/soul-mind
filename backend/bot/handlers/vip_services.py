@@ -1,4 +1,3 @@
-import asyncio
 import random
 from dataclasses import asdict
 from datetime import datetime
@@ -13,7 +12,6 @@ from aiogram.types import (
     Message,
     PreCheckoutQuery,
 )
-from asgiref.sync import sync_to_async
 
 from bot.api.humandesign import HumanDesignAPI
 from bot.api.soul_muse import SoulMuse
@@ -21,6 +19,7 @@ from bot.api.speechkit import synthesize
 from bot.keyboards.inline.registration import birth_times_kb
 from bot.keyboards.inline.vip_services import (
     connection_types_kb,
+    get_answer_consult_kb,
     get_payment_choices_kb,
     get_topics_kb,
     get_vip_compatability_report_kb,
@@ -50,11 +49,9 @@ from core.choices import (
     ExpertTypes,
     FeelingsTypes,
     Intentions,
-    MiniConsultFeedbackRatings,
 )
 from core.models import (
     Client,
-    ExpertAnswer,
     MiniConsult,
     MiniConsultFeedback,
     MiniConsultTopic,
@@ -193,12 +190,13 @@ async def choose_experience_type(
     msg: Message | CallbackQuery,
     state: FSMContext,
 ):
-    answer_func = (
-        msg.answer if isinstance(msg, Message) else msg.message.answer
-    )
-    intention = (
-        msg.text if isinstance(msg, Message) else msg.data.split(':')[1]
-    )
+    if isinstance(msg, Message):
+        answer_func = msg.answer
+        intention = msg.text
+    else:
+        answer_func = msg.message.answer
+        intention = Intentions(msg.data.split(':')[1])
+
     await state.update_data(intention=intention)
     await answer_func(
         'Ты уже сталкивался с этим направлением?',
@@ -229,7 +227,7 @@ async def choose_topics(
     await state.set_state(MiniConsultState.topics)
     await query.message.edit_text(
         'Выбери до трех меток, к которым относится твой вопрос.\n'
-        'Если нужно метки нет в списке, то можешь написать ее.',
+        'Если нужной метки нет в списке, то можешь написать ее.',
         reply_markup=await get_topics_kb(client),
     )
 
@@ -289,121 +287,21 @@ async def send_question_to_expert(
     await MiniConsultTopic.objects.abulk_create(
         [MiniConsultTopic(consult=consult, topic_id=t) for t in topics_ids],
     )
-    topics = await sync_to_async(
-        lambda: list(
-            Topic.objects.filter(pk__in=topics_ids).values_list(
-                'name',
-                flat=True,
-            ),
-        ),
-    )()
 
-    text = (
-        f'Пользователь: {client}\n'
-        f'Тип эксперта: {ExpertTypes(data["expert_type"]).label}\n'
-        f'Намерение: {Intentions(data["intention"]).label}\n'
-        f'Уже сталкивался: {ExperienceTypes(data["experience_type"]).label}\n'
-        f'Ощущения: {FeelingsTypes(data["feelings_type"]).label}\n'
-        f'Метки: {", ".join(topics)}\n\n'
-    )
-    if data['expert_type'] in (
-        ExpertTypes.ASTROLOGIST,
-        ExpertTypes.HD_ANALYST,
-    ):
-        text += (
-            f'Дата рождения: {client.birth.strftime(settings.DATE_FMT)}\n'
-            f'Место рождения: {client.birth_place}'
-        )
-    if data['expert_type'] == ExpertTypes.NUMEROLOGIST:
-        text += (
-            f'Дата рождения: {client.birth.strftime(settings.DATE_FMT)}\n'
-            f'ФИО: {client.fullname}'
-        )
-
-    kb = one_button_keyboard(
-        text='Ответить',
-        callback_data=f'answer_consult:{consult.pk}',
+    consult = (
+        await MiniConsult.objects.select_related('client')
+        .prefetch_related('topics__topic')
+        .aget(pk=consult.pk)
     )
 
-    if msg.voice:
-        await msg.bot.send_audio(
-            settings.EXPERTS_CHAT_ID,
-            msg.voice.file_id,
-            caption=text,
-            reply_markup=kb,
-        )
-    else:
-        text += f'\n\nВопрос:\n{msg.text}'
-        await msg.bot.send_message(
-            settings.EXPERTS_CHAT_ID,
-            text,
-            reply_markup=kb,
+    async for client in Client.objects.filter(expert_type=consult.expert_type):
+        await consult.send_to(
+            chat_id=client.id,
+            reply_markup=get_answer_consult_kb(consult.pk),
         )
 
     await msg.answer('Вопрос принят. Эксперт ответит в течение 24 часов.')
     await state.clear()
-
-
-@router.callback_query(
-    F.data.startswith('answer_consult'),
-    F.message.chat.id == settings.EXPERTS_CHAT_ID,
-)
-async def answer_consult(query: CallbackQuery, state: FSMContext):
-    consult_id = query.data.split(':')[1]
-    await state.update_data(consult_id=consult_id)
-    await state.set_state(MiniConsultState.answer_consult)
-    await query.message.reply(
-        'Запишите несколько голосовых сообщений',
-        reply_markup=one_button_keyboard(
-            text='Завершить консультацию',
-            callback_data=f'end_consult:{consult_id}',
-        ),
-    )
-
-
-@router.message(
-    F.voice,
-    F.chat.id == settings.EXPERTS_CHAT_ID,
-    StateFilter(MiniConsultState.answer_consult),
-)
-async def expert_answer(msg: Message, state: FSMContext):
-    await ExpertAnswer.objects.acreate(
-        expert=await Client.objects.aget(pk=msg.from_user.id),
-        consult=await MiniConsult.objects.aget(
-            pk=await state.get_value('consult_id'),
-        ),
-        audio_file_id=msg.voice.file_id,
-    )
-    await msg.answer('Записано')
-
-
-@router.callback_query(
-    F.data.startswith('end_consult'),
-    F.message.chat.id == settings.EXPERTS_CHAT_ID,
-)
-async def end_consult(query: CallbackQuery, state: FSMContext):
-    consult = await MiniConsult.objects.select_related('client').aget(
-        pk=await state.get_value('consult_id'),
-    )
-    answers = ExpertAnswer.objects.filter(consult=consult)
-
-    async for answer in answers:
-        await query.bot.send_audio(
-            consult.client.pk,
-            audio=answer.audio_file_id,
-        )
-        await asyncio.sleep(1)
-
-    await query.bot.send_message(
-        consult.client.pk,
-        'Как тебе консультация?',
-        reply_markup=keyboard_from_choices(
-            MiniConsultFeedbackRatings,
-            prefix=f'feedback:{consult.pk}',
-        ),
-    )
-
-    await query.message.edit_text('Консультация завершена')
 
 
 @router.callback_query(F.data.startswith('feedback'))

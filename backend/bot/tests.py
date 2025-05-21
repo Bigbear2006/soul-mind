@@ -3,7 +3,6 @@ import os
 
 from bot.api.speechkit import synthesize
 from bot.templates.friday_gift import cards
-from bot.text_utils import split_text
 
 
 def all_cards_has_images():
@@ -30,25 +29,12 @@ async def test_asyncio_wait_ignore_exceptions():
     print([i.result() for i in done if not i.exception()], pending, sep='\n')
 
 
-text = """
-Ты открыл дверь. И, может быть, не все еще ясно. Но точно — не случайно.
-"""
-
-
 async def test_speechkit_v3_api():
-    print(split_text(text))
+    text = (
+        'Ты открыл дверь. '
+        'И, может быть, не все еще ясно. '
+        'Но точно — не случайно.'
+    )
     r = await synthesize(text)
     with open('test.wav', 'wb') as f:
         f.write(r)
-
-
-# async def test_speechkit_v3_rpc():
-#     configure_credentials(
-#         creds.YandexCredentials(api_key=settings.YANDEX_API_KEY),
-#     )
-#     model = model_repository.synthesis_model()
-#     model.voice = 'zhanar'
-#     model.role = 'friendly'
-#     r = model.synthesize(text, raw_format=True)
-#     with open('v3_rpc.wav', 'wb') as f:
-#         f.write(r)

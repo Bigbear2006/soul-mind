@@ -26,9 +26,7 @@ class AstrologyAPI(APIClient):
 
     @property
     def headers(self):
-        return {
-            'Accept-Language': 'en',
-        }
+        return {'Accept-Language': 'en'}
 
     @property
     def auth(self):
@@ -62,6 +60,25 @@ class AstrologyAPI(APIClient):
             houses=[House(**i) for i in data['houses']],
             aspects=[Aspect(**i) for i in data['aspects']],
         )
+
+    async def get_tropical_planets(self, data: HoroscopeParams):
+        async with self.session.post(
+            'planets/tropical',
+            json=asdict(data),
+        ) as rsp:
+            data = await rsp.json()
+        return [
+            Planet(
+                name=i['name'],
+                full_degree=i['fullDegree'],
+                norm_degree=i['normDegree'],
+                speed=i['speed'],
+                is_retro=i['is_retro'],
+                sign=i['sign'],
+                house=i['house'],
+            )
+            for i in data
+        ]
 
     async def get_timezone(
         self,

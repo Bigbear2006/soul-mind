@@ -215,6 +215,7 @@ async def month_script(query: CallbackQuery, client: Client):
             'Хочешь — покажу.',
             reply_markup=get_to_subscription_plans_kb(
                 text='💎 Оформить Премиум и открыть сценарий',
+                only_premium=True,
             ),
         )
 
@@ -230,7 +231,7 @@ async def show_month_script(query: CallbackQuery, client: Client):
     if script:
         text = script.text
     else:
-        text = get_month_script_text(client)
+        text = await get_month_script_text(client)
         await MonthText.objects.acreate(
             text=text,
             client=client,

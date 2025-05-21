@@ -1,6 +1,6 @@
 FROM python:3.11-alpine
 
-RUN apk update && apk add --no-cache postgresql-dev
+RUN apk update && apk add --no-cache postgresql-dev ffmpeg
 
 WORKDIR app
 

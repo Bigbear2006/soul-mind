@@ -22,7 +22,7 @@ class SpeechKit(APIClient):
     def headers(self):
         return {'Authorization': f'Api-Key {settings.YANDEX_API_KEY}'}
 
-    async def synthesize_v3(self, text: str) -> bytes:
+    async def synthesize_v3(self, text: str) -> bytes | None:
         async with self.session.post(
             'tts/v3/utteranceSynthesis',
             json={
@@ -39,7 +39,7 @@ class SpeechKit(APIClient):
             logger.debug(data)
             if not data.get('result'):
                 logger.info(data)
-                return b''
+                return None
             result = data['result']
 
         logger.debug(f'Synthesized text ({result.get("lengthMs")} ms)')
@@ -67,6 +67,8 @@ async def synthesize(text: str) -> bytes:
         )
     audio = AudioSegment.empty()
     for chunk in audio_chunks:
+        if not chunk:
+            continue
         audio += AudioSegment.from_wav(
             io.BytesIO(chunk),
         )

@@ -144,3 +144,9 @@ class FridayGiftTypes(models.TextChoices):
     INSIGHT_PHRASES = 'insight_phrases', 'Инсайт'
     CARDS = 'cards', 'Карта Soul Muse'
     SYMBOLS = 'symbols', 'Интуитивный символ / образ недели'
+
+
+class MiniConsultStatuses(models.TextChoices):
+    WAITING = 'waiting', 'В ожидании'
+    IN_PROGRESS = 'in_progress', 'В обработке'
+    COMPLETED = 'completed', 'Завершена'

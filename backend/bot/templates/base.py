@@ -397,3 +397,11 @@ astropoints_not_enough = (
     'Баллов не хватает, но есть другой путь.\n'
     'Если откликается — выбирай. Это вложение в себя.'
 )
+
+aspect_angles = {
+    'Conjunction': 0,
+    'Sextile': 60,
+    'Square': 90,
+    'Trine': 120,
+    'Opposition': 180,
+}

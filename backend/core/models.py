@@ -1,8 +1,10 @@
+import random
 from datetime import date, datetime, timedelta
 from typing import Optional
 
 from aiogram import types
 from aiogram.types import InlineKeyboardMarkup, Message
+from asgiref.sync import sync_to_async
 from django.contrib.auth.models import AbstractUser
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ObjectDoesNotExist
@@ -10,7 +12,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.timezone import now
 
-from bot.loader import logger
+from bot.loader import bot, logger
 from bot.settings import settings
 from bot.templates.base import all_centers_ordered
 from bot.templates.friday_gift import friday_gifts_preambles
@@ -26,7 +28,7 @@ from core.choices import (
     MiniConsultFeedbackRatings,
     MonthTextTypes,
     QuestStatuses,
-    SubscriptionPlans,
+    SubscriptionPlans, MiniConsultStatuses,
 )
 
 
@@ -231,6 +233,7 @@ class Client(models.Model):
         null=True,
         blank=True,
     )
+    expert_type = models.CharField('Тип эксперта', max_length=50, choices=ExpertTypes, blank=True)
     notifications_enabled = models.BooleanField('Уведомления', default=False)
     created_at: datetime = models.DateTimeField(
         'Дата создания',
@@ -360,7 +363,6 @@ class Client(models.Model):
                 < (today - self.created_at).days
             )
             or client_action.subscription_plan != self.subscription_plan
-            or not self.subscription_is_active()
         ):
             await self.update_limit(action)
 
@@ -391,6 +393,42 @@ class Client(models.Model):
             self.centers,
             key=lambda x: all_centers_ordered.index(x),
         )[0]
+
+    async def get_today_quest(self) -> Optional['ClientDailyQuest']:
+        today = now().date()
+        try:
+            quest = (
+                await ClientDailyQuest.objects.filter(client=self)
+                .select_related('quest')
+                .alatest('created_at')
+            )
+            return quest
+        except ObjectDoesNotExist:
+            pass
+
+        all_quests_ids = await sync_to_async(
+            lambda: set(
+                DailyQuest.objects.filter(
+                    tags__tag_id__in=self.tags.values_list('tag_id', flat=True),
+                ).values_list('id', flat=True),
+            ),
+        )()
+
+        sent_quests_ids = await sync_to_async(
+            lambda: set(
+                ClientDailyQuest.objects
+                .filter(client=self, status=QuestStatuses.COMPLETED)
+                .values_list('quest_id', flat=True)
+            )
+        )()
+
+        quest = await DailyQuest.objects.aget(
+            pk=random.choice(list(all_quests_ids - sent_quests_ids)),
+        )
+        return await ClientDailyQuest.objects.acreate(
+            client=self,
+            quest=quest,
+        )
 
 
 ##############
@@ -480,8 +518,9 @@ class WeeklyQuestTask(models.Model):
 
     def to_message_text(self):
         return (
-            f'{self.quest.title} (день {self.day})\n\n'
-            f'{self.title}\n{self.text}'
+            f'Челлендж «{self.quest.title}»\n\n'
+            f'День {self.day}: «{self.title}»\n'
+            f'{self.text}'
         )
 
 
@@ -658,11 +697,7 @@ class MiniConsult(models.Model):
         max_length=50,
         choices=ExpertTypes,
     )
-    intention = models.CharField(
-        'Намерение',
-        max_length=50,
-        choices=Intentions,
-    )
+    intention = models.CharField('Намерение', max_length=255)
     experience_type = models.CharField(
         'Уже сталкивался',
         max_length=50,
@@ -674,6 +709,12 @@ class MiniConsult(models.Model):
         choices=FeelingsTypes,
     )
     date = models.DateTimeField('Дата', auto_now_add=True)
+    status = models.CharField(
+        'Статус',
+        max_length=20,
+        choices=MiniConsultStatuses,
+        default=MiniConsultStatuses.WAITING,
+    )
 
     class Meta:
         verbose_name = 'Мини-консультация'
@@ -682,6 +723,60 @@ class MiniConsult(models.Model):
 
     def __str__(self):
         return f'{self.client} - {self.date.strftime(settings.DATE_FMT)}'
+
+    def to_message_text(self) -> str:
+        intention = (
+            Intentions(self.intention).label
+            if self.intention in Intentions
+            else self.intention
+        )
+        text = (
+            f'Тип эксперта: {ExpertTypes(self.expert_type).label}\n'
+            f'Намерение: {intention}\n'
+            f'Уже сталкивался: {ExperienceTypes(self.experience_type).label}\n'
+            f'Ощущения: {FeelingsTypes(self.feelings_type).label}\n'
+            f'Метки: {", ".join([t.topic.name for t in self.topics.all()])}\n\n'
+        )
+        if self.expert_type in (
+            ExpertTypes.ASTROLOGIST,
+            ExpertTypes.HD_ANALYST,
+        ):
+            text += (
+                f'Дата рождения: {self.client.birth.strftime(settings.DATE_FMT)}\n'
+                f'Место рождения: {self.client.birth_place}'
+            )
+        if self.expert_type == ExpertTypes.NUMEROLOGIST:
+            text += (
+                f'Дата рождения: {self.client.birth.strftime(settings.DATE_FMT)}\n'
+                f'ФИО: {self.client.fullname}'
+            )
+        return text
+
+    def to_button_text(self):
+        if self.audio_file_id:
+            return f'Аудио от {self.date.strftime(settings.DATE_FMT)}'
+        return self.text[:25]
+
+    async def send_to(
+        self,
+        chat_id: int | str,
+        reply_markup: InlineKeyboardMarkup,
+    ):
+        text = self.to_message_text()
+        if self.audio_file_id:
+            await bot.send_audio(
+                chat_id,
+                self.audio_file_id,
+                caption=text,
+                reply_markup=reply_markup,
+            )
+        else:
+            text += f'\n\nВопрос:\n{self.text}'
+            await bot.send_message(
+                chat_id,
+                text,
+                reply_markup=reply_markup,
+            )
 
 
 class Topic(models.Model):
