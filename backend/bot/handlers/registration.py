@@ -248,8 +248,19 @@ async def set_birth_time(msg: Message | CallbackQuery, state: FSMContext):
 @router.message(F.text, StateFilter(UserInfoState.birth_location))
 @flags.with_client
 async def set_birth_location(msg: Message, client: Client, state: FSMContext):
-    async with GeocodingAPI() as api:
-        lat, lon = await api.get_coordinates(msg.text)
+    fail_text = client.genderize(
+        'Я вижу, ты {gender:родился,родилась} в месте, которое не у всех на карте.\n'
+        'И это уже делает тебя {gender:интересным,интересной}.\n'
+        'Но чтобы точнее считать звёзды и дизайн, мне нужен ближайший город.\n'
+        'Укажи его — и мы продолжим путь.',
+    )
+
+    try:
+        async with GeocodingAPI() as api:
+            lat, lon = await api.get_coordinates(msg.text)
+    except IndexError:
+        await msg.answer(fail_text)
+        return
 
     async with HumanDesignAPI() as api:
         bodygraphs = await api.bodygraphs(
@@ -257,14 +268,7 @@ async def set_birth_location(msg: Message, client: Client, state: FSMContext):
         )
 
     if not bodygraphs.centers:
-        await msg.answer(
-            client.genderize(
-                'Я вижу, ты {gender:родился,родилась} в месте, которое не у всех на карте.\n'
-                'И это уже делает тебя {gender:интересным,интересной}.\n'
-                'Но чтобы точнее считать звёзды и дизайн, мне нужен ближайший город.\n'
-                'Укажи его — и мы продолжим путь.',
-            ),
-        )
+        await msg.answer(fail_text)
         return
 
     async with AstrologyAPI() as api:
