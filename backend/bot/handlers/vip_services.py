@@ -195,7 +195,7 @@ async def choose_experience_type(
         intention = msg.text
     else:
         answer_func = msg.message.answer
-        intention = Intentions(msg.data.split(':')[1])
+        intention = Intentions(msg.data.split(':')[1]).label
 
     await state.update_data(intention=intention)
     await answer_func(
@@ -275,10 +275,17 @@ async def send_question_to_expert(
 ):
     data = await state.get_data()
     topics_ids = data.get('topics', [])
+
+    if msg.voice:
+        file_path = (await msg.bot.get_file(msg.voice.file_id)).file_path
+    else:
+        file_path = ''
+
     consult = await MiniConsult.objects.acreate(
         client=client,
         text=msg.text or '',
         audio_file_id=msg.voice.file_id if msg.voice else None,
+        audio_file_path=file_path,
         expert_type=data['expert_type'],
         intention=data['intention'],
         experience_type=data['experience_type'],
@@ -338,10 +345,17 @@ async def send_feedback_without_comment(
 @router.message(F.text | F.voice, StateFilter(MiniConsultState.comment))
 async def send_feedback_with_comment(msg: Message, state: FSMContext):
     data = await state.get_data()
+
+    if msg.voice:
+        file_path = (await msg.bot.get_file(msg.voice.file_id)).file_path
+    else:
+        file_path = ''
+
     await MiniConsultFeedback.objects.acreate(
         consult_id=data['consult_id'],
         rating=data['rating'],
         audio_file_id=msg.voice.file_id if msg.voice else None,
+        audio_file_path=file_path,
         text=msg.text or '',
     )
     await msg.answer('Ответ записан!')
@@ -381,6 +395,21 @@ async def buy_personal_report(query: CallbackQuery, state: FSMContext):
     )
 
 
+async def make_vip_report(msg: Message, client: Client):
+    report = await SoulMuse().answer(get_personal_report_prompt(client))
+    pdf_text = personal_report_intro + report
+    audio_text = f'{report}\n{random.choice(personal_report_audio_closures)}'
+    await msg.answer_document(
+        BufferedInputFile(generate_pdf(pdf_text), 'Персональный отчёт.pdf'),
+    )
+    await msg.answer_audio(
+        BufferedInputFile(
+            await synthesize(audio_text),
+            'Персональный отчёт.wav',
+        ),
+    )
+
+
 @router.callback_query(
     F.data.in_(('astropoints', 'money')),
     StateFilter(PersonalReportState.payment_type),
@@ -404,6 +433,7 @@ async def choose_personal_report_payment_type(
             'Создаю отчет и аудио...\nЭто может занять несколько минут...',
         )
         await state.clear()
+        await make_vip_report(query.message, client)
     else:
         await query.message.answer_invoice(
             'Глубокий персональный отчёт',
@@ -430,19 +460,7 @@ async def on_successful_payment(
         'Создаю отчет и аудио...\nЭто может занять несколько минут...',
     )
     await state.clear()
-    report = await SoulMuse().answer(get_personal_report_prompt(client))
-    pdf_text = personal_report_intro + report
-    audio_text = f'{report}\n{random.choice(personal_report_audio_closures)}'
-    await msg.answer_document(
-        BufferedInputFile(generate_pdf(pdf_text), 'Персональный отчёт.pdf'),
-    )
-    await msg.answer_audio(
-        BufferedInputFile(
-            await synthesize(audio_text),
-            'Персональный отчёт.wav',
-        ),
-    )
-    await state.clear()
+    await make_vip_report(msg, client)
 
 
 #########################

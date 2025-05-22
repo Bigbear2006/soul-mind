@@ -16,7 +16,7 @@ class AudioPlayerMixin:
     def audio_player(self, obj):
         url = (
             f'https://api.telegram.org/file/bot{settings.BOT_TOKEN}/'
-            f'{obj.audio_url}'
+            f'{obj.audio_file_path}'
         )
         return mark_safe(
             f'<audio controls src="{url}">'
@@ -87,22 +87,22 @@ class ClientActionLimitAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.MiniConsult)
-class MiniConsultAdmin(admin.ModelAdmin):
+class MiniConsultAdmin(admin.ModelAdmin, AudioPlayerMixin):
     list_select_related = ('client',)
-    # readonly_fields = ('audio_player',)
+    readonly_fields = ('audio_player',)
     inlines = [MiniConsultTopicInline]
 
 
 @admin.register(models.MiniConsultFeedback)
-class MiniConsultFeedbackAdmin(admin.ModelAdmin):
+class MiniConsultFeedbackAdmin(admin.ModelAdmin, AudioPlayerMixin):
     list_select_related = ('consult',)
-    # readonly_fields = ('audio_player',)
+    readonly_fields = ('audio_player',)
 
 
 @admin.register(models.ExpertAnswer)
-class ExpertAnswerAdmin(admin.ModelAdmin):
+class ExpertAnswerAdmin(admin.ModelAdmin, AudioPlayerMixin):
     list_select_related = ('expert', 'consult')
-    # readonly_fields = ('audio_player',)
+    readonly_fields = ('audio_player',)
 
 
 @admin.register(models.MonthText)

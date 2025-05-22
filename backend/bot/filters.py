@@ -1,7 +1,9 @@
 from typing import Any
 
+from aiogram.dispatcher.event.bases import SkipHandler
 from aiogram.filters import BaseFilter
 from aiogram.types import Message, CallbackQuery
+from django.core.exceptions import ObjectDoesNotExist
 
 from core.models import Client
 
@@ -16,5 +18,12 @@ class IsExpert(BaseFilter):
             if isinstance(msg, Message)
             else msg.message.chat.id
         )
-        client = await Client.objects.aget(pk=pk)
-        return client.expert_type != ''
+
+        try:
+            client = await Client.objects.aget(pk=pk)
+            if client.expert_type == '':
+                raise SkipHandler
+        except ObjectDoesNotExist:
+            raise SkipHandler
+
+        return True

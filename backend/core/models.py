@@ -712,7 +712,7 @@ class MiniConsult(models.Model):
         null=True,
         blank=True,
     )
-    # audio_file_path = models.CharField('Путь к файлу', max_length=255)
+    audio_file_path = models.CharField('Путь к файлу', max_length=255, blank=True)
     expert_type = models.CharField(
         'Тип эксперта',
         max_length=50,
@@ -831,7 +831,7 @@ class MiniConsultFeedback(models.Model):
         null=True,
         blank=True,
     )
-    # audio_file_path = models.CharField('Путь к файлу', max_length=255)
+    audio_file_path = models.CharField('Путь к файлу', max_length=255, blank=True)
     date = models.DateTimeField('Дата', auto_now_add=True)
 
     class Meta:
@@ -854,7 +854,7 @@ class ExpertAnswer(models.Model):
     )
     consult = models.ForeignKey(MiniConsult, models.CASCADE, 'answers')
     audio_file_id = models.TextField('ID аудиофайла в телеграм')
-    # audio_file_path = models.CharField('Путь к файлу', max_length=255)
+    audio_file_path = models.CharField('Путь к файлу', max_length=255)
     date = models.DateTimeField('Дата', auto_now_add=True)
 
     class Meta:

@@ -23,29 +23,37 @@ router = Router()
 @flags.with_client
 async def answer_consult(query: CallbackQuery, state: FSMContext):
     if await state.get_state() == MiniConsultState.answer_consult.state:
-        await query.message.answer(
+        await query.message.reply(
             'Чтобы ответить на эту консультацию, '
             'сначала завершите текущую консультацию',
         )
         return
 
-    consult_id = int(query.data.split(':')[1])
-    await state.update_data(consult_id=consult_id)
+    consult = await MiniConsult.objects.aget(pk=int(query.data.split(':')[1]))
+    if consult.status != MiniConsultStatuses.WAITING:
+        await query.message.reply(
+            'Эту консультацию уже взял другой эксперт или она завершена'
+        )
+        return
+
+    await state.update_data(consult_id=consult.pk)
     await state.set_state(MiniConsultState.answer_consult)
     await query.message.reply(
         'Запишите несколько голосовых сообщений',
-        reply_markup=get_end_consult_kb(consult_id),
+        reply_markup=get_end_consult_kb(consult.pk),
     )
 
 
 @router.message(F.voice, StateFilter(MiniConsultState.answer_consult))
 async def expert_answer(msg: Message, state: FSMContext):
+    file = await msg.bot.get_file(msg.voice.file_id)
     await ExpertAnswer.objects.acreate(
         expert=await Client.objects.aget(pk=msg.from_user.id),
         consult=await MiniConsult.objects.aget(
             pk=await state.get_value('consult_id'),
         ),
         audio_file_id=msg.voice.file_id,
+        audio_file_path=file.file_path,
     )
     await msg.answer('Записано')
 
@@ -92,7 +100,8 @@ async def end_consult(query: CallbackQuery, state: FSMContext):
             prefix=f'feedback:{consult.pk}',
         ),
     )
-    if MiniConsult.objects.filter(client=consult.client).acount() % 3 == 0:
+
+    if await MiniConsult.objects.filter(client=consult.client).acount() % 3 == 0:
         consults = MiniConsult.objects.prefetch_related('topics').filter(
             client=consult.client,
         )
