@@ -408,7 +408,8 @@ class Client(models.Model):
                 .select_related('quest')
                 .alatest('created_at')
             )
-            return quest
+            if quest.created_at.date() == today:
+                return quest
         except ObjectDoesNotExist:
             pass
 
