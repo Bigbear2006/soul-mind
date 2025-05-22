@@ -1,4 +1,4 @@
-from aiogram import F, Router
+from aiogram import F, Router, flags
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
@@ -7,22 +7,22 @@ from bot.keyboards.inline.vip_services import (
     get_answer_consult_kb,
     get_consults_list_kb,
 )
-from bot.settings import settings
-from core.models import MiniConsult
+from core.models import MiniConsult, Client
 
 router = Router()
 
 
 @router.message(Command('consults'))
 @router.callback_query(F.data == 'consults_list')
-async def consults_list(msg: Message | CallbackQuery, state: FSMContext):
+@flags.with_client
+async def consults_list(msg: Message | CallbackQuery, state: FSMContext, client: Client):
     answer_func = (
         msg.answer if isinstance(msg, Message) else msg.message.edit_text
     )
     await state.update_data(page=1)
     await answer_func(
         'Текущие консультации',
-        reply_markup=await get_consults_list_kb(),
+        reply_markup=await get_consults_list_kb(client),
     )
 
 
@@ -48,7 +48,8 @@ async def delete_this_message(query: CallbackQuery):
 
 
 @router.callback_query(F.data.in_(('consults_previous', 'consults_next')))
-async def change_consults_list_page(query: CallbackQuery, state: FSMContext):
+@flags.with_client
+async def change_consults_list_page(query: CallbackQuery, state: FSMContext, client: Client):
     page = await state.get_value('page')
     if query.data == 'consults_previous':
         page -= 1
@@ -58,5 +59,5 @@ async def change_consults_list_page(query: CallbackQuery, state: FSMContext):
 
     await query.message.edit_text(
         'Текущие консультации',
-        reply_markup=await get_consults_list_kb(page=page),
+        reply_markup=await get_consults_list_kb(client, page=page),
     )

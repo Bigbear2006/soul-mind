@@ -25,7 +25,7 @@ from bot.states import CompatabilityEnergyState
 from bot.templates.base import astropoints_not_enough
 from bot.templates.compatability_energy import get_compatability_energy_text
 from bot.text_utils import compatability_plural, remaining_plural
-from core.choices import SubscriptionPlans, Genders
+from core.choices import Genders, SubscriptionPlans
 from core.models import Actions, Client
 
 router = Router()

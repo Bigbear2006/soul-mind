@@ -1,25 +1,26 @@
 import asyncio
 import random
 
-from aiogram import F, Router
+from aiogram import F, Router, flags
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message, BufferedInputFile
+from aiogram.types import BufferedInputFile, CallbackQuery, Message
 
 from bot.api.speechkit import synthesize
 from bot.keyboards.inline.vip_services import get_end_consult_kb
 from bot.keyboards.utils import keyboard_from_choices
 from bot.loader import logger
 from bot.states import MiniConsultState
-from bot.templates.vip_services import mosaic_intros, mosaic_experts_texts
-from core.choices import MiniConsultFeedbackRatings
+from bot.templates.vip_services import mosaic_experts_texts, mosaic_intros, mosaic_topic_texts
+from core.choices import MiniConsultFeedbackRatings, MiniConsultStatuses
 from core.models import Client, ExpertAnswer, MiniConsult
 
 router = Router()
 
 
 @router.callback_query(F.data.startswith('answer_consult'))
+@flags.with_client
 async def answer_consult(query: CallbackQuery, state: FSMContext):
     if await state.get_state() == MiniConsultState.answer_consult.state:
         await query.message.answer(
@@ -65,10 +66,9 @@ async def end_consult(query: CallbackQuery, state: FSMContext):
         )
         return
 
-
     await query.bot.send_message(
         consult.client.pk,
-        '🔥 Ответ готов. Soul Muse ждёт тебя внутри.'
+        '🔥 Ответ готов. Soul Muse ждёт тебя внутри.',
     )
     async for answer in answers:
         try:
@@ -83,7 +83,7 @@ async def end_consult(query: CallbackQuery, state: FSMContext):
                 f'{e.__class__.__name__}: {str(e)}',
             )
 
-    await MiniConsult.objects.filter(pk=consult.pk).aupdate(completed=True)
+    await MiniConsult.objects.filter(pk=consult.pk).aupdate(status=MiniConsultStatuses.COMPLETED)
     await query.bot.send_message(
         consult.client.pk,
         'Как тебе консультация?',
@@ -96,20 +96,22 @@ async def end_consult(query: CallbackQuery, state: FSMContext):
         consults = MiniConsult.objects.prefetch_related('topics').filter(
             client=consult.client,
         )
-        experts_text = "\n".join({mosaic_experts_texts[i.expert_type] async for i in consults})
-        all_topics = [t for i in consults for t in i.topics.all()]
+        experts_text = '\n'.join(
+            {mosaic_experts_texts[i.expert_type] async for i in consults},
+        )
+        all_topics = [
+            mosaic_topic_texts[t]
+            for i in consults for t in i.topics.all()
+            if t in mosaic_topic_texts
+        ]
         if len(all_topics) < 3:
             topics_text = '\n'.join(all_topics)
         else:
             topics_text = '\n'.join(random.choices(all_topics, k=3))
-        text = (
-            f'{random.choice(mosaic_intros)}\n'
-            f'{experts_text}\n'
-            f'{topics_text}'
-        )
+        text = f'{random.choice(mosaic_intros)}\n{experts_text}\n{topics_text}'
         await query.bot.send_audio(
             consult.client.pk,
-            BufferedInputFile(await synthesize(text), 'Мозаика Я.wav')
+            BufferedInputFile(await synthesize(text), 'Мозаика Я.wav'),
         )
 
     await query.message.edit_text('Консультация завершена')

@@ -10,15 +10,17 @@ from bot.keyboards.inline.base import (
 )
 from bot.keyboards.inline.quests import (
     get_quest_statuses_kb,
+    get_quests_kb,
     get_weekly_quest_kb,
-    get_weekly_quests_kb, get_quests_kb,
+    get_weekly_quests_kb,
 )
 from bot.keyboards.utils import one_button_keyboard
 from bot.settings import settings
 from bot.templates.quests import (
     daily_praises,
+    get_daily_quest_text,
     trial_quest_praise,
-    weekly_praises, get_daily_quest_text,
+    weekly_praises,
 )
 from core.choices import SubscriptionPlans
 from core.models import (
@@ -59,9 +61,12 @@ async def weekly_quests_list(msg: Message | CallbackQuery, client: Client):
                     'Каждый день — одно действие для фокуса.\n'
                     'Каждый месяц — один челлендж, который собирает тебя по частям.\n'
                     'И да, за это ты ещё получаешь астробаллы.\n\n'
-                    '{gender:Готов,Готова} вырасти в своём ритме?'
+                    '{gender:Готов,Готова} вырасти в своём ритме?',
                 ),
-                reply_markup=get_quests_kb('⚡ Перейти к заданию дня', '▶ Открыть челлендж месяца')
+                reply_markup=get_quests_kb(
+                    '⚡ Перейти к заданию дня',
+                    '▶ Открыть челлендж месяца',
+                ),
             )
         else:
             await answer_func(
@@ -71,9 +76,12 @@ async def weekly_quests_list(msg: Message | CallbackQuery, client: Client):
                     'Хочешь идти медленно — иди.\n'
                     'Хочешь глубже — выбирай любой челлендж, хоть сейчас.\n'
                     'Баллы считаются за два в месяц — всё остальное только для души.\n\n'
-                    '{gender:Готов,Готова} к новому вызову?'
+                    '{gender:Готов,Готова} к новому вызову?',
                 ),
-                reply_markup=get_quests_kb('⚡ Сегодняшнее задание', '▶ Выбрать челлендж'),
+                reply_markup=get_quests_kb(
+                    '⚡ Сегодняшнее задание',
+                    '▶ Выбрать челлендж',
+                ),
             )
     elif client.has_trial():
         await msg.answer(
@@ -110,14 +118,14 @@ async def daily_quest(query: CallbackQuery, client: Client):
     if quest.status == QuestStatuses.COMPLETED:
         await query.message.edit_text(
             client.genderize(
-                'Сегодня ты уже {gender:выполнил,выполнила} ежедневное задание.\n'
+                'Сегодня ты уже {gender:выполнил,выполнила} ежедневное задание.\n',
             ),
         )
         return
 
     await query.message.edit_text(
         get_daily_quest_text(client, quest.quest.text),
-        reply_markup=get_quest_statuses_kb(client, 'daily', quest.quest_id)
+        reply_markup=get_quest_statuses_kb(client, 'daily', quest.quest_id),
     )
 
 
@@ -190,8 +198,8 @@ async def quest_handler(query: CallbackQuery, client: Client):
         except IntegrityError:
             await query.answer(
                 client.genderize(
-                    'Ты уже {gender:проходил,проходила} это задание'
-                )
+                    'Ты уже {gender:проходил,проходила} это задание',
+                ),
             )
             return
 

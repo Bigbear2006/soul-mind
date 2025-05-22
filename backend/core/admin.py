@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.models import Group
+from django.utils.safestring import mark_safe
 
+from bot.settings import settings
 from core import models
 from core.models import SoulMuseQuestion
 
@@ -8,6 +10,21 @@ admin.site.unregister(Group)
 
 admin.site.register(models.QuestTag)
 admin.site.register(models.Topic)
+
+
+class AudioPlayerMixin:
+    def audio_player(self, obj):
+        url = (
+            f'https://api.telegram.org/file/bot{settings.BOT_TOKEN}/'
+            f'{obj.audio_url}'
+        )
+        return mark_safe(
+            f'<audio controls src="{url}">'
+            'Ваш браузер не поддерживает элемент audio.'
+            '</audio>'
+        )
+
+    audio_player.short_description = 'Аудио'
 
 
 class DailyQuestTagInline(admin.TabularInline):
@@ -72,17 +89,20 @@ class ClientActionLimitAdmin(admin.ModelAdmin):
 @admin.register(models.MiniConsult)
 class MiniConsultAdmin(admin.ModelAdmin):
     list_select_related = ('client',)
+    # readonly_fields = ('audio_player',)
     inlines = [MiniConsultTopicInline]
 
 
 @admin.register(models.MiniConsultFeedback)
 class MiniConsultFeedbackAdmin(admin.ModelAdmin):
     list_select_related = ('consult',)
+    # readonly_fields = ('audio_player',)
 
 
 @admin.register(models.ExpertAnswer)
 class ExpertAnswerAdmin(admin.ModelAdmin):
     list_select_related = ('expert', 'consult')
+    # readonly_fields = ('audio_player',)
 
 
 @admin.register(models.MonthText)

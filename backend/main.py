@@ -50,7 +50,7 @@ async def main():
         personal_account.router,
         vip_services.router,
         load_media.router,
-        experts.router
+        experts.router,
     )
 
     dp.message.middleware(WithClientMiddleware())

@@ -7,12 +7,23 @@ from bot.keyboards.utils import keyboard_from_queryset
 from core.choices import QuestStatuses
 from core.models import Client, QuestTag, WeeklyQuest
 
+
 def get_quests_kb(daily_quests_text: str, weekly_quests_text: str):
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=daily_quests_text, callback_data='daily_quest')],
-            [InlineKeyboardButton(text=weekly_quests_text, callback_data='weekly_quests')],
-        ]
+            [
+                InlineKeyboardButton(
+                    text=daily_quests_text,
+                    callback_data='daily_quest',
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text=weekly_quests_text,
+                    callback_data='weekly_quests',
+                ),
+            ],
+        ],
     )
 
 

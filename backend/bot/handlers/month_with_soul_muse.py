@@ -231,11 +231,12 @@ async def show_month_script(query: CallbackQuery, client: Client):
     if script:
         text = script.text
     else:
-        text = await get_month_script_text(client)
+        text, script_number = await get_month_script_text(client)
         await MonthText.objects.acreate(
             text=text,
             client=client,
             type=MonthTextTypes.MONTH_SCRIPT,
+            script_number=script_number,
         )
 
     await query.message.edit_text(

@@ -26,9 +26,10 @@ from core.choices import (
     Genders,
     Intentions,
     MiniConsultFeedbackRatings,
+    MiniConsultStatuses,
     MonthTextTypes,
     QuestStatuses,
-    SubscriptionPlans, MiniConsultStatuses,
+    SubscriptionPlans,
 )
 
 
@@ -233,7 +234,12 @@ class Client(models.Model):
         null=True,
         blank=True,
     )
-    expert_type = models.CharField('Тип эксперта', max_length=50, choices=ExpertTypes, blank=True)
+    expert_type = models.CharField(
+        'Тип эксперта',
+        max_length=50,
+        choices=ExpertTypes,
+        blank=True,
+    )
     notifications_enabled = models.BooleanField('Уведомления', default=False)
     created_at: datetime = models.DateTimeField(
         'Дата создания',
@@ -409,17 +415,21 @@ class Client(models.Model):
         all_quests_ids = await sync_to_async(
             lambda: set(
                 DailyQuest.objects.filter(
-                    tags__tag_id__in=self.tags.values_list('tag_id', flat=True),
+                    tags__tag_id__in=self.tags.values_list(
+                        'tag_id',
+                        flat=True,
+                    ),
                 ).values_list('id', flat=True),
             ),
         )()
 
         sent_quests_ids = await sync_to_async(
             lambda: set(
-                ClientDailyQuest.objects
-                .filter(client=self, status=QuestStatuses.COMPLETED)
-                .values_list('quest_id', flat=True)
-            )
+                ClientDailyQuest.objects.filter(
+                    client=self,
+                    status=QuestStatuses.COMPLETED,
+                ).values_list('quest_id', flat=True),
+            ),
         )()
 
         quest = await DailyQuest.objects.aget(
@@ -429,6 +439,15 @@ class Client(models.Model):
             client=self,
             quest=quest,
         )
+
+    async def get_previous_month_script(self) -> Optional['MonthText']:
+        try:
+            return await MonthText.objects.filter(
+                client=self,
+                type=MonthTextTypes.MONTH_SCRIPT,
+            ).alatest('created_at')
+        except ObjectDoesNotExist:
+            return
 
 
 ##############
@@ -692,6 +711,7 @@ class MiniConsult(models.Model):
         null=True,
         blank=True,
     )
+    # audio_file_path = models.CharField('Путь к файлу', max_length=255)
     expert_type = models.CharField(
         'Тип эксперта',
         max_length=50,
@@ -810,6 +830,7 @@ class MiniConsultFeedback(models.Model):
         null=True,
         blank=True,
     )
+    # audio_file_path = models.CharField('Путь к файлу', max_length=255)
     date = models.DateTimeField('Дата', auto_now_add=True)
 
     class Meta:
@@ -832,6 +853,7 @@ class ExpertAnswer(models.Model):
     )
     consult = models.ForeignKey(MiniConsult, models.CASCADE, 'answers')
     audio_file_id = models.TextField('ID аудиофайла в телеграм')
+    # audio_file_path = models.CharField('Путь к файлу', max_length=255)
     date = models.DateTimeField('Дата', auto_now_add=True)
 
     class Meta:
@@ -877,6 +899,11 @@ class MonthText(models.Model):
         models.CASCADE,
         'forecasts',
         verbose_name='Пользователь',
+    )
+    script_number = models.IntegerField(
+        'Номер шаблона в сценарии месяца',
+        null=True,
+        blank=True,
     )
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
     objects = MonthTextManager()
