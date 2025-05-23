@@ -221,8 +221,8 @@ async def set_birth_time(msg: Message | CallbackQuery, state: FSMContext):
 
     birth = f'{await state.get_value("birth_date")} {birth_time}'
     await Client.objects.filter(pk=pk).aupdate(
-        birth=datetime.strptime(birth, settings.DATE_FMT).astimezone(
-            settings.TZ,
+        birth=datetime.strptime(birth, settings.DATE_FMT).replace(
+            tzinfo=settings.TZ,
         ),
     )
 
@@ -241,22 +241,19 @@ async def set_birth_location(msg: Message, client: Client, state: FSMContext):
         'Но чтобы точнее считать звёзды и дизайн, мне нужен ближайший город.\n'
         'Укажи его — и мы продолжим путь.',
     )
+    msg_to_edit = await msg.answer('Собираю данные...')
 
     try:
         async with GeocodingAPI() as api:
             lat, lon = await api.get_coordinates(msg.text)
     except IndexError:
-        await msg.answer(fail_text)
+        await msg_to_edit.edit_text(fail_text)
         return
 
     async with HumanDesignAPI() as api:
         bodygraphs = await api.bodygraphs(
             HDInputData.from_datetime(client.birth, msg.text),
         )
-
-    if not bodygraphs.centers:
-        await msg.answer(fail_text)
-        return
 
     async with AstrologyAPI() as api:
         tzone = await api.get_timezone(lat, lon, client.birth.date())
@@ -269,7 +266,7 @@ async def set_birth_location(msg: Message, client: Client, state: FSMContext):
                 min=client.birth.minute,
                 lat=lat,
                 lon=lon,
-                tzone=tzone,
+                tzone=0,
             ),
         )
 
@@ -297,7 +294,7 @@ async def set_birth_location(msg: Message, client: Client, state: FSMContext):
         ],
     )
 
-    await msg.answer(
+    await msg_to_edit.edit_text(
         '⚠️ Я храню твои данные как свою тайну. '
         'Тётя Люда из маркетинга не узнает.\n'
         'Согласен с обработкой данных в рамках '

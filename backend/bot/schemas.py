@@ -13,7 +13,7 @@ class HDInputData:
     @classmethod
     def from_datetime(cls, birth: datetime, location: str):
         return cls(
-            birthdate=birth.strftime('%d-%b-%y'),
+            birthdate=birth.strftime('%d.%m.%Y'),
             birthtime=birth.strftime('%H:%M'),
             location=location,
         )
@@ -65,7 +65,7 @@ class HoroscopeParams:
             min=client.birth.minute,
             lat=client.birth_latitude,
             lon=client.birth_longitude,
-            tzone=client.tzone,
+            tzone=0,
         )
 
 

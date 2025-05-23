@@ -1,3 +1,4 @@
+import calendar
 import re
 from collections.abc import Callable, Sequence
 from datetime import date
@@ -79,4 +80,9 @@ def get_month_number(birth_date: date) -> int:
 
 
 def get_power_day(birth_date: date):
-    return get_life_path_number(birth_date) + date.today().month
+    today = now()
+    days_in_month = calendar.monthrange(today.year, today.month)[1]
+    day = get_life_path_number(birth_date) + date.today().month
+    if day > days_in_month:
+        return reduce_number(day)
+    return day
