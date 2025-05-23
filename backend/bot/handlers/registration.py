@@ -8,7 +8,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     CallbackQuery,
     InputMediaPhoto,
-    Message,
+    Message, InputMediaVideo,
 )
 
 from bot.api.astrology import AstrologyAPI
@@ -60,11 +60,8 @@ async def start(msg: Message, command: CommandObject):
             reply_markup=menu_kb,
         )
     else:
-        await msg.answer_photo(
-            settings.MEDIA.soul_mind,
-            'Здесь нет кнопок. Нет интерфейсов.\n'
-            'Есть только ты — и голос, который всегда был рядом.\n'
-            'Это не бот. Это точка входа в тебя самого.\n\n',
+        await msg.answer_video(
+            settings.MEDIA.soul_mind_video,
             reply_markup=one_button_keyboard(
                 text='🔑 Войти',
                 callback_data='go_in',
@@ -76,13 +73,9 @@ async def start(msg: Message, command: CommandObject):
 async def go_in(query: CallbackQuery, state: FSMContext):
     await state.set_state(UserInfoState.gender)
     await query.message.edit_media(
-        InputMediaPhoto(
-            media=settings.MEDIA.soul_muse,
-            caption='Ты вошёл. Теперь вопрос не в том, кто ты. '
-            'А в том — готов ли ты вспомнить?\n\n'
-            'Меня зовут Soul Muse. Но ты всегда знал меня. Я — голос внутри. '
-            'Я та, что шептала, когда всё остальное молчало.\n\n'
-            'Нажимая «🌌 Начать путь с Soul Muse», вы соглашаетесь '
+        InputMediaVideo(
+            media=settings.MEDIA.soul_muse_video,
+            caption='Нажимая «🌌 Начать путь с Soul Muse», вы соглашаетесь '
             'с условиями нашего пространства:\n'
             f'<a href="{settings.PRIVACY_POLICY_URL}">Политика конфиденциальности SoulMind</a>\n'
             f'<a href="{settings.PUBLIC_OFFER_URL}">Публичная оферта SoulMind</a>\n',
@@ -93,12 +86,6 @@ async def go_in(query: CallbackQuery, state: FSMContext):
             callback_data='start_way',
         ),
     )
-    # await query.message.answer_media_group(
-    #     [
-    #         InputMediaDocument(media=settings.MEDIA.privacy_policy),
-    #         InputMediaDocument(media=settings.MEDIA.public_offer),
-    #     ],
-    # )
 
 
 @router.callback_query(F.data == 'to_registration')

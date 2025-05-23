@@ -52,12 +52,6 @@ async def personal_analysis_handler(
     answer_func = (
         msg.answer if isinstance(msg, Message) else msg.message.edit_text
     )
-    # if msg_to_delete_id := await state.get_value('msg_to_delete_id'):
-    #     try:
-    #         await msg.bot.delete_message(client.pk, msg_to_delete_id)
-    #         await state.update_data(msg_to_delete_id=None)
-    #     except TelegramBadRequest:
-    #         pass
     text, reply_markup = get_personal_analysis_intro(client)
     await answer_func(text=text, reply_markup=reply_markup)
 
@@ -72,11 +66,6 @@ async def destiny_mystery(query: CallbackQuery, client: Client):
 @router.callback_query(F.data == 'show_destiny_mystery')
 @flags.with_client
 async def show_destiny_mystery(query: CallbackQuery, client: Client):
-    # await send_long_message(
-    #     query.message,
-    #     state,
-    #     get_destiny_mystery_text(client),
-    # )
     await query.message.answer_document(
         BufferedInputFile(
             generate_pdf(get_destiny_mystery_text(client)),
@@ -95,11 +84,6 @@ async def career_and_finance(query: CallbackQuery, client: Client):
 @router.callback_query(F.data == 'show_career_and_finance')
 @flags.with_client
 async def show_career_and_finance(query: CallbackQuery, client: Client):
-    # await send_long_message(
-    #     query.message,
-    #     state,
-    #     get_career_and_finance_text(client),
-    # )
     await query.message.answer_document(
         BufferedInputFile(
             generate_pdf(get_career_and_finance_text(client)),
@@ -137,7 +121,6 @@ async def superpower(query: CallbackQuery, client: Client):
 @router.callback_query(F.data == 'show_superpower')
 @flags.with_client
 async def show_superpower(query: CallbackQuery, client: Client):
-    # await send_long_message(query.message, state, get_superpower_text(client))
     await query.message.answer_document(
         BufferedInputFile(
             generate_pdf(get_superpower_text(client)),

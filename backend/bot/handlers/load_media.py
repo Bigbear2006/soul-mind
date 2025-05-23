@@ -5,7 +5,7 @@ from aiogram.types import (
     BufferedInputFile,
     InputMediaDocument,
     InputMediaPhoto,
-    Message,
+    Message, InputMediaVideo,
 )
 
 from bot.settings import settings
@@ -48,11 +48,28 @@ async def load_media(msg: Message):
         ],
     )
 
+    videos_msg = await msg.answer_media_group(
+        [
+            InputMediaVideo(
+                media=BufferedInputFile.from_file(
+                    'assets/videos/soul_mind.mov',
+                ),
+            ),
+            InputMediaVideo(
+                media=BufferedInputFile.from_file(
+                    'assets/videos/soul_muse.mov',
+                ),
+            ),
+        ]
+    )
+
     media = {
         'privacy_policy': documents_msg[0].document.file_id,
         'public_offer': documents_msg[1].document.file_id,
         'soul_mind': images_msg[0].photo[-1].file_id,
         'soul_muse': images_msg[1].photo[-1].file_id,
+        'soul_mind_video': videos_msg[0].video.file_id,
+        'soul_muse_video': videos_msg[1].video.file_id,
     }
     with open('media.json', 'w') as f:
         json.dump(media, f, indent=2)

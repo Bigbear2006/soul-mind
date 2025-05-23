@@ -30,7 +30,7 @@ class SpeechKit(APIClient):
                 'hints': [
                     {'voice': 'zhanar_ru'},
                     {'role': 'friendly'},
-                    {'pitch_shift': -20.0},
+                    {'pitch_shift': -18.0},
                     {'speed': 1.0},
                 ],
             },

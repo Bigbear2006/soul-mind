@@ -10,10 +10,12 @@ env.read_env()
 
 @dataclass
 class Media:
-    privacy_policy: str
-    public_offer: str
-    soul_mind: str
-    soul_muse: str
+    privacy_policy: str = ''
+    public_offer: str = ''
+    soul_mind: str = ''
+    soul_muse: str = ''
+    soul_mind_video: str = ''
+    soul_muse_video: str = ''
 
     @classmethod
     def from_file(cls):
@@ -48,6 +50,7 @@ class Settings:
     TZ: ZoneInfo = field(default=ZoneInfo('Europe/Moscow'))
     DATE_FMT: str = field(default='%d.%m.%Y %H:%M')
     PAGE_SIZE: int = field(default=1)
+
     PRIVACY_POLICY_URL: str = field(
         default=(
             'https://docs.google.com/document/d/'
