@@ -19,9 +19,12 @@ dump:
 	docker-compose exec django python manage.py dumpdata \
 	-o fixtures/topics.json --indent 2 core.topic
 
+	docker-compose exec django python manage.py dumpdata \
+	-o fixtures/expert_types.json --indent 2 core.experttype
+
 load:
 	docker-compose exec django python manage.py loaddata \
-	fixtures/quest_tags.json fixtures/quests.json fixtures/topics.json
+	fixtures/quest_tags.json fixtures/quests.json fixtures/topics.json fixtures/expert_types.json
 
 admin:
 	docker-compose exec django python manage.py createsuperuser

@@ -29,7 +29,7 @@ async def consults_list(msg: Message | CallbackQuery, state: FSMContext, client:
 @router.callback_query(F.data.startswith('mini_consult'))
 async def mini_consult_detail(query: CallbackQuery):
     consult = (
-        await MiniConsult.objects.select_related('client')
+        await MiniConsult.objects.select_related('client', 'expert_type')
         .prefetch_related('topics__topic')
         .aget(pk=query.data.split(':')[1])
     )

@@ -55,7 +55,7 @@ from core.models import (
     MiniConsult,
     MiniConsultFeedback,
     MiniConsultTopic,
-    Topic,
+    Topic, ExpertType,
 )
 
 router = Router()
@@ -286,7 +286,7 @@ async def send_question_to_expert(
         text=msg.text or '',
         audio_file_id=msg.voice.file_id if msg.voice else None,
         audio_file_path=file_path,
-        expert_type=data['expert_type'],
+        expert_type=await ExpertType.objects.aget(name=data['expert_type']),
         intention=data['intention'],
         experience_type=data['experience_type'],
         feelings_type=data['feelings_type'],
@@ -296,12 +296,12 @@ async def send_question_to_expert(
     )
 
     consult = (
-        await MiniConsult.objects.select_related('client')
+        await MiniConsult.objects.select_related('client', 'expert_type')
         .prefetch_related('topics__topic')
         .aget(pk=consult.pk)
     )
 
-    async for client in Client.objects.filter(expert_type=consult.expert_type):
+    async for client in Client.objects.filter(expert_types__expert_type=consult.expert_type):
         await consult.send_to(
             chat_id=client.id,
             reply_markup=get_answer_consult_kb(consult.pk),

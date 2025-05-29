@@ -4,7 +4,6 @@ from django.utils.safestring import mark_safe
 
 from bot.settings import settings
 from core import models
-from core.models import SoulMuseQuestion
 
 admin.site.unregister(Group)
 
@@ -39,6 +38,10 @@ class ClientQuestTagInline(admin.TabularInline):
     model = models.ClientQuestTag
 
 
+class ClientExpertTypeInline(admin.TabularInline):
+    model = models.ClientExpertType
+
+
 class WeeklyQuestTaskInline(admin.StackedInline):
     model = models.WeeklyQuestTask
 
@@ -60,7 +63,7 @@ class WeeklyQuestAdmin(admin.ModelAdmin):
 @admin.register(models.Client)
 class ClientAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at',)
-    inlines = [ClientQuestTagInline]
+    inlines = [ClientQuestTagInline, ClientExpertTypeInline]
 
 
 @admin.register(models.ClientDailyQuest)
@@ -111,7 +114,7 @@ class MonthForecastAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at',)
 
 
-@admin.register(SoulMuseQuestion)
+@admin.register(models.SoulMuseQuestion)
 class SoulMuseQuestion(admin.ModelAdmin):
     readonly_fields = ('date',)
 

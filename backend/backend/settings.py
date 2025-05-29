@@ -187,7 +187,7 @@ CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND')
 
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = False
 
-__CELERY_BEAT_SCHEDULE = {
+CELERY_BEAT_SCHEDULE = {
     'send_daily_quests': {
         'task': 'core.tasks.send_daily_quests',
         'schedule': crontab(minute='0', hour='8'),

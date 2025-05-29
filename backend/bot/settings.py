@@ -49,7 +49,7 @@ class Settings:
     TRIAL_WEEKLY_QUEST_ID: str = field(default=1)
     TZ: ZoneInfo = field(default=ZoneInfo('Europe/Moscow'))
     DATE_FMT: str = field(default='%d.%m.%Y %H:%M')
-    PAGE_SIZE: int = field(default=1)
+    PAGE_SIZE: int = field(default=5)
 
     PRIVACY_POLICY_URL: str = field(
         default=(

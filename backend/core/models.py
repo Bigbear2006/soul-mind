@@ -234,12 +234,6 @@ class Client(models.Model):
         null=True,
         blank=True,
     )
-    expert_type = models.CharField(
-        'Тип эксперта',
-        max_length=50,
-        choices=ExpertTypes,
-        blank=True,
-    )
     notifications_enabled = models.BooleanField('Уведомления', default=False)
     created_at: datetime = models.DateTimeField(
         'Дата создания',
@@ -449,6 +443,22 @@ class Client(models.Model):
             ).alatest('created_at')
         except ObjectDoesNotExist:
             return
+
+
+class ExpertType(models.Model):
+    name = models.CharField(max_length=255, unique=True, choices=ExpertTypes)
+
+    class Meta:
+        verbose_name = 'Тип эксперта'
+        verbose_name_plural = 'Типы экспертов'
+
+    def __str__(self):
+        return ExpertTypes(self.name).label
+
+
+class ClientExpertType(models.Model):
+    client = models.ForeignKey(Client, models.CASCADE, 'expert_types', verbose_name='Пользователь')
+    expert_type = models.ForeignKey(ExpertType, models.CASCADE, 'clients', verbose_name='Тип эксперта')
 
 
 ##############
@@ -713,10 +723,12 @@ class MiniConsult(models.Model):
         blank=True,
     )
     audio_file_path = models.CharField('Путь к файлу', max_length=255, blank=True)
-    expert_type = models.CharField(
-        'Тип эксперта',
-        max_length=50,
-        choices=ExpertTypes,
+    expert_type = models.ForeignKey(
+        ExpertType,
+        models.SET_NULL,
+        'mini_consults',
+        null=True,
+        verbose_name='Тип эксперта',
     )
     intention = models.CharField('Намерение', max_length=255)
     experience_type = models.CharField(
@@ -752,13 +764,13 @@ class MiniConsult(models.Model):
             else self.intention
         )
         text = (
-            f'Тип эксперта: {ExpertTypes(self.expert_type).label}\n'
+            f'Тип эксперта: {self.expert_type}\n'
             f'Намерение: {intention}\n'
             f'Уже сталкивался: {ExperienceTypes(self.experience_type).label}\n'
             f'Ощущения: {FeelingsTypes(self.feelings_type).label}\n'
             f'Метки: {", ".join([t.topic.name for t in self.topics.all()])}\n\n'
         )
-        if self.expert_type in (
+        if self.expert_type.name in (
             ExpertTypes.ASTROLOGIST,
             ExpertTypes.HD_ANALYST,
         ):
@@ -766,7 +778,7 @@ class MiniConsult(models.Model):
                 f'Дата рождения: {self.client.birth.strftime(settings.DATE_FMT)}\n'
                 f'Место рождения: {self.client.birth_place}'
             )
-        if self.expert_type == ExpertTypes.NUMEROLOGIST:
+        if self.expert_type.name == ExpertTypes.NUMEROLOGIST:
             text += (
                 f'Дата рождения: {self.client.birth.strftime(settings.DATE_FMT)}\n'
                 f'ФИО: {self.client.fullname}'

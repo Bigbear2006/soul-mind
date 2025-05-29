@@ -5,7 +5,7 @@ from aiogram.filters import BaseFilter
 from aiogram.types import Message, CallbackQuery
 from django.core.exceptions import ObjectDoesNotExist
 
-from core.models import Client
+from core.models import Client, ClientExpertType
 
 
 class IsExpert(BaseFilter):
@@ -21,7 +21,10 @@ class IsExpert(BaseFilter):
 
         try:
             client = await Client.objects.aget(pk=pk)
-            if client.expert_type == '':
+            expert_types = (
+                await ClientExpertType.objects.filter(client=client).acount()
+            )
+            if expert_types == 0:
                 raise SkipHandler
         except ObjectDoesNotExist:
             raise SkipHandler

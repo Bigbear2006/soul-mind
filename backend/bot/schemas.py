@@ -65,7 +65,7 @@ class HoroscopeParams:
             min=client.birth.minute,
             lat=client.birth_latitude,
             lon=client.birth_longitude,
-            tzone=0,
+            tzone=client.tzone,
         )
 
 

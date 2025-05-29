@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime, timezone, timedelta, UTC
 
 from aiogram import F, Router, flags
 from aiogram.enums import ParseMode
@@ -211,21 +211,14 @@ async def set_birth_date(msg: Message, state: FSMContext):
 )
 async def set_birth_time(msg: Message | CallbackQuery, state: FSMContext):
     if isinstance(msg, Message):
-        pk = msg.chat.id
         birth_time = msg.text
         answer_func = msg.answer
     else:
-        pk = msg.message.chat.id
         birth_time = msg.data.split('_')[-1]
         answer_func = msg.message.answer
 
     birth = f'{await state.get_value("birth_date")} {birth_time}'
-    await Client.objects.filter(pk=pk).aupdate(
-        birth=datetime.strptime(birth, settings.DATE_FMT).replace(
-            tzinfo=settings.TZ,
-        ),
-    )
-
+    await state.update_data(birth=birth)
     await answer_func(
         'Отправь место своего рождения.\n📍 Только город — без страны',
     )
@@ -250,27 +243,31 @@ async def set_birth_location(msg: Message, client: Client, state: FSMContext):
         await msg_to_edit.edit_text(fail_text)
         return
 
-    async with HumanDesignAPI() as api:
-        bodygraphs = await api.bodygraphs(
-            HDInputData.from_datetime(client.birth, msg.text),
-        )
-
     async with AstrologyAPI() as api:
-        tzone = await api.get_timezone(lat, lon, client.birth.date())
+        birth = datetime.strptime(await state.get_value('birth'), settings.DATE_FMT)
+        tzone = await api.get_timezone(lat, lon, birth.date())
+        birth = birth.replace(tzinfo=timezone(timedelta(hours=tzone)))
+
+        async with HumanDesignAPI() as hd_api:
+            bodygraphs = await hd_api.bodygraphs(
+                HDInputData.from_datetime(birth.astimezone(UTC), msg.text),
+            )
+
         horoscope = await api.western_horoscope(
             HoroscopeParams(
-                day=client.birth.day,
-                month=client.birth.month,
-                year=client.birth.year,
-                hour=client.birth.hour,
-                min=client.birth.minute,
+                day=birth.day,
+                month=birth.month,
+                year=birth.year,
+                hour=birth.hour,
+                min=birth.minute,
                 lat=lat,
                 lon=lon,
-                tzone=0,
+                tzone=tzone,
             ),
         )
 
     await Client.objects.filter(pk=msg.chat.id).aupdate(
+        birth=birth,
         birth_place=msg.text,
         birth_latitude=lat,
         birth_longitude=lon,
