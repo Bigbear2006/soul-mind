@@ -31,40 +31,6 @@ def get_client_resource(client: Client) -> str:
         'мягкость',
     )
 
-    # resources = set()
-    #
-    # if any(int(g) in {22, 36, 12} for g in client.gates):
-    #     resources.update({'мягкость', 'прозрачность'})
-    # elif '6/' in client.profile:
-    #     resources.update({'принятие'})
-    # elif 'Spleen' not in client.centers:
-    #     resources.update({'доверие'})
-    # elif 'G' not in client.centers:
-    #     resources.update({'границы'})
-    #
-    # if resources:
-    #     return random.choice(list(resources))
-    #
-    # sun_sign = [i['sign'] for i in client.planets if i['name'] == 'Sun'][0]
-    # if sun_sign in ['Aries', 'Leo', 'Sagittarius']:
-    #     resources.update({'вдохновение', 'смелость', 'решимость'})
-    # elif sun_sign in ['Taurus', 'Virgo', 'Capricorn']:
-    #     resources.update({'границы', 'стойкость', 'присутствие'})
-    # elif sun_sign in ['Gemini', 'Libra', 'Aquarius']:
-    #     resources.update({'лёгкость', 'гибкость', 'ясность'})
-    # elif sun_sign in ['Cancer', 'Scorpio', 'Pisces']:
-    #     resources.update({'интуиция', 'принятие', 'тишина'})
-    #
-    # month_number = get_month_number(client.birth.date())
-    # if month_number in (1, 2, 3):
-    #     resources.update({'смелость', 'вдохновение', 'решимость'})
-    # elif month_number in (4, 5, 6):
-    #     resources.update({'стойкость', 'границы', 'принятие'})
-    # elif month_number in (7, 8, 9):
-    #     resources.update({'интуиция', 'тишина', 'ясность'})
-    #
-    # return random.choice(list(resources))
-
 
 def get_month_resource_text(client: Client):
     sun_sign = [i['sign'] for i in client.planets if i['name'] == 'Sun'][0]
@@ -72,7 +38,7 @@ def get_month_resource_text(client: Client):
     return client.genderize(
         f'{client.fullname.split()[1]}, '
         f'твоя энергия в этом месяце раскрывается через {resource}.\n'
-        f'Ты {sun_signs_descriptions[sun_sign]}.\n'
+        f'{sun_signs_descriptions[sun_sign]}.\n'
         'Но сейчас ты входишь в новое состояние.\n'
         '*Вот что просит твоя душа услышать:*\n'
         f'{random.choice(resources_descriptions[resource])}\n'
