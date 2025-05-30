@@ -102,7 +102,6 @@ async def love_code(query: CallbackQuery, client: Client):
 @router.callback_query(F.data == 'show_love_code')
 @flags.with_client
 async def show_love_code(query: CallbackQuery, client: Client):
-    # await send_long_message(query.message, state, get_love_code_text(client))
     await query.message.answer_document(
         BufferedInputFile(
             generate_pdf(get_love_code_text(client)),
@@ -145,11 +144,14 @@ async def show_full_profile(query: CallbackQuery, client: Client):
         await query.message.answer_document(
             BufferedInputFile(generate_pdf(text), 'Твой полный профиль.pdf'),
         )
+
     elif client.has_trial():
         text = '\n\n'.join([intro, *content])
         await query.message.answer_document(
             BufferedInputFile(generate_pdf(text), 'Твой полный профиль.pdf'),
-            caption=conclusion,
+        )
+        await query.message.answer(
+            conclusion,
             reply_markup=get_to_subscription_plans_kb(
                 text='Оформить подписку',
             ),

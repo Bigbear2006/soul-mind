@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 from aiogram import F, Router, flags
-from aiogram.exceptions import TelegramAPIError, TelegramBadRequest
+from aiogram.exceptions import TelegramAPIError
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
@@ -28,13 +28,10 @@ async def subscription_plans_handler(
     client: Client,
 ):
     await state.set_state()
-    try:
-        await query.message.edit_text(
-            client.genderize(SubscriptionPlans.subscription_plans_teaser()),
-            reply_markup=keyboard_from_choices(SubscriptionPlans),
-        )
-    except TelegramBadRequest:
-        pass
+    await query.message.edit_text(
+        client.genderize(SubscriptionPlans.subscription_plans_teaser()),
+        reply_markup=keyboard_from_choices(SubscriptionPlans),
+    )
 
 
 @router.callback_query(F.data.in_(SubscriptionPlans.values))

@@ -5,6 +5,7 @@ from bot.keyboards.inline.base import (
     get_to_subscription_plans_kb,
 )
 from bot.keyboards.utils import one_button_keyboard
+from bot.lunar_nodes import get_lunar_nodes
 from bot.numerology import (
     get_fate_number,
     get_life_path_number,
@@ -68,9 +69,7 @@ def get_destiny_mystery_text(client: Client) -> str:
     hd_type = hd_types_translation[client.type]
     soul_number = get_soul_number(client.fullname)
     fate_number = get_fate_number(client.fullname)
-    north_node_sign = [i for i in client.planets if i['name'] == 'Node'][0][
-        'sign'
-    ]
+    north_node_sign = get_lunar_nodes()['north']
     south_node_sign = signs_map[north_node_sign]
 
     if client.subscription_is_active():

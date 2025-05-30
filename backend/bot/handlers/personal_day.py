@@ -9,7 +9,7 @@ from bot.keyboards.inline.base import (
     get_to_subscription_plans_kb,
 )
 from bot.keyboards.utils import one_button_keyboard
-from bot.numerology import calculate_number
+from bot.numerology import calculate_number, get_personal_day_number
 from bot.templates.personal_day import moon_phases, personal_day_messages
 from core.choices import Actions
 from core.models import Client, ClientAction
@@ -76,7 +76,7 @@ async def personal_day_preview(msg: Message, client: Client):
 @flags.with_client
 async def personal_day(query: CallbackQuery, client: Client):
     phase = moon_phases[date.today().strftime('%d.%m.%Y')]
-    number = calculate_number(str(client.birth.date()), ())
+    number = get_personal_day_number(client.birth.date())
     await query.message.edit_text(
         personal_day_messages[phase][number],
     )

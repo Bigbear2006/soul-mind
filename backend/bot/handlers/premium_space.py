@@ -3,9 +3,10 @@ from datetime import date
 
 from aiogram import F, Router, flags
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, BufferedInputFile
 from django.utils.timezone import now
 
+from bot.api.speechkit import synthesize
 from bot.keyboards.inline.base import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
@@ -113,6 +114,10 @@ async def power_day_handler(query: CallbackQuery, client: Client):
         await query.message.edit_text(
             '🚀 Твой День силы\n\n'
             'Твой День силы ещё не наступил — я сообщу тебе, когда придёт время.',
+            reply_markup=one_button_keyboard(
+                text='Назад',
+                callback_data='premium_space',
+            ),
         )
         return
 
@@ -134,12 +139,17 @@ async def power_day_handler(query: CallbackQuery, client: Client):
 @flags.with_client
 async def show_power_day(query: CallbackQuery, client: Client):
     power_day = get_power_day(client.birth.date())
-    await query.message.edit_text(
-        client.genderize(power_days_descriptions[power_day]),
-        reply_markup=one_button_keyboard(
-            text='Назад',
-            callback_data='power_day',
-        ),
+    text = client.genderize(power_days_descriptions[power_day])
+
+    await query.message.edit_text(text)
+    await query.message.answer_audio(
+        BufferedInputFile(await synthesize(text), 'Твой День силы.wav')
+    )
+
+    await ClientAction.objects.aget_or_create(
+        client=client,
+        action=Actions.POWER_DAY,
+        date__date=now().date(),
     )
 
 
@@ -161,6 +171,10 @@ async def universe_answer_handler(query: CallbackQuery, client: Client):
                 '✨ Ответ Вселенной\n\n'
                 'Ты уже {gender:получил,получила} ответ на этот месяц. '
                 'Новый будет 1 числа.',
+            ),
+            reply_markup=one_button_keyboard(
+                text='Назад',
+                callback_data='premium_space',
             ),
         )
         return
@@ -244,8 +258,17 @@ async def soul_muse_vip_answer(query: CallbackQuery, client: Client):
 @router.callback_query(F.data == 'show_vip_advice')
 @flags.with_client
 async def show_vip_advice(query: CallbackQuery, client: Client):
-    advice = random.choice(list(universe_vip_advices.values()))
-    await query.message.edit_text(client.genderize(advice))
+    advice_key = random.choice(list(universe_vip_advices.keys()))
+    advice_value = client.genderize(universe_vip_advices[advice_key])
+
+    await query.message.edit_text(f'{advice_key}\n\n{advice_value}')
+    await query.message.answer_audio(
+        BufferedInputFile(
+            await synthesize(advice_value),
+            'VIP-совет от Soul Muse.wav',
+        )
+    )
+
     await ClientAction.objects.aget_or_create(
         client=client,
         action=Actions.SOUL_MUSE_VIP_ANSWER,

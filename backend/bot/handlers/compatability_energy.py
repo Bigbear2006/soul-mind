@@ -17,7 +17,7 @@ from bot.keyboards.inline.base import (
 from bot.keyboards.inline.compatability_energy import (
     buy_compatability_kb,
     compatability_energy_kb,
-    show_connection_depth,
+    show_connection_depth, trial_usages_ended_kb,
 )
 from bot.keyboards.inline.vip_services import get_payment_choices_kb
 from bot.settings import settings
@@ -56,6 +56,18 @@ async def compatability_energy(
     )
 
     if remaining_usages <= 0:
+        if client.has_trial():
+            await msg.answer(
+                client.genderize(
+                    'Ты уже {gender:посмотрел,посмотрела} две энергии. '
+                    'И, возможно, {gender:почувствовал,почувствовала}, как это работает.'
+                    'На тестовом доступе это максимум.'
+                    'Но если ты хочешь увидеть глубже — у тебя есть два пути:'
+                ),
+                reply_markup=trial_usages_ended_kb,
+            )
+            return
+
         await msg.answer(
             client.genderize(
                 'Твоя энергия не ограничена тремя людьми.\n'
@@ -103,6 +115,11 @@ async def compatability_energy(
 ###############################
 ### BUY EXTRA COMPATABILITY ###
 ###############################
+
+
+@router.callback_query(F.data == 'buy_compatability_choices')
+async def buy_compatability_choices(query: CallbackQuery):
+    await query.message.edit_reply_markup(reply_markup=buy_compatability_kb)
 
 
 @router.callback_query(F.data.startswith('buy_compatability'))

@@ -4,46 +4,66 @@ from datetime import date, datetime, timedelta
 from django.utils.timezone import now
 
 from bot.api.astrology import AstrologyAPI
-from bot.numerology import get_month_number, get_soul_number
+from bot.numerology import get_month_number, get_soul_number, calculate_number
 from bot.schemas import HoroscopeParams, Planet
 from bot.templates.base import aspect_angles
 from core.models import Client
 
 
 def get_client_resource(client: Client) -> str:
-    resources = set()
-
     if any(int(g) in {22, 36, 12} for g in client.gates):
-        resources.update({'мягкость', 'прозрачность'})
-    elif '6/' in client.profile:
-        resources.update({'принятие'})
-    elif 'Spleen' not in client.centers:
-        resources.update({'доверие'})
-    elif 'G' not in client.centers:
-        resources.update({'границы'})
+        return 'мягкость'
 
-    if resources:
-        return random.choice(list(resources))
+    month_numbers_resources = {
+        1: 'решимость',
+        2: 'мягкость',
+        3: 'вдохновение',
+        4: 'стойкость',
+        5: 'гибкость',
+        6: 'принятие',
+        7: 'интуиция',
+        8: 'границы',
+        9: 'ясность',
+    }
 
-    sun_sign = [i['sign'] for i in client.planets if i['name'] == 'Sun'][0]
-    if sun_sign in ['Aries', 'Leo', 'Sagittarius']:
-        resources.update({'вдохновение', 'смелость', 'решимость'})
-    elif sun_sign in ['Taurus', 'Virgo', 'Capricorn']:
-        resources.update({'границы', 'стойкость', 'присутствие'})
-    elif sun_sign in ['Gemini', 'Libra', 'Aquarius']:
-        resources.update({'лёгкость', 'гибкость', 'ясность'})
-    elif sun_sign in ['Cancer', 'Scorpio', 'Pisces']:
-        resources.update({'интуиция', 'принятие', 'тишина'})
+    return month_numbers_resources.get(
+        get_month_number(client.birth.date()),
+        'мягкость',
+    )
 
-    month_number = get_month_number(client.birth.date())
-    if month_number in (1, 2, 3):
-        resources.update({'смелость', 'вдохновение', 'решимость'})
-    elif month_number in (4, 5, 6):
-        resources.update({'стойкость', 'границы', 'принятие'})
-    elif month_number in (7, 8, 9):
-        resources.update({'интуиция', 'тишина', 'ясность'})
-
-    return random.choice(list(resources))
+    # resources = set()
+    #
+    # if any(int(g) in {22, 36, 12} for g in client.gates):
+    #     resources.update({'мягкость', 'прозрачность'})
+    # elif '6/' in client.profile:
+    #     resources.update({'принятие'})
+    # elif 'Spleen' not in client.centers:
+    #     resources.update({'доверие'})
+    # elif 'G' not in client.centers:
+    #     resources.update({'границы'})
+    #
+    # if resources:
+    #     return random.choice(list(resources))
+    #
+    # sun_sign = [i['sign'] for i in client.planets if i['name'] == 'Sun'][0]
+    # if sun_sign in ['Aries', 'Leo', 'Sagittarius']:
+    #     resources.update({'вдохновение', 'смелость', 'решимость'})
+    # elif sun_sign in ['Taurus', 'Virgo', 'Capricorn']:
+    #     resources.update({'границы', 'стойкость', 'присутствие'})
+    # elif sun_sign in ['Gemini', 'Libra', 'Aquarius']:
+    #     resources.update({'лёгкость', 'гибкость', 'ясность'})
+    # elif sun_sign in ['Cancer', 'Scorpio', 'Pisces']:
+    #     resources.update({'интуиция', 'принятие', 'тишина'})
+    #
+    # month_number = get_month_number(client.birth.date())
+    # if month_number in (1, 2, 3):
+    #     resources.update({'смелость', 'вдохновение', 'решимость'})
+    # elif month_number in (4, 5, 6):
+    #     resources.update({'стойкость', 'границы', 'принятие'})
+    # elif month_number in (7, 8, 9):
+    #     resources.update({'интуиция', 'тишина', 'ясность'})
+    #
+    # return random.choice(list(resources))
 
 
 def get_month_resource_text(client: Client):
@@ -52,9 +72,9 @@ def get_month_resource_text(client: Client):
     return client.genderize(
         f'{client.fullname.split()[1]}, '
         f'твоя энергия в этом месяце раскрывается через {resource}.\n'
-        f'{sun_signs_descriptions[sun_sign]}.\n'
+        f'Ты {sun_signs_descriptions[sun_sign]}.\n'
         'Но сейчас ты входишь в новое состояние.\n'
-        'Вот что просит твоя душа услышать:\n'
+        '*Вот что просит твоя душа услышать:*\n'
         f'{random.choice(resources_descriptions[resource])}\n'
         'Ты не {gender:должен,должна} спешить. Достаточно — быть. И помнить.',
     )
@@ -144,7 +164,7 @@ async def get_month_script_text(client: Client):
     else:
         script_number = random.randint(0, 5)
 
-    hd_gate = get_active_hd_gate('10.05.2025')
+    hd_gate = get_active_hd_gate()
     soul_number = get_soul_number(client.fullname)
     moon = moon_phases_descriptions[current_date]
 
@@ -173,6 +193,12 @@ async def get_month_script_text(client: Client):
         else random.choice(aspect_fallback_texts)
     )
 
+    archetype_of_the_month = month_archetypes_descriptions[current_date]
+    archetype_of_the_month = (
+        f'{archetype_of_the_month["archetype"]}\n'
+        f'{random.choice(archetype_of_the_month["text"])}'
+    )
+
     return client.genderize(
         scripts[script_number].format(
             hd_gate=hd_gate['gate'],
@@ -181,9 +207,7 @@ async def get_month_script_text(client: Client):
             new_moon_sign=moon['new_moon']['sign'],
             full_moon_date=moon['full_moon']['date'],
             full_moon_sign=moon['full_moon']['sign'],
-            archetype_of_the_month=month_archetypes_descriptions[current_date][
-                'archetype'
-            ],
+            archetype_of_the_month=archetype_of_the_month,
             aspect_text=aspect_text,
             balance_tip=random.choice(balance_tips_descriptions[soul_number]),
         ),

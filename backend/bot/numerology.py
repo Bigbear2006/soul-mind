@@ -71,6 +71,10 @@ def get_karmic_number(fullname: str) -> int | None:
         return None
 
 
+def get_personal_day_number(birth_date: date):
+    return calculate_number(str(birth_date) + str(now().date()), ())
+
+
 def get_month_number(birth_date: date) -> int:
     current_date = now()
     return calculate_number(

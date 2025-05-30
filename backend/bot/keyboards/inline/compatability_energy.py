@@ -41,3 +41,14 @@ buy_compatability_kb = InlineKeyboardMarkup(
         ],
     ],
 )
+
+trial_usages_ended_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(text='🌟 Оформить подписку', callback_data='subscription_plans'),
+        ],
+        [
+            InlineKeyboardButton(text='🔓 Разблокировать доп. совместимости', callback_data='buy_compatability_choices'),
+        ],
+    ]
+)
