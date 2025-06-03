@@ -210,6 +210,12 @@ async def set_birth_date(msg: Message, state: FSMContext):
     StateFilter(UserInfoState.birth_time),
 )
 async def set_birth_time(msg: Message | CallbackQuery, state: FSMContext):
+    try:
+        datetime.strptime(msg.text, '%H:%M')
+    except ValueError:
+        await msg.answer('Некорректное время. Попробуй еще раз')
+        return
+
     if isinstance(msg, Message):
         birth_time = msg.text
         answer_func = msg.answer

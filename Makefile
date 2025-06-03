@@ -9,6 +9,12 @@ init:
 run:
 	docker-compose up --build -d
 
+logs:
+	docker-compose logs -f bot
+
+restart:
+	docker-compose restart bot
+
 dump:
 	docker-compose exec django python manage.py dumpdata \
 	-o fixtures/quest_tags.json --indent 2 core.questtag

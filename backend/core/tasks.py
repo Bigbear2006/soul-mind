@@ -91,6 +91,19 @@ async def dispatch_messages(
     )
 
 
+async def dispatch_genderized_messages(
+    clients: AsyncIterable[Client],
+    text: str,
+    **kwargs,
+):
+    await asyncio_wait(
+        [
+            asyncio.create_task(safe_send_message(c.pk, c.genderize(text), **kwargs))
+            async for c in clients
+        ],
+    )
+
+
 def async_shared_task(func):
     @shared_task
     @functools.wraps(func)
@@ -138,7 +151,6 @@ async def send_daily_quests():
     quests = (
         ClientDailyQuest.objects.select_related('client')
         .filter(
-            # created_at__gte=now() - timedelta(days=30),
             client__notifications_enabled=True,
             client__subscription_end__gte=today,
             quest__is_active=True,
@@ -267,9 +279,8 @@ async def send_quests_reminders():
                 created_at__date=now().date(),
             ).values_list('client_id', flat=True),
         )
-        .values_list('id', flat=True)
     )
-    await dispatch_messages(clients_ids, quest_reminder)
+    await dispatch_genderized_messages(clients_ids, quest_reminder)
 
 
 @async_shared_task
@@ -279,9 +290,9 @@ async def send_new_weekly_quest_is_available():
         notifications_enabled=True,
         created_at__lte=date - timedelta(days=3),
         subscription_end__lte=date,
-    ).values_list('id', flat=True)
+    )
 
-    await dispatch_messages(
+    await dispatch_genderized_messages(
         clients,
         new_weekly_quest_is_available['text'],
         reply_markup=new_weekly_quest_is_available['reply_markup'],
@@ -327,10 +338,9 @@ async def send_universe_advice_messages():
             actions__date__date=today.date(),
         )
         .distinct()
-        .values_list('id', flat=True)
     )
     text, kb = get_universe_advice_text_and_kb(today, extended=False)
-    await dispatch_messages(clients, text, reply_markup=kb)
+    await dispatch_genderized_messages(clients, text, reply_markup=kb)
 
 
 @async_shared_task
@@ -346,10 +356,9 @@ async def send_university_advice_extended_messages():
             personal_day_count=0,
         )
         .distinct()
-        .values_list('id', flat=True)
     )
     text, kb = get_universe_advice_text_and_kb(today, extended=True)
-    await dispatch_messages(clients, text, reply_markup=kb)
+    await dispatch_genderized_messages(clients, text, reply_markup=kb)
 
 
 @async_shared_task
@@ -365,10 +374,9 @@ async def send_destiny_guide_messages():
             actions__date__date__lte=last_week_day,
         )
         .distinct()
-        .values_list('id', flat=True)
     )
     n = random.randint(0, 3)
-    await dispatch_messages(
+    await dispatch_genderized_messages(
         clients,
         destiny_guide['text'][n],
         reply_markup=destiny_guide['reply_markup'][n],
@@ -377,13 +385,9 @@ async def send_destiny_guide_messages():
 
 @async_shared_task
 async def send_friday_gift_messages():
-    clients = (
-        Client.objects.filter(notifications_enabled=True)
-        .distinct()
-        .values_list('id', flat=True)
-    )
+    clients = Client.objects.filter(notifications_enabled=True)
     n = random.randint(0, 3)
-    await dispatch_messages(
+    await dispatch_genderized_messages(
         clients,
         friday_gift['text'][n],
         reply_markup=friday_gift['reply_markup'][n],
