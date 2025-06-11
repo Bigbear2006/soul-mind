@@ -5,7 +5,8 @@ from aiogram.types import (
     BufferedInputFile,
     InputMediaDocument,
     InputMediaPhoto,
-    Message, InputMediaVideo,
+    InputMediaVideo,
+    Message,
 )
 
 from bot.settings import settings
@@ -60,7 +61,7 @@ async def load_media(msg: Message):
                     'assets/videos/soul_muse.mov',
                 ),
             ),
-        ]
+        ],
     )
 
     media = {

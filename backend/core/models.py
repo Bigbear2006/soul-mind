@@ -363,6 +363,7 @@ class Client(models.Model):
                 < (today - self.created_at).days
             )
             or client_action.subscription_plan != self.subscription_plan
+            or client_action.updated_at > self.subscription_end < now()
         ):
             await self.update_limit(action)
 
@@ -457,8 +458,18 @@ class ExpertType(models.Model):
 
 
 class ClientExpertType(models.Model):
-    client = models.ForeignKey(Client, models.CASCADE, 'expert_types', verbose_name='Пользователь')
-    expert_type = models.ForeignKey(ExpertType, models.CASCADE, 'clients', verbose_name='Тип эксперта')
+    client = models.ForeignKey(
+        Client,
+        models.CASCADE,
+        'expert_types',
+        verbose_name='Пользователь',
+    )
+    expert_type = models.ForeignKey(
+        ExpertType,
+        models.CASCADE,
+        'clients',
+        verbose_name='Тип эксперта',
+    )
 
 
 ##############
@@ -722,7 +733,11 @@ class MiniConsult(models.Model):
         null=True,
         blank=True,
     )
-    audio_file_path = models.CharField('Путь к файлу', max_length=255, blank=True)
+    audio_file_path = models.CharField(
+        'Путь к файлу',
+        max_length=255,
+        blank=True,
+    )
     expert_type = models.ForeignKey(
         ExpertType,
         models.SET_NULL,
@@ -843,7 +858,11 @@ class MiniConsultFeedback(models.Model):
         null=True,
         blank=True,
     )
-    audio_file_path = models.CharField('Путь к файлу', max_length=255, blank=True)
+    audio_file_path = models.CharField(
+        'Путь к файлу',
+        max_length=255,
+        blank=True,
+    )
     date = models.DateTimeField('Дата', auto_now_add=True)
 
     class Meta:
@@ -976,8 +995,13 @@ class FridayGift(models.Model):
             return self.text[:25]
         return f'Аудио от {self.created_at.strftime(settings.DATE_FMT)}'
 
-    async def send(self, msg: Message, reply_markup: InlineKeyboardMarkup):
-        preamble = friday_gifts_preambles[self.type]
+    async def send(
+        self,
+        msg: Message,
+        client: Client,
+        reply_markup: InlineKeyboardMarkup,
+    ):
+        preamble = client.genderize(friday_gifts_preambles[self.type])
         if self.type == FridayGiftTypes.SYMBOLS:
             await msg.answer(self.text, reply_markup=reply_markup)
         elif self.type == FridayGiftTypes.CARDS:

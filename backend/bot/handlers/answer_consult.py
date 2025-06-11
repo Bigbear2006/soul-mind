@@ -12,7 +12,11 @@ from bot.keyboards.inline.vip_services import get_end_consult_kb
 from bot.keyboards.utils import keyboard_from_choices
 from bot.loader import logger
 from bot.states import MiniConsultState
-from bot.templates.vip_services import mosaic_experts_texts, mosaic_intros, mosaic_topic_texts
+from bot.templates.vip_services import (
+    mosaic_experts_texts,
+    mosaic_intros,
+    mosaic_topic_texts,
+)
 from core.choices import MiniConsultFeedbackRatings, MiniConsultStatuses
 from core.models import Client, ExpertAnswer, MiniConsult
 
@@ -32,7 +36,7 @@ async def answer_consult(query: CallbackQuery, state: FSMContext):
     consult = await MiniConsult.objects.aget(pk=int(query.data.split(':')[1]))
     if consult.status != MiniConsultStatuses.WAITING:
         await query.message.reply(
-            'Эту консультацию уже взял другой эксперт или она завершена'
+            'Эту консультацию уже взял другой эксперт или она завершена',
         )
         return
 
@@ -91,7 +95,9 @@ async def end_consult(query: CallbackQuery, state: FSMContext):
                 f'{e.__class__.__name__}: {str(e)}',
             )
 
-    await MiniConsult.objects.filter(pk=consult.pk).aupdate(status=MiniConsultStatuses.COMPLETED)
+    await MiniConsult.objects.filter(pk=consult.pk).aupdate(
+        status=MiniConsultStatuses.COMPLETED,
+    )
     await query.bot.send_message(
         consult.client.pk,
         'Как тебе консультация?',
@@ -101,7 +107,10 @@ async def end_consult(query: CallbackQuery, state: FSMContext):
         ),
     )
 
-    if await MiniConsult.objects.filter(client=consult.client).acount() % 3 == 0:
+    if (
+        await MiniConsult.objects.filter(client=consult.client).acount() % 3
+        == 0
+    ):
         consults = MiniConsult.objects.prefetch_related('topics').filter(
             client=consult.client,
         )
@@ -110,7 +119,8 @@ async def end_consult(query: CallbackQuery, state: FSMContext):
         )
         all_topics = [
             mosaic_topic_texts[t]
-            for i in consults for t in i.topics.all()
+            for i in consults
+            for t in i.topics.all()
             if t in mosaic_topic_texts
         ]
         if len(all_topics) < 3:

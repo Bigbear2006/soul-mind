@@ -52,10 +52,11 @@ from core.choices import (
 )
 from core.models import (
     Client,
+    ExpertType,
     MiniConsult,
     MiniConsultFeedback,
     MiniConsultTopic,
-    Topic, ExpertType,
+    Topic,
 )
 
 router = Router()
@@ -301,7 +302,9 @@ async def send_question_to_expert(
         .aget(pk=consult.pk)
     )
 
-    async for client in Client.objects.filter(expert_types__expert_type=consult.expert_type):
+    async for client in Client.objects.filter(
+        expert_types__expert_type=consult.expert_type,
+    ):
         await consult.send_to(
             chat_id=client.id,
             reply_markup=get_answer_consult_kb(consult.pk),

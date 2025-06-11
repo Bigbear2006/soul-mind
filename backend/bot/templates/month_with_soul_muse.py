@@ -4,7 +4,7 @@ from datetime import date, datetime, timedelta
 from django.utils.timezone import now
 
 from bot.api.astrology import AstrologyAPI
-from bot.numerology import get_month_number, get_soul_number, calculate_number
+from bot.numerology import get_month_number, get_soul_number
 from bot.schemas import HoroscopeParams, Planet
 from bot.templates.base import aspect_angles
 from core.models import Client

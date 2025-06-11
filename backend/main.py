@@ -29,6 +29,7 @@ async def main():
         registration,
         soul_muse_question,
         subscribe,
+        tests,
         universe_advice,
         vip_services,
     )
@@ -53,6 +54,7 @@ async def main():
         vip_services.router,
         load_media.router,
         experts.router,
+        tests.router,
     )
 
     dp.message.middleware(WithClientMiddleware())

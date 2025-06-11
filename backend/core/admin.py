@@ -20,7 +20,7 @@ class AudioPlayerMixin:
         return mark_safe(
             f'<audio controls src="{url}">'
             'Ваш браузер не поддерживает элемент audio.'
-            '</audio>'
+            '</audio>',
         )
 
     audio_player.short_description = 'Аудио'

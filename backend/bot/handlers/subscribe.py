@@ -21,23 +21,35 @@ router = Router()
 
 
 @router.callback_query(F.data == 'subscription_plans')
+@router.callback_query(F.data == 'subscription_plans_with_back_button')
 @flags.with_client
 async def subscription_plans_handler(
     query: CallbackQuery,
     state: FSMContext,
     client: Client,
 ):
+    back_button_data = (
+        'trial_usages_ended'
+        if query.data == 'subscription_plans_with_back_button'
+        else None
+    )
     await state.set_state()
     await query.message.edit_text(
         client.genderize(SubscriptionPlans.subscription_plans_teaser()),
-        reply_markup=keyboard_from_choices(SubscriptionPlans),
+        reply_markup=keyboard_from_choices(
+            SubscriptionPlans,
+            back_button_data=back_button_data,
+        ),
     )
 
 
 @router.callback_query(F.data.in_(SubscriptionPlans.values))
 async def choose_subscription_plan(query: CallbackQuery, state: FSMContext):
     plan = SubscriptionPlans(query.data)
-    await state.update_data(subscription_plan=plan.value)
+    await state.update_data(
+        subscription_plan=plan.value,
+        back_button_data=None,
+    )
     await query.message.edit_text(
         plan.teaser,
         reply_markup=one_button_keyboard(

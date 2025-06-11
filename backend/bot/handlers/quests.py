@@ -196,6 +196,10 @@ async def quest_handler(query: CallbackQuery, client: Client):
                 status=status,
             )
         except IntegrityError:
+            await QuestModel.objects.filter(
+                client_id=query.message.chat.id,
+                quest_id=quest_id,
+            ).aupdate(status=status)
             await query.answer(
                 client.genderize(
                     'Ты уже {gender:проходил,проходила} это задание',

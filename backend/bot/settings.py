@@ -56,14 +56,14 @@ class Settings:
             'https://docs.google.com/document/d/'
             '11eEnAiY9y1IbVk9CtvyEzvIC0mLU6nxG/edit?usp=drive_link'
             '&ouid=111038030028092199179&rtpof=true&sd=true'
-        )
+        ),
     )
     PUBLIC_OFFER_URL: str = field(
         default=(
             'https://docs.google.com/document/d/'
             '1PRFVMc8NSMVvD8L37d7dZzNx5uxI7wp4/edit?usp=drive_link'
             '&ouid=111038030028092199179&rtpof=true&sd=true'
-        )
+        ),
     )
 
 

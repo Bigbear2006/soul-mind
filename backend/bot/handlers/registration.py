@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from datetime import datetime, timezone, timedelta, UTC
+from datetime import UTC, datetime, timedelta, timezone
 
 from aiogram import F, Router, flags
 from aiogram.enums import ParseMode
@@ -7,8 +7,8 @@ from aiogram.filters import Command, CommandObject, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     CallbackQuery,
-    InputMediaPhoto,
-    Message, InputMediaVideo,
+    InputMediaVideo,
+    Message,
 )
 
 from bot.api.astrology import AstrologyAPI
@@ -210,13 +210,13 @@ async def set_birth_date(msg: Message, state: FSMContext):
     StateFilter(UserInfoState.birth_time),
 )
 async def set_birth_time(msg: Message | CallbackQuery, state: FSMContext):
-    try:
-        datetime.strptime(msg.text, '%H:%M')
-    except ValueError:
-        await msg.answer('Некорректное время. Попробуй еще раз')
-        return
-
     if isinstance(msg, Message):
+        try:
+            datetime.strptime(msg.text, '%H:%M')
+        except ValueError:
+            await msg.answer('Некорректное время. Попробуй еще раз')
+            return
+
         birth_time = msg.text
         answer_func = msg.answer
     else:
@@ -250,7 +250,10 @@ async def set_birth_location(msg: Message, client: Client, state: FSMContext):
         return
 
     async with AstrologyAPI() as api:
-        birth = datetime.strptime(await state.get_value('birth'), settings.DATE_FMT)
+        birth = datetime.strptime(
+            await state.get_value('birth'),
+            settings.DATE_FMT,
+        )
         tzone = await api.get_timezone(lat, lon, birth.date())
         birth = birth.replace(tzinfo=timezone(timedelta(hours=tzone)))
 

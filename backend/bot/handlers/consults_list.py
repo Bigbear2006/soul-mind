@@ -7,7 +7,7 @@ from bot.keyboards.inline.vip_services import (
     get_answer_consult_kb,
     get_consults_list_kb,
 )
-from core.models import MiniConsult, Client
+from core.models import Client, MiniConsult
 
 router = Router()
 
@@ -15,7 +15,11 @@ router = Router()
 @router.message(Command('consults'))
 @router.callback_query(F.data == 'consults_list')
 @flags.with_client
-async def consults_list(msg: Message | CallbackQuery, state: FSMContext, client: Client):
+async def consults_list(
+    msg: Message | CallbackQuery,
+    state: FSMContext,
+    client: Client,
+):
     answer_func = (
         msg.answer if isinstance(msg, Message) else msg.message.edit_text
     )
@@ -49,7 +53,11 @@ async def delete_this_message(query: CallbackQuery):
 
 @router.callback_query(F.data.in_(('consults_previous', 'consults_next')))
 @flags.with_client
-async def change_consults_list_page(query: CallbackQuery, state: FSMContext, client: Client):
+async def change_consults_list_page(
+    query: CallbackQuery,
+    state: FSMContext,
+    client: Client,
+):
     page = await state.get_value('page')
     if query.data == 'consults_previous':
         page -= 1

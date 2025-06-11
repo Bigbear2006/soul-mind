@@ -78,10 +78,12 @@ async def personal_gifts_handler(query: CallbackQuery):
 
 
 @router.callback_query(F.data.startswith('friday_gift'))
-async def friday_gift_detail(query: CallbackQuery):
+@flags.with_client
+async def friday_gift_detail(query: CallbackQuery, client: Client):
     gift = await FridayGift.objects.aget(pk=query.data.split(':')[1])
     await gift.send(
         query.message,
+        client,
         one_button_keyboard(
             text='Назад',
             callback_data='delete_this_message',

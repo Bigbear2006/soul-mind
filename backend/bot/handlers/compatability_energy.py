@@ -15,9 +15,10 @@ from bot.keyboards.inline.base import (
     get_to_subscription_plans_kb,
 )
 from bot.keyboards.inline.compatability_energy import (
-    buy_compatability_kb,
     compatability_energy_kb,
-    show_connection_depth, trial_usages_ended_kb,
+    get_buy_compatability_kb,
+    show_connection_depth,
+    trial_usages_ended_kb,
 )
 from bot.keyboards.inline.vip_services import get_payment_choices_kb
 from bot.settings import settings
@@ -60,9 +61,9 @@ async def compatability_energy(
             await msg.answer(
                 client.genderize(
                     'Ты уже {gender:посмотрел,посмотрела} две энергии. '
-                    'И, возможно, {gender:почувствовал,почувствовала}, как это работает.'
+                    'И, возможно, {gender:почувствовал,почувствовала}, как это работает.\n'
                     'На тестовом доступе это максимум.'
-                    'Но если ты хочешь увидеть глубже — у тебя есть два пути:'
+                    'Но если ты хочешь увидеть глубже — у тебя есть два пути:',
                 ),
                 reply_markup=trial_usages_ended_kb,
             )
@@ -82,7 +83,7 @@ async def compatability_energy(
                 'Пара. Семья. Команда. Друзья.\n'
                 'Выбирай формат — и ныряем вглубь.\n\n',
             ),
-            reply_markup=buy_compatability_kb,
+            reply_markup=get_buy_compatability_kb(),
         )
         return
 
@@ -117,9 +118,27 @@ async def compatability_energy(
 ###############################
 
 
+@router.callback_query(F.data == 'trial_usages_ended')
+@flags.with_client
+async def trial_usages_ended_handler(query: CallbackQuery, client: Client):
+    await query.message.edit_text(
+        client.genderize(
+            'Ты уже {gender:посмотрел,посмотрела} две энергии. '
+            'И, возможно, {gender:почувствовал,почувствовала}, как это работает.\n'
+            'На тестовом доступе это максимум.'
+            'Но если ты хочешь увидеть глубже — у тебя есть два пути:',
+        ),
+        reply_markup=trial_usages_ended_kb,
+    )
+
+
 @router.callback_query(F.data == 'buy_compatability_choices')
 async def buy_compatability_choices(query: CallbackQuery):
-    await query.message.edit_reply_markup(reply_markup=buy_compatability_kb)
+    await query.message.edit_reply_markup(
+        reply_markup=get_buy_compatability_kb(
+            back_button_data='trial_usages_ended',
+        ),
+    )
 
 
 @router.callback_query(F.data.startswith('buy_compatability'))

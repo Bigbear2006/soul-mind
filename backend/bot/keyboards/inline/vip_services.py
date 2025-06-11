@@ -1,6 +1,6 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from django.db.models import Case, IntegerField, Value, When, Subquery
+from django.db.models import Case, IntegerField, Subquery, Value, When
 
 from bot.keyboards.utils import (
     get_paginated_keyboard,
@@ -8,7 +8,7 @@ from bot.keyboards.utils import (
     one_button_keyboard,
 )
 from core.choices import MiniConsultStatuses
-from core.models import Client, MiniConsult, Topic, ClientExpertType
+from core.models import Client, ClientExpertType, MiniConsult, Topic
 
 vip_services_kb = InlineKeyboardMarkup(
     inline_keyboard=[
@@ -108,7 +108,9 @@ async def get_consults_list_kb(client: Client, page: int = 1):
             MiniConsult.objects.filter(
                 status=MiniConsultStatuses.WAITING,
                 expert_type__in=Subquery(
-                    ClientExpertType.objects.filter(client=client).values('expert_type'),
+                    ClientExpertType.objects.filter(client=client).values(
+                        'expert_type',
+                    ),
                 ),
             )
             .select_related('client')

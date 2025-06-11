@@ -34,3 +34,14 @@ load:
 
 admin:
 	docker-compose exec django python manage.py createsuperuser
+
+shell:
+	docker-compose exec django python manage.py shell
+
+lint:
+	ruff format
+	ruff check --fix --silent
+	ruff format
+
+check:
+	ruff check

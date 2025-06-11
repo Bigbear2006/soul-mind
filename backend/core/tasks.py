@@ -11,6 +11,7 @@ from asgiref.sync import sync_to_async
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.contrib.postgres.aggregates import ArrayAgg
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count, Exists, Max, OuterRef, Q
 from django.utils.timezone import now
 
@@ -98,7 +99,9 @@ async def dispatch_genderized_messages(
 ):
     await asyncio_wait(
         [
-            asyncio.create_task(safe_send_message(c.pk, c.genderize(text), **kwargs))
+            asyncio.create_task(
+                safe_send_message(c.pk, c.genderize(text), **kwargs),
+            )
             async for c in clients
         ],
     )
@@ -194,10 +197,17 @@ async def send_daily_quests():
 
 
 async def send_weekly_quest_task(client: Client, quest_task_id: int, day: int):
-    quest = await WeeklyQuestTask.objects.select_related('quest').aget(
-        quest_id=quest_task_id,
-        day=day,
-    )
+    try:
+        quest = await WeeklyQuestTask.objects.select_related('quest').aget(
+            quest_id=quest_task_id,
+            day=day,
+        )
+    except ObjectDoesNotExist:
+        task_logger.info(
+            f'WeeklyQuestTask does not exists {quest_task_id=} {day=}',
+        )
+        return
+
     await safe_send_message(
         client.pk,
         client.genderize(quest.to_message_text()),
@@ -272,13 +282,10 @@ async def send_weekly_quests_tasks():
 
 @async_shared_task
 async def send_quests_reminders():
-    clients_ids = (
-        Client.objects.filter(notifications_enabled=True)
-        .exclude(
-            id__in=ClientDailyQuest.objects.filter(
-                created_at__date=now().date(),
-            ).values_list('client_id', flat=True),
-        )
+    clients_ids = Client.objects.filter(notifications_enabled=True).exclude(
+        id__in=ClientDailyQuest.objects.filter(
+            created_at__date=now().date(),
+        ).values_list('client_id', flat=True),
     )
     await dispatch_genderized_messages(clients_ids, quest_reminder)
 

@@ -3,7 +3,7 @@ from datetime import date
 
 from aiogram import F, Router, flags
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message, BufferedInputFile
+from aiogram.types import BufferedInputFile, CallbackQuery, Message
 from django.utils.timezone import now
 
 from bot.api.speechkit import synthesize
@@ -143,7 +143,7 @@ async def show_power_day(query: CallbackQuery, client: Client):
 
     await query.message.edit_text(text)
     await query.message.answer_audio(
-        BufferedInputFile(await synthesize(text), 'Твой День силы.wav')
+        BufferedInputFile(await synthesize(text), 'Твой День силы.wav'),
     )
 
     await ClientAction.objects.aget_or_create(
@@ -266,7 +266,7 @@ async def show_vip_advice(query: CallbackQuery, client: Client):
         BufferedInputFile(
             await synthesize(advice_value),
             'VIP-совет от Soul Muse.wav',
-        )
+        ),
     )
 
     await ClientAction.objects.aget_or_create(

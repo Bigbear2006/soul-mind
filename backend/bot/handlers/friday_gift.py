@@ -85,7 +85,7 @@ async def friday_gift_intro(msg: Message, client: Client):
 async def friday_gift_handler(query: CallbackQuery, client: Client):
     gift = await FridayGift.objects.get_current_week_gift(client)
     if gift:
-        await gift.send(query.message, friday_gift_kb)
+        await gift.send(query.message, client, friday_gift_kb)
         return
 
     latest_gift = await FridayGift.objects.get_latest_gift(client)

@@ -99,6 +99,7 @@ def keyboard_from_choices(
     choices: type[Choices],
     *,
     prefix: str = '',
+    back_button_data: str | None = None,
 ) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     for value, label in choices.choices:
@@ -106,4 +107,6 @@ def keyboard_from_choices(
             text=label,
             callback_data=f'{prefix}:{value}' if prefix else value,
         )
+    if back_button_data:
+        kb.button(text='Назад', callback_data=back_button_data)
     return kb.adjust(1).as_markup()
