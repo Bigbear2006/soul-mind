@@ -299,7 +299,7 @@ class Client(models.Model):
                 if self.subscription_plan == SubscriptionPlans.PREMIUM:
                     return 999  # unlimited
                 else:
-                    return 2
+                    return 3
             elif self.has_trial():
                 return 2
             else:

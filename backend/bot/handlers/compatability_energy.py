@@ -33,16 +33,18 @@ router = Router()
 
 
 @router.message(F.text == '💞 Энергия вашей совместимости')
+@router.callback_query(F.data == 'compatability_energy')
 @flags.with_client
 async def compatability_energy(
-    msg: Message,
+    msg: Message | CallbackQuery,
     state: FSMContext,
     client: Client,
 ):
     await client.refresh_limit(Actions.COMPATABILITY_ENERGY)
+    answer_func = msg.answer if isinstance(msg, Message) else msg.message.edit_text
 
     if not client.is_registered():
-        await msg.answer(
+        await answer_func(
             client.genderize(
                 'Ты хочешь понять вас,\n'
                 'но ещё не {gender:заглянул,заглянула} в себя?\n\n'
@@ -58,7 +60,7 @@ async def compatability_energy(
 
     if remaining_usages <= 0:
         if client.has_trial():
-            await msg.answer(
+            await answer_func(
                 client.genderize(
                     'Ты уже {gender:посмотрел,посмотрела} две энергии. '
                     'И, возможно, {gender:почувствовал,почувствовала}, как это работает.\n'
@@ -69,7 +71,7 @@ async def compatability_energy(
             )
             return
 
-        await msg.answer(
+        await answer_func(
             client.genderize(
                 'Твоя энергия не ограничена тремя людьми.\n'
                 'Каждая новая связь — это отражение тебя.\n\n'
@@ -95,7 +97,7 @@ async def compatability_energy(
             else ''
         )
         await state.set_state(CompatabilityEnergyState.connection_type)
-        await msg.answer(
+        await answer_func(
             client.genderize(
                 'Случайных встреч не бывает.\n'
                 'Я покажу, почему этот человек рядом — и чему вы учите друг друга.\n\n'
@@ -105,7 +107,7 @@ async def compatability_energy(
             reply_markup=compatability_energy_kb,
         )
     else:
-        await msg.answer(
+        await answer_func(
             'Связь, которую ты хочешь понять,\n'
             'не раскрывается за пару строк.\n\n'
             'Продолжи путь — и я покажу, что между вами на самом деле.',
@@ -118,25 +120,11 @@ async def compatability_energy(
 ###############################
 
 
-@router.callback_query(F.data == 'trial_usages_ended')
-@flags.with_client
-async def trial_usages_ended_handler(query: CallbackQuery, client: Client):
-    await query.message.edit_text(
-        client.genderize(
-            'Ты уже {gender:посмотрел,посмотрела} две энергии. '
-            'И, возможно, {gender:почувствовал,почувствовала}, как это работает.\n'
-            'На тестовом доступе это максимум.'
-            'Но если ты хочешь увидеть глубже — у тебя есть два пути:',
-        ),
-        reply_markup=trial_usages_ended_kb,
-    )
-
-
 @router.callback_query(F.data == 'buy_compatability_choices')
 async def buy_compatability_choices(query: CallbackQuery):
     await query.message.edit_reply_markup(
         reply_markup=get_buy_compatability_kb(
-            back_button_data='trial_usages_ended',
+            back_button_data='compatability_energy',
         ),
     )
 
@@ -151,6 +139,7 @@ async def buy_compatability(query: CallbackQuery, state: FSMContext):
         reply_markup=get_payment_choices_kb(
             '250 баллов' if buy_count == 'one' else '650 баллов',
             '159 ₽' if buy_count == 'one' else '399 ₽',
+            back_button_data='buy_compatability_choices',
         ),
     )
 

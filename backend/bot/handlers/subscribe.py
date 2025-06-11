@@ -29,7 +29,7 @@ async def subscription_plans_handler(
     client: Client,
 ):
     back_button_data = (
-        'trial_usages_ended'
+        'compatability_energy'
         if query.data == 'subscription_plans_with_back_button'
         else None
     )
@@ -46,10 +46,7 @@ async def subscription_plans_handler(
 @router.callback_query(F.data.in_(SubscriptionPlans.values))
 async def choose_subscription_plan(query: CallbackQuery, state: FSMContext):
     plan = SubscriptionPlans(query.data)
-    await state.update_data(
-        subscription_plan=plan.value,
-        back_button_data=None,
-    )
+    await state.update_data(subscription_plan=plan.value)
     await query.message.edit_text(
         plan.teaser,
         reply_markup=one_button_keyboard(
