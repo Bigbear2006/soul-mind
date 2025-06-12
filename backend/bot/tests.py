@@ -2,7 +2,7 @@ import asyncio
 import os
 
 from bot.api.speechkit import synthesize
-from bot.templates.friday_gift import cards
+from bot.text_templates.friday_gift import cards
 
 
 def all_cards_has_images():

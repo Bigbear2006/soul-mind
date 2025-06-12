@@ -1,7 +1,7 @@
 from aiogram import Router
 
 from bot.filters import IsExpert
-from bot.handlers import answer_consult, consults_list
+from bot.handlers.experts import answer_consult, consults_list
 
 router = Router()
 router.include_router(answer_consult.router)

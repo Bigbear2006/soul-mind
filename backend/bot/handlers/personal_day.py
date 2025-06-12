@@ -9,8 +9,8 @@ from bot.keyboards.inline.base import (
     get_to_subscription_plans_kb,
 )
 from bot.keyboards.utils import one_button_keyboard
-from bot.numerology import get_personal_day_number
-from bot.templates.personal_day import moon_phases, personal_day_messages
+from bot.services.numerology import get_personal_day_number
+from bot.text_templates.personal_day import moon_phases, personal_day_messages
 from core.choices import Actions
 from core.models import Client, ClientAction
 

@@ -1,7 +1,7 @@
 from django.utils.timezone import now
 
-from bot.templates.base import all_centers
-from bot.templates.vip_services import power_calendar
+from bot.text_templates.base import all_centers
+from bot.text_templates.vip_services import power_calendar
 from core.models import Client
 
 

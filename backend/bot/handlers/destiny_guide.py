@@ -6,7 +6,7 @@ from django.utils.timezone import now
 
 from bot.keyboards.inline.base import get_to_registration_kb
 from bot.keyboards.utils import one_button_keyboard
-from bot.templates.destiny_guide import astro_events, important_days
+from bot.text_templates.destiny_guide import astro_events, important_days
 from core.choices import Actions
 from core.models import Client, ClientAction
 

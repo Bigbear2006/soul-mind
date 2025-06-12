@@ -1,10 +1,10 @@
-from bot.numerology import (
+from bot.services.numerology import (
     get_fate_number,
     get_karmic_number,
     get_life_path_number,
     get_soul_number,
 )
-from bot.templates.base import archetypes, shadow_archetypes
+from bot.text_templates.base import archetypes, shadow_archetypes
 from core.choices import Genders
 from core.models import Client
 

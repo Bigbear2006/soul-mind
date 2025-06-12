@@ -14,9 +14,9 @@ from django.utils.timezone import now
 
 from bot.loader import bot, logger
 from bot.settings import settings
-from bot.templates.base import all_centers_ordered
-from bot.templates.friday_gift import friday_gifts_preambles
-from bot.text_utils import genderize
+from bot.text_templates.base import all_centers_ordered
+from bot.text_templates.friday_gift import friday_gifts_preambles
+from bot.utils.formatters import genderize
 from core.choices import (
     Actions,
     ExperienceTypes,
@@ -363,7 +363,10 @@ class Client(models.Model):
                 < (today - self.created_at).days
             )
             or client_action.subscription_plan != self.subscription_plan
-            or client_action.updated_at > self.subscription_end < now()
+            or (
+                self.subscription_end
+                and client_action.updated_at > self.subscription_end < now()
+            )
         ):
             await self.update_limit(action)
 

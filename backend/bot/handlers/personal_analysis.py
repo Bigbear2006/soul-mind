@@ -1,45 +1,32 @@
 from aiogram import F, Router, flags
-from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile, CallbackQuery, Message
 
 from bot.keyboards.inline.base import get_to_subscription_plans_kb
-from bot.keyboards.inline.personal_analysis import back_to_personal_analysis_kb
-from bot.pdf import generate_pdf
-from bot.templates.career_and_finance import (
+from bot.services.personal_analysis.career_and_finance import (
     get_career_and_finance_intro,
     get_career_and_finance_text,
 )
-from bot.templates.destiny_mystery import (
+from bot.services.personal_analysis.destiny_mystery import (
     get_destiny_mystery_intro,
     get_destiny_mystery_text,
 )
-from bot.templates.full_profile import (
+from bot.services.personal_analysis.full_profile import (
     get_full_profile_intro,
     get_full_profile_text,
 )
-from bot.templates.love_code import get_love_code_intro, get_love_code_text
-from bot.templates.personal_analysis import get_personal_analysis_intro
-from bot.templates.superpower import get_superpower_intro, get_superpower_text
-from bot.text_utils import split_text
+from bot.services.personal_analysis.intro import get_personal_analysis_intro
+from bot.services.personal_analysis.love_code import (
+    get_love_code_intro,
+    get_love_code_text,
+)
+from bot.services.personal_analysis.superpower import (
+    get_superpower_intro,
+    get_superpower_text,
+)
+from bot.utils.pdf import generate_pdf
 from core.models import Client
 
 router = Router()
-
-
-async def send_long_message(msg: Message, state: FSMContext, text: str):
-    if len(text) > 4000:
-        text_parts = split_text(text, max_length=4000, sep='\n')
-        msg_to_delete = await msg.edit_text(text_parts[0])
-        await state.update_data(msg_to_delete_id=msg_to_delete.message_id)
-        await msg.answer(
-            text_parts[1],
-            reply_markup=back_to_personal_analysis_kb,
-        )
-    else:
-        await msg.edit_text(
-            text,
-            reply_markup=back_to_personal_analysis_kb,
-        )
 
 
 @router.message(F.text == '📌 Личностный разбор')

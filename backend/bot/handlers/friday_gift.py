@@ -14,7 +14,7 @@ from bot.keyboards.inline.friday_gift import friday_gift_kb
 from bot.keyboards.utils import one_button_keyboard
 from bot.loader import logger
 from bot.states import FridayGiftState
-from bot.templates.friday_gift import (
+from bot.text_templates.friday_gift import (
     cards,
     friday_gifts_order,
     friday_gifts_preambles,

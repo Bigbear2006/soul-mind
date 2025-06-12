@@ -7,7 +7,7 @@ from pydub import AudioSegment
 from bot.api.base import APIClient
 from bot.loader import logger
 from bot.settings import settings
-from bot.text_utils import split_text
+from bot.utils.formatters import split_text
 
 
 class SpeechKit(APIClient):

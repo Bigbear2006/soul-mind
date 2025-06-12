@@ -23,9 +23,9 @@ from bot.keyboards.reply import menu_kb
 from bot.keyboards.utils import keyboard_from_choices, one_button_keyboard
 from bot.loader import logger
 from bot.schemas import HDInputData, HoroscopeParams
+from bot.services.tags import get_client_tags
 from bot.settings import settings
 from bot.states import UserInfoState
-from bot.tags import get_client_tags
 from core.models import Client, ClientQuestTag, Genders, QuestTag
 
 router = Router()

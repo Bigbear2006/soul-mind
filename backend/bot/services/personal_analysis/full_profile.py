@@ -5,10 +5,14 @@ from bot.keyboards.inline.base import (
     get_to_subscription_plans_kb,
 )
 from bot.keyboards.utils import one_button_keyboard
-from bot.templates.career_and_finance import get_career_and_finance_text
-from bot.templates.destiny_mystery import get_destiny_mystery_text
-from bot.templates.love_code import get_love_code_text
-from bot.templates.superpower import get_superpower_text
+from bot.services.personal_analysis.career_and_finance import (
+    get_career_and_finance_text,
+)
+from bot.services.personal_analysis.destiny_mystery import (
+    get_destiny_mystery_text,
+)
+from bot.services.personal_analysis.love_code import get_love_code_text
+from bot.services.personal_analysis.superpower import get_superpower_text
 from core.models import Client
 
 

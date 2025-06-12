@@ -1,5 +1,5 @@
-from bot.numerology import get_life_path_number, get_soul_number
-from bot.templates.base import archetypes
+from bot.services.numerology import get_life_path_number, get_soul_number
+from bot.text_templates.base import archetypes
 from core.models import Client
 
 

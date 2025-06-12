@@ -10,7 +10,7 @@ from bot.keyboards.inline.base import (
 from bot.keyboards.inline.month_with_soul_muse import month_with_soul_muse_kb
 from bot.keyboards.utils import one_button_keyboard
 from bot.prompts.month_forecast import get_month_forecast_prompt
-from bot.templates.month_with_soul_muse import (
+from bot.services.month_with_soul_muse import (
     get_month_resource_text,
     get_month_script_text,
 )

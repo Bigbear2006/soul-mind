@@ -12,7 +12,7 @@ from bot.keyboards.inline.vip_services import get_end_consult_kb
 from bot.keyboards.utils import keyboard_from_choices
 from bot.loader import logger
 from bot.states import MiniConsultState
-from bot.templates.vip_services import (
+from bot.text_templates.vip_services import (
     mosaic_experts_texts,
     mosaic_intros,
     mosaic_topic_texts,

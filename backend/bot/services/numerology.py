@@ -5,7 +5,7 @@ from datetime import date
 
 from django.utils.timezone import now
 
-from bot.templates.base import pythagorean_matrix
+from bot.text_templates.base import pythagorean_matrix
 
 
 def calculate_number(number: int | str, master_numbers: Sequence[int]) -> int:

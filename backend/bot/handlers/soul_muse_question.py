@@ -26,9 +26,11 @@ from bot.prompts.answer_question import get_answer_question_prompt
 from bot.prompts.categorize_question import get_categorize_question_prompt
 from bot.settings import settings
 from bot.states import SoulMuseQuestionState
-from bot.templates.base import astropoints_not_enough
-from bot.templates.soul_muse_question import inappropriate_questions_answers
-from bot.text_utils import questions_plural, remaining_plural
+from bot.text_templates.base import astropoints_not_enough
+from bot.text_templates.soul_muse_question import (
+    inappropriate_questions_answers,
+)
+from bot.utils.formatters import questions_plural, remaining_plural
 from core.models import (
     Actions,
     Client,

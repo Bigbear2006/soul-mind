@@ -1,6 +1,6 @@
 from typing import Literal
 
-from bot.templates.base import all_centers
+from bot.text_templates.base import all_centers
 
 
 def get_vip_compatability_prompt(

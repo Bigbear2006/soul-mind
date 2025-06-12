@@ -21,11 +21,11 @@ from bot.keyboards.inline.compatability_energy import (
     trial_usages_ended_kb,
 )
 from bot.keyboards.inline.vip_services import get_payment_choices_kb
+from bot.services.compatability_energy import get_compatability_energy_text
 from bot.settings import settings
 from bot.states import CompatabilityEnergyState
-from bot.templates.base import astropoints_not_enough
-from bot.templates.compatability_energy import get_compatability_energy_text
-from bot.text_utils import compatability_plural, remaining_plural
+from bot.text_templates.base import astropoints_not_enough
+from bot.utils.formatters import compatability_plural, remaining_plural
 from core.choices import Genders, SubscriptionPlans
 from core.models import Actions, Client
 
@@ -41,7 +41,9 @@ async def compatability_energy(
     client: Client,
 ):
     await client.refresh_limit(Actions.COMPATABILITY_ENERGY)
-    answer_func = msg.answer if isinstance(msg, Message) else msg.message.edit_text
+    answer_func = (
+        msg.answer if isinstance(msg, Message) else msg.message.edit_text
+    )
 
     if not client.is_registered():
         await answer_func(

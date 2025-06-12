@@ -15,10 +15,10 @@ from bot.keyboards.inline.quests import (
     get_weekly_quests_kb,
 )
 from bot.keyboards.utils import one_button_keyboard
+from bot.services.quests import get_daily_quest_text
 from bot.settings import settings
-from bot.templates.quests import (
+from bot.text_templates.quests import (
     daily_praises,
-    get_daily_quest_text,
     trial_quest_praise,
     weekly_praises,
 )
@@ -185,9 +185,7 @@ async def quest_handler(query: CallbackQuery, client: Client):
         await QuestModel.objects.filter(
             client_id=query.message.chat.id,
             quest_id=quest_id,
-        ).aupdate(
-            status=status,
-        )
+        ).aupdate(status=status)
     else:
         try:
             await QuestModel.objects.acreate(
@@ -200,12 +198,6 @@ async def quest_handler(query: CallbackQuery, client: Client):
                 client_id=query.message.chat.id,
                 quest_id=quest_id,
             ).aupdate(status=status)
-            await query.answer(
-                client.genderize(
-                    'Ты уже {gender:проходил,проходила} это задание',
-                ),
-            )
-            return
 
     if status == QuestStatuses.COMPLETED:
         await query.message.edit_text(

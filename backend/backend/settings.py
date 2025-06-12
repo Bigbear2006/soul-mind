@@ -1,3 +1,4 @@
+import os.path
 from pathlib import Path
 
 from celery.schedules import crontab
@@ -137,6 +138,9 @@ AUTH_USER_MODEL = 'core.User'
 # Logging configuration
 # https://docs.djangoproject.com/en/5.2/ref/settings/#logging
 
+if not os.path.exists(BASE_DIR / 'logs'):
+    os.mkdir(BASE_DIR / 'logs')
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -187,7 +191,7 @@ CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND')
 
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = False
 
-CELERY_BEAT_SCHEDULE = {
+__CELERY_BEAT_SCHEDULE = {
     'send_daily_quests': {
         'task': 'core.tasks.send_daily_quests',
         'schedule': crontab(minute='0', hour='8'),

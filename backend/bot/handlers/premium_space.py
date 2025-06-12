@@ -13,8 +13,8 @@ from bot.keyboards.inline.base import (
 )
 from bot.keyboards.inline.premium_space import premium_space_kb
 from bot.keyboards.utils import one_button_keyboard
-from bot.numerology import get_life_path_number, get_power_day
-from bot.templates.premium_space import (
+from bot.services.numerology import get_life_path_number, get_power_day
+from bot.text_templates.premium_space import (
     power_days_descriptions,
     universe_answers,
     universe_vip_advices,

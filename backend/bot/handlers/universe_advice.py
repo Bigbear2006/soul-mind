@@ -6,7 +6,7 @@ from django.utils.timezone import now
 
 from bot.keyboards.inline.base import get_to_registration_kb
 from bot.keyboards.utils import one_button_keyboard
-from bot.templates.universe_advice import universe_advices
+from bot.text_templates.universe_advice import universe_advices
 from core.choices import Actions
 from core.models import Client, ClientAction
 

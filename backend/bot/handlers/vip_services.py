@@ -29,7 +29,6 @@ from bot.keyboards.utils import (
     keyboard_from_choices,
     one_button_keyboard,
 )
-from bot.pdf import generate_pdf
 from bot.prompts.personal_report import get_personal_report_prompt
 from bot.prompts.vip_compatability import get_vip_compatability_prompt
 from bot.schemas import Bodygraphs, HDInputData
@@ -39,11 +38,12 @@ from bot.states import (
     PersonalReportState,
     VIPCompatabilityState,
 )
-from bot.templates.base import astropoints_not_enough, connection_types
-from bot.templates.vip_services import (
+from bot.text_templates.base import astropoints_not_enough, connection_types
+from bot.text_templates.vip_services import (
     personal_report_audio_closures,
     personal_report_intro,
 )
+from bot.utils.pdf import generate_pdf
 from core.choices import (
     ExperienceTypes,
     ExpertTypes,

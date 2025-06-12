@@ -12,13 +12,21 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Count, Exists, Max, OuterRef, Q
+from django.db.models import (
+    Count,
+    Exists,
+    F,
+    Max,
+    OuterRef,
+    Q,
+)
 from django.utils.timezone import now
 
 from bot.keyboards.inline.quests import get_quest_statuses_kb
 from bot.loader import bot
-from bot.numerology import get_power_day
-from bot.push_messages import (
+from bot.services.numerology import get_power_day
+from bot.settings import settings
+from bot.text_templates.push_messages import (
     destiny_guide,
     friday_gift,
     new_weekly_quest_is_available,
@@ -28,8 +36,7 @@ from bot.push_messages import (
     universe_advice_extended_reminder,
     universe_advice_reminder,
 )
-from bot.settings import settings
-from bot.templates.quests import quest_reminder
+from bot.text_templates.quests import quest_reminder
 from core.choices import Actions, QuestStatuses
 from core.models import (
     Client,
@@ -218,33 +225,46 @@ async def send_weekly_quest_task(client: Client, quest_task_id: int, day: int):
 @async_shared_task
 async def send_weekly_quests_tasks():
     tasks = (
-        ClientWeeklyQuestTask.objects.select_related('client')
+        ClientWeeklyQuestTask.objects.annotate(
+            quest_task_id=F('quest__quest_id'),
+            day=F('quest__day'),
+        )
+        .values('client_id', 'quest_task_id')
         .annotate(
-            last_task_day=Max(
-                'quest__day',
+            last_completed_day=Max(
+                'day',
                 filter=Q(status=QuestStatuses.COMPLETED),
+                default=0,
             ),
         )
         .filter(
             (
-                Q(last_task_day__lt=7)
-                & ~Q(quest__quest_id=settings.TRIAL_WEEKLY_QUEST_ID)
+                Q(last_completed_day__lt=7)
+                & ~Q(quest_task_id=settings.TRIAL_WEEKLY_QUEST_ID)
             )
             | Q(
-                last_task_day__lt=3,
-                quest__quest_id=settings.TRIAL_WEEKLY_QUEST_ID,
+                last_completed_day__lt=3,
+                quest_task_id=settings.TRIAL_WEEKLY_QUEST_ID,
             ),
             quest__is_active=True,
             client__notifications_enabled=True,
         )
     )
+
+    client_ids = {task['client_id'] async for task in tasks}
+    clients = {
+        client.id: client
+        async for client in Client.objects.filter(id__in=client_ids)
+    }
+    [task_logger.info(str(i)) async for i in tasks]
+
     await asyncio_wait(
         [
             asyncio.create_task(
                 send_weekly_quest_task(
-                    task.client,
-                    task.quest_id,
-                    task.last_task_day + 1,
+                    clients[task['client_id']],
+                    task['quest_task_id'],
+                    task['last_completed_day'] + 1,
                 ),
             )
             async for task in tasks
@@ -266,6 +286,7 @@ async def send_weekly_quests_tasks():
             ),
         )
     )
+
     await asyncio_wait(
         [
             asyncio.create_task(
