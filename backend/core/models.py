@@ -787,13 +787,18 @@ class MiniConsult(models.Model):
         else:
             priority = 'Разовая покупка'
 
+        topics = genderize(
+            ', '.join([t.topic.name for t in self.topics.all()]),
+            gender=self.client.gender,
+        )
+
         text = (
             f'Приоритет: {priority}\n'
             f'Тип эксперта: {self.expert_type}\n'
             f'Намерение: {intention}\n'
             f'Уже сталкивался: {ExperienceTypes(self.experience_type).label}\n'
             f'Ощущения: {FeelingsTypes(self.feelings_type).label}\n'
-            f'Метки: {", ".join([t.topic.name for t in self.topics.all()])}\n\n'
+            f'Метки: {topics}\n\n'
         )
         if self.expert_type.name in (
             ExpertTypes.ASTROLOGIST,

@@ -10,5 +10,5 @@ async def support(msg: Message):
         'Даже звёзды иногда сбиваются с курса.\n'
         'Если что-то не работает — просто скажи.\n'
         'Пиши в Telegram:\n'
-        '@soulmind_support\n'
+        '@soulmind_support\n',
     )

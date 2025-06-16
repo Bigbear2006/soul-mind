@@ -239,7 +239,11 @@ async def choose_topics(
     StateFilter(MiniConsultState.topics),
 )
 @flags.with_client
-async def ask_question(msg: Message | CallbackQuery, state: FSMContext, client: Client):
+async def ask_question(
+    msg: Message | CallbackQuery,
+    state: FSMContext,
+    client: Client,
+):
     answer_func = (
         msg.answer if isinstance(msg, Message) else msg.message.answer
     )
