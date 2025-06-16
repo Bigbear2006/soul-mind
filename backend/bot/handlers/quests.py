@@ -219,7 +219,7 @@ async def quest_handler(query: CallbackQuery, client: Client):
             await query.message.edit_text(random.choice(weekly_praises))
 
         if (
-            weekly_quest_task.pk == settings.TRIAL_WEEKLY_QUEST_ID
+            weekly_quest_task.quest_id == settings.TRIAL_WEEKLY_QUEST_ID
             and weekly_quest_task.day == 3
         ):
             astropoints += 10

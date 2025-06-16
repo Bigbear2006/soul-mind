@@ -781,7 +781,14 @@ class MiniConsult(models.Model):
             if self.intention in Intentions
             else self.intention
         )
+
+        if self.client.subscription_is_active():
+            priority = SubscriptionPlans(self.client.subscription_plan).label
+        else:
+            priority = 'Разовая покупка'
+
         text = (
+            f'Приоритет: {priority}\n'
             f'Тип эксперта: {self.expert_type}\n'
             f'Намерение: {intention}\n'
             f'Уже сталкивался: {ExperienceTypes(self.experience_type).label}\n'

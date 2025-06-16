@@ -238,7 +238,8 @@ async def choose_topics(
     F.data.startswith('topic'),
     StateFilter(MiniConsultState.topics),
 )
-async def ask_question(msg: Message | CallbackQuery, state: FSMContext):
+@flags.with_client
+async def ask_question(msg: Message | CallbackQuery, state: FSMContext, client: Client):
     answer_func = (
         msg.answer if isinstance(msg, Message) else msg.message.answer
     )
@@ -252,7 +253,7 @@ async def ask_question(msg: Message | CallbackQuery, state: FSMContext):
             topic = await Topic.objects.aget(pk=pk)
         topics.append(topic.pk)
         await state.update_data(topics=topics)
-        await answer_func(f'Метка {topic} добавлена')
+        await answer_func(f'Метка {client.genderize(topic.name)} добавлена')
 
     if pk == 'done' or len(topics) == 3:
         await state.set_state(MiniConsultState.question)

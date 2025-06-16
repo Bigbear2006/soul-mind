@@ -24,10 +24,11 @@ menu_kb = ReplyKeyboardMarkup(
         ],
         [
             KeyboardButton(text='🤝 Пригласить друга'),
-            KeyboardButton(text='👤 Soul Space'),
+            KeyboardButton(text='VIP-Услуги'),
         ],
         [
-            KeyboardButton(text='VIP-Услуги'),
+            KeyboardButton(text='👤 Soul Space'),
+            KeyboardButton(text='🛠 Тех. поддержка'),
         ],
     ],
     resize_keyboard=True,
