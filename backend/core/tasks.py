@@ -23,6 +23,7 @@ from django.db.models import (
 from django.utils.timezone import now
 
 from bot.keyboards.inline.quests import get_quest_statuses_kb
+from bot.keyboards.utils import one_button_keyboard
 from bot.loader import bot
 from bot.services.numerology import get_power_day
 from bot.settings import settings
@@ -303,12 +304,19 @@ async def send_weekly_quests_tasks():
 
 @async_shared_task
 async def send_quests_reminders():
-    clients_ids = Client.objects.filter(notifications_enabled=True).exclude(
-        id__in=ClientDailyQuest.objects.filter(
-            created_at__date=now().date(),
-        ).values_list('client_id', flat=True),
+    today = now()
+    clients_ids = Client.objects.filter(
+        ~Q(
+            id__in=ClientDailyQuest.objects.filter(
+                ~Q(status=''),
+                created_at__date=today.date(),
+            ).values_list('client_id', flat=True),
+        ),
+        notifications_enabled=True,
+        subscription_end__gte=today,
     )
-    await dispatch_genderized_messages(clients_ids, quest_reminder)
+    kb = one_button_keyboard(text='⚡ Сегодняшнее задание', callback_data='daily_quest')
+    await dispatch_genderized_messages(clients_ids, quest_reminder, reply_markup=kb)
 
 
 @async_shared_task
