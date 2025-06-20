@@ -18,6 +18,7 @@ from bot.text_templates.month_with_soul_muse import (
     scripts,
     sun_signs_descriptions,
 )
+from bot.utils.formatters import date_to_str
 from core.models import Client
 
 
@@ -81,12 +82,12 @@ def get_nearest_sun_aspect(client: Client) -> tuple[str, str]:
     aspects_to_sun = [
         asp
         for asp in client.aspects
-        if asp['aspected_planet'] == 'Sun' and asp['aspecting_planet'] != 'Sun'
+        if asp['aspecting_planet'] == 'Sun'
     ]
     if not aspects_to_sun:
         return '', ''
     nearest_aspect = min(aspects_to_sun, key=lambda x: x['orb'])
-    return nearest_aspect['aspecting_planet'], nearest_aspect['type']
+    return nearest_aspect['aspected_planet'], nearest_aspect['type']
 
 
 def get_aspect_date(sun: Planet, planet: Planet, aspect_type: str):
@@ -164,7 +165,7 @@ async def get_month_script_text(client: Client):
 
     aspect_text = (
         planets_aspects_descriptions[aspect_planet][aspect_type].format(
-            date=aspect_date,
+            date=date_to_str(aspect_date),
         )
         if aspect_date
         else random.choice(aspect_fallback_texts)

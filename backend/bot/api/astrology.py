@@ -73,7 +73,7 @@ class AstrologyAPI(APIClient):
                 full_degree=i['fullDegree'],
                 norm_degree=i['normDegree'],
                 speed=i['speed'],
-                is_retro=i['is_retro'],
+                is_retro=i.get('is_retro', False),
                 sign=i['sign'],
                 house=i['house'],
             )

@@ -1,5 +1,7 @@
 import re
+from datetime import datetime
 
+from bot.settings import settings
 from core.choices import Genders
 
 
@@ -63,3 +65,7 @@ def genderize(text: str, *, gender: str, prefix: str = 'gender') -> str:
             return match.group(1)
 
     return re.sub(rf'{{{prefix}:([^}}]+)}}', replace, text)
+
+
+def date_to_str(__date: datetime):
+    return __date.strftime(settings.DATE_FMT)
