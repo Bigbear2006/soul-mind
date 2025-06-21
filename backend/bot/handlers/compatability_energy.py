@@ -5,9 +5,7 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     CallbackQuery,
-    LabeledPrice,
     Message,
-    PreCheckoutQuery,
 )
 
 from bot.keyboards.inline.base import (
@@ -22,7 +20,7 @@ from bot.keyboards.inline.compatability_energy import (
 )
 from bot.keyboards.inline.vip_services import get_payment_choices_kb
 from bot.services.compatability_energy import get_compatability_energy_text
-from bot.settings import settings
+from bot.services.payment import check_payment, send_payment_link
 from bot.states import CompatabilityEnergyState
 from bot.text_templates.base import astropoints_not_enough
 from bot.utils.formatters import compatability_plural, remaining_plural
@@ -188,32 +186,40 @@ async def choose_compatability_payment_type(
         )
         await state.clear()
     else:
-        await query.message.answer_invoice(
-            f'Дополнительные совместимости ({buy_count_str})',
-            f'Дополнительные совместимости ({buy_count_str})',
-            'extra_compatability',
-            settings.CURRENCY,
-            [LabeledPrice(label=settings.CURRENCY, amount=money * 100)],
-            settings.PROVIDER_TOKEN,
-        )
+        # await query.message.answer_invoice(
+        #     f'Дополнительные совместимости ({buy_count_str})',
+        #     f'Дополнительные совместимости ({buy_count_str})',
+        #     'extra_compatability',
+        #     settings.CURRENCY,
+        #     [LabeledPrice(label=settings.CURRENCY, amount=money * 100)],
+        #     settings.PROVIDER_TOKEN,
+        # )
         await state.set_state(CompatabilityEnergyState.payment)
+        await send_payment_link(
+            query,
+            state,
+            amount=money,
+            description=f'Дополнительные совместимости ({buy_count_str})',
+        )
 
 
-@router.pre_checkout_query(StateFilter(CompatabilityEnergyState.payment))
-async def accept_pre_checkout_query(query: PreCheckoutQuery):
-    await query.answer(True)
+# @router.pre_checkout_query(StateFilter(CompatabilityEnergyState.payment))
+# async def accept_pre_checkout_query(query: PreCheckoutQuery):
+#     await query.answer(True)
 
 
-@router.message(
-    F.successful_payment,
+@router.callback_query(
+    F.data == 'check_buying',
     StateFilter(CompatabilityEnergyState.payment),
 )
 @flags.with_client
 async def on_extra_compatability_buying(
-    msg: Message,
+    query: CallbackQuery,
     state: FSMContext,
     client: Client,
 ):
+    await check_payment(query, state)
+
     await client.add_extra_usages(
         action=Actions.COMPATABILITY_ENERGY,
         count=1 if await state.get_value('buy_count') == 'one' else 3,
@@ -221,7 +227,7 @@ async def on_extra_compatability_buying(
     remaining_usages = await client.get_remaining_usages(
         Actions.COMPATABILITY_ENERGY,
     )
-    await msg.answer(
+    await query.message.edit_text(
         f'Теперь у тебя {remaining_usages} '
         f'{compatability_plural(remaining_usages)}!',
     )

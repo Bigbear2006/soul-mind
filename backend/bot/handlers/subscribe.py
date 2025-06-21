@@ -6,14 +6,12 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     CallbackQuery,
-    LabeledPrice,
-    Message,
-    PreCheckoutQuery,
 )
 from django.db import models
 
 from bot.keyboards.utils import keyboard_from_choices, one_button_keyboard
 from bot.loader import logger
+from bot.services.payment import check_payment, send_payment_link
 from bot.settings import settings
 from core.models import Client, SubscriptionPlans
 
@@ -62,25 +60,34 @@ async def subscribe_handler(query: CallbackQuery, state: FSMContext):
     plan = SubscriptionPlans(
         await state.get_value('subscription_plan'),
     )
-    await query.message.answer_invoice(
-        f'Оплата подписки {plan.label}',
-        f'Оплата подписки {plan.label}',
-        plan.value,
-        settings.CURRENCY,
-        [LabeledPrice(label=settings.CURRENCY, amount=plan.price * 100)],
-        settings.PROVIDER_TOKEN,
+    await send_payment_link(
+        query,
+        state,
+        amount=plan.price,
+        description=f'Оплата подписки {plan.label}',
     )
+    # await query.message.answer_invoice(
+    #     f'Оплата подписки {plan.label}',
+    #     f'Оплата подписки {plan.label}',
+    #     plan.value,
+    #     settings.CURRENCY,
+    #     [LabeledPrice(label=settings.CURRENCY, amount=plan.price * 100)],
+    #     settings.PROVIDER_TOKEN,
+    # )
 
 
-@router.pre_checkout_query(StateFilter(None))
-async def accept_pre_checkout_query(query: PreCheckoutQuery):
-    await query.answer(True)
+# @router.pre_checkout_query(StateFilter(None))
+# async def accept_pre_checkout_query(query: PreCheckoutQuery):
+#     await query.answer(True)
 
 
-@router.message(F.successful_payment, StateFilter(None))
-async def on_successful_payment(msg: Message, state: FSMContext):
+# @router.message(F.successful_payment, StateFilter(None))
+@router.callback_query(F.data == 'check_buying', StateFilter(None))
+async def on_successful_payment(query: CallbackQuery, state: FSMContext):
+    await check_payment(query, state)
+
     client = await Client.objects.prefetch_related('invited_by').aget(
-        pk=msg.chat.id,
+        pk=query.message.chat.id,
     )
     plan = SubscriptionPlans(
         await state.get_value('subscription_plan'),
@@ -92,7 +99,7 @@ async def on_successful_payment(msg: Message, state: FSMContext):
         if client.subscription_end
         else datetime.now(settings.TZ)
     )
-    await Client.objects.filter(pk=msg.chat.id).aupdate(
+    await Client.objects.filter(pk=client.pk).aupdate(
         subscription_end=subscription_end + timedelta(days=30),
         subscription_plan=plan.value,
     )
@@ -103,7 +110,7 @@ async def on_successful_payment(msg: Message, state: FSMContext):
         )
 
         try:
-            await msg.bot.send_message(
+            await query.bot.send_message(
                 client.invited_by.pk,
                 f'Пользователь {client} перешел по вашей реферальной ссылке '
                 f'и оформил подписку "{plan.label}".\n'
@@ -115,5 +122,13 @@ async def on_successful_payment(msg: Message, state: FSMContext):
                 f'{e.__class__.__name__}: {e}',
             )
 
-    await msg.answer(f'Вы оплатили подписку "{plan.label}" на 30 дней')
+    await query.message.edit_text(
+        f'Вы оплатили подписку "{plan.label}" на 30 дней',
+    )
     await state.clear()
+
+
+@router.callback_query(F.data == 'cancel_buying', StateFilter(None))
+async def cancel_subscription_buying(query: CallbackQuery, state: FSMContext):
+    await state.clear()
+    await query.message.edit_text('Платеж отменен')

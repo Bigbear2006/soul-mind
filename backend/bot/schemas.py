@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from datetime import datetime
+from enum import StrEnum
 
 from core.models import Client
 
 
+# human design
 @dataclass
 class HDInputData:
     birthdate: str
@@ -44,6 +46,7 @@ class Bodygraphs:
         )
 
 
+# astrology
 @dataclass
 class HoroscopeParams:
     day: int
@@ -105,3 +108,19 @@ class WesternHoroscope:
     planets: list[Planet]
     houses: list[House]
     aspects: list[Aspect]
+
+
+# yookassa
+@dataclass(frozen=True)
+class Payment:
+    id: str
+    confirmation_url: str
+
+
+class PaymentStatus(StrEnum):
+    """https://yookassa.ru/developers/payment-acceptance/getting-started/payment-process#lifecycle"""
+
+    PENDING = 'pending'
+    WAITING_FOR_CAPTURE = 'waiting_for_capture'
+    SUCCEEDED = 'succeeded'
+    CANCELED = 'canceled'

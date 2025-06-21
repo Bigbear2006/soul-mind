@@ -5,9 +5,7 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     CallbackQuery,
-    LabeledPrice,
     Message,
-    PreCheckoutQuery,
 )
 
 from bot.api.soul_muse import SoulMuse
@@ -24,6 +22,7 @@ from bot.keyboards.utils import one_button_keyboard
 from bot.loader import logger
 from bot.prompts.answer_question import get_answer_question_prompt
 from bot.prompts.categorize_question import get_categorize_question_prompt
+from bot.services.payment import check_payment, send_payment_link
 from bot.settings import settings
 from bot.states import SoulMuseQuestionState
 from bot.text_templates.base import astropoints_not_enough
@@ -207,32 +206,40 @@ async def choose_extra_questions_payment_type(
         )
         await state.clear()
     else:
-        await query.message.answer_invoice(
-            f'Дополнительные вопросы ({buy_count_str})',
-            f'Дополнительные вопросы ({buy_count_str})',
-            'extra_questions',
-            settings.CURRENCY,
-            [LabeledPrice(label=settings.CURRENCY, amount=money * 100)],
-            settings.PROVIDER_TOKEN,
-        )
+        # await query.message.answer_invoice(
+        #     f'Дополнительные вопросы ({buy_count_str})',
+        #     f'Дополнительные вопросы ({buy_count_str})',
+        #     'extra_questions',
+        #     settings.CURRENCY,
+        #     [LabeledPrice(label=settings.CURRENCY, amount=money * 100)],
+        #     settings.PROVIDER_TOKEN,
+        # )
         await state.set_state(SoulMuseQuestionState.payment)
+        await send_payment_link(
+            query,
+            state,
+            amount=money,
+            description=f'Дополнительные совместимости ({buy_count_str})',
+        )
 
 
-@router.pre_checkout_query(StateFilter(SoulMuseQuestionState.payment))
-async def accept_pre_checkout_query(query: PreCheckoutQuery):
-    await query.answer(True)
+# @router.pre_checkout_query(StateFilter(SoulMuseQuestionState.payment))
+# async def accept_pre_checkout_query(query: PreCheckoutQuery):
+#     await query.answer(True)
 
 
-@router.message(
-    F.successful_payment,
+@router.callback_query(
+    F.data == 'check_buying',
     StateFilter(SoulMuseQuestionState.payment),
 )
 @flags.with_client
 async def on_extra_questions_buying(
-    msg: Message,
+    query: CallbackQuery,
     state: FSMContext,
     client: Client,
 ):
+    await check_payment(query, state)
+
     await client.add_extra_usages(
         action=Actions.SOUL_MUSE_QUESTION,
         count=1 if await state.get_value('buy_count') == 'one' else 5,
@@ -240,7 +247,7 @@ async def on_extra_questions_buying(
     remaining_usages = await client.get_remaining_usages(
         Actions.SOUL_MUSE_QUESTION,
     )
-    await msg.answer(
+    await query.message.edit_text(
         f'Теперь у тебя {remaining_usages} '
         f'{questions_plural(remaining_usages)}!',
     )

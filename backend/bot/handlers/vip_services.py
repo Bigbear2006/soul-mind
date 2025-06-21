@@ -1,4 +1,3 @@
-import random
 from dataclasses import asdict
 from datetime import datetime
 
@@ -8,7 +7,6 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     BufferedInputFile,
     CallbackQuery,
-    LabeledPrice,
     Message,
     PreCheckoutQuery,
 )
@@ -29,9 +27,10 @@ from bot.keyboards.utils import (
     keyboard_from_choices,
     one_button_keyboard,
 )
-from bot.prompts.personal_report import get_personal_report_prompt
 from bot.prompts.vip_compatability import get_vip_compatability_prompt
 from bot.schemas import Bodygraphs, HDInputData
+from bot.services.payment import check_payment, send_payment_link
+from bot.services.vip_services import make_vip_report
 from bot.settings import settings
 from bot.states import (
     MiniConsultState,
@@ -39,10 +38,6 @@ from bot.states import (
     VIPCompatabilityState,
 )
 from bot.text_templates.base import astropoints_not_enough, connection_types
-from bot.text_templates.vip_services import (
-    personal_report_audio_closures,
-    personal_report_intro,
-)
 from bot.utils.pdf import generate_pdf
 from core.choices import (
     ExperienceTypes,
@@ -79,15 +74,15 @@ async def vip_services_handler(msg: Message | CallbackQuery):
     )
 
 
-@router.pre_checkout_query(
-    StateFilter(
-        VIPCompatabilityState.payment,
-        PersonalReportState.payment,
-        MiniConsultState.payment,
-    ),
-)
-async def accept_pre_checkout_query(query: PreCheckoutQuery):
-    await query.answer(True)
+# @router.pre_checkout_query(
+#     StateFilter(
+#         VIPCompatabilityState.payment,
+#         PersonalReportState.payment,
+#         MiniConsultState.payment,
+#     ),
+# )
+# async def accept_pre_checkout_query(query: PreCheckoutQuery):
+#     await query.answer(True)
 
 
 ####################
@@ -148,24 +143,31 @@ async def choose_mini_consult_payment_type(
         )
         await state.clear()
     else:
-        await query.message.answer_invoice(
-            'Мини-консультация с экспертом',
-            'Мини-консультация с экспертом',
-            'mini_consult',
-            settings.CURRENCY,
-            [LabeledPrice(label=settings.CURRENCY, amount=999 * 100)],
-            settings.PROVIDER_TOKEN,
-        )
+        # await query.message.answer_invoice(
+        #     'Мини-консультация с экспертом',
+        #     'Мини-консультация с экспертом',
+        #     'mini_consult',
+        #     settings.CURRENCY,
+        #     [LabeledPrice(label=settings.CURRENCY, amount=999 * 100)],
+        #     settings.PROVIDER_TOKEN,
+        # )
         await state.set_state(MiniConsultState.payment)
+        await send_payment_link(
+            query,
+            state,
+            amount=999,
+            description='Мини-консультация с экспертом',
+        )
 
 
-@router.message(
-    F.successful_payment,
+@router.callback_query(
+    F.data == 'check_buying',
     StateFilter(MiniConsultState.payment),
 )
 @flags.with_client
-async def choose_expert_type(msg: Message):
-    await msg.answer(
+async def choose_expert_type(query: CallbackQuery, state: FSMContext):
+    await check_payment(query, state)
+    await query.message.edit_text(
         'Выбери тип эксперта',
         reply_markup=keyboard_from_choices(ExpertTypes, prefix='expert'),
     )
@@ -403,21 +405,6 @@ async def buy_personal_report(query: CallbackQuery, state: FSMContext):
     )
 
 
-async def make_vip_report(msg: Message, client: Client):
-    report = await SoulMuse().answer(get_personal_report_prompt(client))
-    pdf_text = personal_report_intro + report
-    audio_text = f'{report}\n{random.choice(personal_report_audio_closures)}'
-    await msg.answer_document(
-        BufferedInputFile(generate_pdf(pdf_text), 'Персональный отчёт.pdf'),
-    )
-    await msg.answer_audio(
-        BufferedInputFile(
-            await synthesize(audio_text),
-            'Персональный отчёт.wav',
-        ),
-    )
-
-
 @router.callback_query(
     F.data.in_(('astropoints', 'money')),
     StateFilter(PersonalReportState.payment_type),
@@ -443,32 +430,39 @@ async def choose_personal_report_payment_type(
         await state.clear()
         await make_vip_report(query.message, client)
     else:
-        await query.message.answer_invoice(
-            'Глубокий персональный отчёт',
-            'Глубокий персональный отчёт',
-            'personal_report',
-            settings.CURRENCY,
-            [LabeledPrice(label=settings.CURRENCY, amount=1299 * 100)],
-            settings.PROVIDER_TOKEN,
-        )
+        # await query.message.answer_invoice(
+        #     'Глубокий персональный отчёт',
+        #     'Глубокий персональный отчёт',
+        #     'personal_report',
+        #     settings.CURRENCY,
+        #     [LabeledPrice(label=settings.CURRENCY, amount=1299 * 100)],
+        #     settings.PROVIDER_TOKEN,
+        # )
         await state.set_state(PersonalReportState.payment)
+        await send_payment_link(
+            query,
+            state,
+            amount=1299,
+            description='Глубокий персональный отчёт',
+        )
 
 
-@router.message(
-    F.successful_payment,
+@router.callback_query(
+    F.data == 'check_buying',
     StateFilter(PersonalReportState.payment),
 )
 @flags.with_client
 async def on_successful_payment(
-    msg: Message,
+    query: CallbackQuery,
     state: FSMContext,
     client: Client,
 ):
-    await msg.answer(
+    await check_payment(query, state)
+    await query.message.edit_text(
         'Создаю отчет и аудио...\nЭто может занять несколько минут...',
     )
     await state.clear()
-    await make_vip_report(msg, client)
+    await make_vip_report(query.message, client)
 
 
 #########################
@@ -536,30 +530,34 @@ async def buy_compatibility(
         )
         await state.clear()
     else:
-        await query.message.answer_invoice(
-            'VIP-анализ совместимости',
-            'VIP-анализ совместимости',
-            'vip_compatability',
-            settings.CURRENCY,
-            [LabeledPrice(label=settings.CURRENCY, amount=1599 * 100)],
-            settings.PROVIDER_TOKEN,
-        )
+        # await query.message.answer_invoice(
+        #     'VIP-анализ совместимости',
+        #     'VIP-анализ совместимости',
+        #     'vip_compatability',
+        #     settings.CURRENCY,
+        #     [LabeledPrice(label=settings.CURRENCY, amount=1599 * 100)],
+        #     settings.PROVIDER_TOKEN,
+        # )
         await state.set_state(VIPCompatabilityState.payment)
+        await send_payment_link(
+            query,
+            state,
+            amount=1599,
+            description='VIP-анализ совместимости',
+        )
 
 
-@router.message(
-    F.successful_payment,
+@router.callback_query(
+    F.data == 'check_buying',
     StateFilter(VIPCompatabilityState.payment),
 )
 @router.callback_query(F.data == 'connection_types')
 async def on_successful_vip_compatability_payment(
-    msg: Message | CallbackQuery,
+    query: CallbackQuery,
     state: FSMContext,
 ):
-    answer_func = (
-        msg.answer if isinstance(msg, Message) else msg.message.edit_text
-    )
-    await answer_func(
+    await check_payment(query, state)
+    await query.message.edit_text(
         text='Выбери тип связи',
         reply_markup=connection_types_kb,
     )

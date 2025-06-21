@@ -315,8 +315,15 @@ async def send_quests_reminders():
         notifications_enabled=True,
         subscription_end__gte=today,
     )
-    kb = one_button_keyboard(text='⚡ Сегодняшнее задание', callback_data='daily_quest')
-    await dispatch_genderized_messages(clients_ids, quest_reminder, reply_markup=kb)
+    kb = one_button_keyboard(
+        text='⚡ Сегодняшнее задание',
+        callback_data='daily_quest',
+    )
+    await dispatch_genderized_messages(
+        clients_ids,
+        quest_reminder,
+        reply_markup=kb,
+    )
 
 
 @async_shared_task

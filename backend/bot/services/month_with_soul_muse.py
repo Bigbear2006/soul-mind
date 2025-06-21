@@ -80,9 +80,7 @@ def get_active_hd_gate(date_str=None):
 
 def get_nearest_sun_aspect(client: Client) -> tuple[str, str]:
     aspects_to_sun = [
-        asp
-        for asp in client.aspects
-        if asp['aspecting_planet'] == 'Sun'
+        asp for asp in client.aspects if asp['aspecting_planet'] == 'Sun'
     ]
     if not aspects_to_sun:
         return '', ''
