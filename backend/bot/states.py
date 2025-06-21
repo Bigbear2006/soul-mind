@@ -7,6 +7,7 @@ class UserInfoState(StatesGroup):
     birth_date = State()
     birth_time = State()
     birth_location = State()
+    email = State()
 
 
 class CompatabilityEnergyState(StatesGroup):

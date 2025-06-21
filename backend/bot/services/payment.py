@@ -13,8 +13,9 @@ async def send_payment_link(
     *,
     amount: int | float,
     description: str,
+    email: str,
 ):
-    payment = await create_payment(amount, description)
+    payment = await create_payment(amount, description, email)
     await state.update_data(payment_id=payment.id)
     await query.message.edit_text(
         f'Ваша ссылка на оплату:\n\n{payment.confirmation_url}',

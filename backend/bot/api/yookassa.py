@@ -27,7 +27,12 @@ class YookassaClient(APIClient):
     def headers(self):
         return {'Idempotence-Key': str(uuid.uuid4())}
 
-    async def create_payment(self, amount: float, description: str) -> Payment:
+    async def create_payment(
+        self,
+        amount: int | float,
+        description: str,
+        email: str,
+    ) -> Payment:
         async with self.session.post(
             '',
             headers=self.headers,
@@ -40,6 +45,20 @@ class YookassaClient(APIClient):
                     'return_url': settings.BOT_LINK,
                 },
                 'description': description,
+                'receipt': {
+                    'customer': {'email': email},
+                    'items': [
+                        {
+                            'amount': {
+                                'value': amount,
+                                'currency': settings.CURRENCY,
+                            },
+                            'description': description,
+                            'vat_code': 1,
+                            'quantity': 1,
+                        },
+                    ],
+                },
             },
         ) as rsp:
             data = await rsp.json()
@@ -65,9 +84,13 @@ class YookassaClient(APIClient):
         return PaymentStatus(data['status'])
 
 
-async def create_payment(amount: float, description: str) -> Payment:
+async def create_payment(
+    amount: float,
+    description: str,
+    email: str,
+) -> Payment:
     async with YookassaClient() as yookassa:
-        return await yookassa.create_payment(amount, description)
+        return await yookassa.create_payment(amount, description, email)
 
 
 async def get_payment_status(payment_id: str) -> PaymentStatus:

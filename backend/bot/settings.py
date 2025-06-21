@@ -27,7 +27,6 @@ class Media:
 @dataclass
 class Settings:
     BOT_TOKEN: str = field(default_factory=lambda: env('BOT_TOKEN'))
-    # PROVIDER_TOKEN: str = field(default_factory=lambda: env('PROVIDER_TOKEN'))
     REDIS_URL: str = field(default_factory=lambda: env('REDIS_URL'))
 
     YOOKASSA_SHOP_ID: str = field(

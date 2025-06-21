@@ -10,6 +10,8 @@ from aiogram.types import (
     InputMediaVideo,
     Message,
 )
+from django.core.exceptions import ValidationError
+from django.core.validators import EmailValidator
 
 from bot.api.astrology import AstrologyAPI
 from bot.api.geocoding import GeocodingAPI
@@ -301,6 +303,22 @@ async def set_birth_location(msg: Message, client: Client, state: FSMContext):
     )
 
     await msg_to_edit.edit_text(
+        'Введи свою почту. Она будет нужна для отправки чеков.',
+    )
+    await state.set_state(UserInfoState.email)
+
+
+@router.message(StateFilter(UserInfoState.email))
+async def set_email(msg: Message, state: FSMContext):
+    validator = EmailValidator()
+    try:
+        validator(msg.text)
+        await Client.objects.filter(pk=msg.chat.id).aupdate(email=msg.text)
+    except ValidationError:
+        await msg.answer('Некорректная почта. Попробуй ещё раз.')
+        return
+
+    await msg.answer(
         '⚠️ Я храню твои данные как свою тайну. '
         'Тётя Люда из маркетинга не узнает.\n'
         'Согласен с обработкой данных в рамках '

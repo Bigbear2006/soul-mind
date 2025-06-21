@@ -1,14 +1,17 @@
 import random
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import Optional
 
-from aiogram import types
 from aiogram.types import InlineKeyboardMarkup, Message
 from asgiref.sync import sync_to_async
 from django.contrib.auth.models import AbstractUser
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import (
+    EmailValidator,
+    MaxValueValidator,
+    MinValueValidator,
+)
 from django.db import models
 from django.utils.timezone import now
 
@@ -16,7 +19,7 @@ from bot.loader import bot, logger
 from bot.settings import settings
 from bot.text_templates.base import all_centers_ordered
 from bot.text_templates.friday_gift import friday_gifts_preambles
-from bot.utils.formatters import genderize
+from bot.utils.formatters import date_to_str, genderize
 from core.choices import (
     Actions,
     ExperienceTypes,
@@ -31,112 +34,16 @@ from core.choices import (
     QuestStatuses,
     SubscriptionPlans,
 )
+from core.managers import (
+    ClientManager,
+    FridayGiftManager,
+    MonthTextManager,
+    PaymentManager,
+)
 
 
 class User(AbstractUser):
     pass
-
-
-################
-### MANAGERS ###
-################
-
-
-class ClientManager(models.Manager):
-    async def from_tg_user(self, user: types.User) -> 'Client':
-        return await self.acreate(
-            id=user.id,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            username=user.username,
-            is_premium=user.is_premium or False,
-        )
-
-    async def update_from_tg_user(self, user: types.User) -> None:
-        await self.filter(pk=user.id).aupdate(
-            first_name=user.first_name,
-            last_name=user.last_name,
-            username=user.username,
-            is_premium=user.is_premium or False,
-        )
-
-    async def create_or_update_from_tg_user(
-        self,
-        user: types.User,
-    ) -> tuple['Client', bool]:
-        try:
-            client = await self.aget(pk=user.id)
-            await self.update_from_tg_user(user)
-            await client.arefresh_from_db()
-            return client, False
-        except ObjectDoesNotExist:
-            return await self.from_tg_user(user), True
-
-    def annotate_actions(self, today: date):
-        return self.annotate(
-            universe_advice_count=models.Count(
-                'actions',
-                filter=models.Q(
-                    actions__action=Actions.UNIVERSE_ADVICE,
-                    actions__date__date=today,
-                ),
-            ),
-            personal_day_count=models.Count(
-                'actions',
-                filter=models.Q(
-                    actions__action=Actions.PERSONAL_DAY,
-                    actions__date__date=today,
-                ),
-            ),
-        )
-
-
-class MonthTextManager(models.Manager):
-    async def get_month_text(
-        self,
-        client: 'Client',
-        type: MonthTextTypes,
-    ) -> Optional['MonthText']:
-        try:
-            return await self.aget(
-                client=client,
-                created_at__month=now().month,
-                type=type,
-            )
-        except ObjectDoesNotExist:
-            return None
-
-
-class FridayGiftManager(models.Manager):
-    async def get_current_week_gift(
-        self,
-        client: 'Client',
-    ) -> Optional['FridayGift']:
-        today = now().date()
-        first_week_day = today - timedelta(days=today.weekday())
-        last_week_day = first_week_day + timedelta(days=6)
-        try:
-            return await self.filter(
-                client=client,
-                created_at__date__gte=first_week_day,
-                created_at__date__lte=last_week_day,
-            ).alatest('created_at')
-        except ObjectDoesNotExist:
-            return None
-
-    async def get_latest_gift(
-        self,
-        client: 'Client',
-    ) -> Optional['FridayGift']:
-        try:
-            return await self.filter(client=client).alatest('created_at')
-        except ObjectDoesNotExist:
-            return None
-
-
-##############
-### CLIENT ###
-##############
 
 
 class Client(models.Model):
@@ -165,11 +72,12 @@ class Client(models.Model):
         max_length=50,
         blank=True,
     )
-    subscription_end: datetime = models.DateTimeField(
+    subscription_end = models.DateTimeField(
         verbose_name='Дата окончания подписки',
         null=True,
         blank=True,
     )
+    email = models.EmailField('Почта', null=True, blank=True)
     gender = models.CharField(
         'Пол',
         choices=Genders,
@@ -187,9 +95,9 @@ class Client(models.Model):
         max_length=255,
         blank=True,
     )
-    birth_latitude = models.FloatField('Широта', null=True)
-    birth_longitude = models.FloatField('Долгота', null=True)
-    tzone = models.FloatField('Часовой пояс', null=True)
+    birth_latitude = models.FloatField('Широта', null=True, blank=True)
+    birth_longitude = models.FloatField('Долгота', null=True, blank=True)
+    tzone = models.FloatField('Часовой пояс', null=True, blank=True)
     type = models.CharField('Тип', max_length=255, blank=True)
     profile = models.CharField('Профиль', max_length=255, blank=True)
     centers = ArrayField(
@@ -1065,3 +973,26 @@ class Insight(models.Model):
         if self.text:
             return self.text[:25]
         return f'Аудио от {self.created_at.strftime(settings.DATE_FMT)}'
+
+
+class Payment(models.Model):
+    client = models.ForeignKey(
+        Client,
+        models.CASCADE,
+        'payments',
+        verbose_name='Пользователь',
+    )
+    charge_id = models.CharField('ID платежа')
+    payment_type = models.CharField('Тип оплаты')
+    date = models.DateTimeField(auto_now_add=True)
+    objects = PaymentManager()
+
+    class Meta:
+        verbose_name = 'Оплата'
+        verbose_name_plural = 'Оплаты'
+        ordering = ['-date']
+
+    def __str__(self):
+        return (
+            f'[{date_to_str(self.date)}] {self.client} - {self.payment_type}'
+        )

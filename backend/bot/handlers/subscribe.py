@@ -56,7 +56,12 @@ async def choose_subscription_plan(query: CallbackQuery, state: FSMContext):
 
 
 @router.callback_query(F.data == 'pay_subscription')
-async def subscribe_handler(query: CallbackQuery, state: FSMContext):
+@flags.with_client
+async def subscribe_handler(
+    query: CallbackQuery,
+    state: FSMContext,
+    client: Client,
+):
     plan = SubscriptionPlans(
         await state.get_value('subscription_plan'),
     )
@@ -65,23 +70,10 @@ async def subscribe_handler(query: CallbackQuery, state: FSMContext):
         state,
         amount=plan.price,
         description=f'Оплата подписки {plan.label}',
+        email=client.email,
     )
-    # await query.message.answer_invoice(
-    #     f'Оплата подписки {plan.label}',
-    #     f'Оплата подписки {plan.label}',
-    #     plan.value,
-    #     settings.CURRENCY,
-    #     [LabeledPrice(label=settings.CURRENCY, amount=plan.price * 100)],
-    #     settings.PROVIDER_TOKEN,
-    # )
 
 
-# @router.pre_checkout_query(StateFilter(None))
-# async def accept_pre_checkout_query(query: PreCheckoutQuery):
-#     await query.answer(True)
-
-
-# @router.message(F.successful_payment, StateFilter(None))
 @router.callback_query(F.data == 'check_buying', StateFilter(None))
 async def on_successful_payment(query: CallbackQuery, state: FSMContext):
     await check_payment(query, state)
@@ -128,7 +120,7 @@ async def on_successful_payment(query: CallbackQuery, state: FSMContext):
     await state.clear()
 
 
-@router.callback_query(F.data == 'cancel_buying', StateFilter(None))
+@router.callback_query(F.data == 'cancel_buying')
 async def cancel_subscription_buying(query: CallbackQuery, state: FSMContext):
     await state.clear()
     await query.message.edit_text('Платеж отменен')

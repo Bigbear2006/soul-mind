@@ -206,26 +206,14 @@ async def choose_extra_questions_payment_type(
         )
         await state.clear()
     else:
-        # await query.message.answer_invoice(
-        #     f'Дополнительные вопросы ({buy_count_str})',
-        #     f'Дополнительные вопросы ({buy_count_str})',
-        #     'extra_questions',
-        #     settings.CURRENCY,
-        #     [LabeledPrice(label=settings.CURRENCY, amount=money * 100)],
-        #     settings.PROVIDER_TOKEN,
-        # )
         await state.set_state(SoulMuseQuestionState.payment)
         await send_payment_link(
             query,
             state,
             amount=money,
             description=f'Дополнительные совместимости ({buy_count_str})',
+            email=client.email,
         )
-
-
-# @router.pre_checkout_query(StateFilter(SoulMuseQuestionState.payment))
-# async def accept_pre_checkout_query(query: PreCheckoutQuery):
-#     await query.answer(True)
 
 
 @router.callback_query(

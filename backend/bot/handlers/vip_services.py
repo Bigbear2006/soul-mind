@@ -8,7 +8,6 @@ from aiogram.types import (
     BufferedInputFile,
     CallbackQuery,
     Message,
-    PreCheckoutQuery,
 )
 
 from bot.api.humandesign import HumanDesignAPI
@@ -74,17 +73,6 @@ async def vip_services_handler(msg: Message | CallbackQuery):
     )
 
 
-# @router.pre_checkout_query(
-#     StateFilter(
-#         VIPCompatabilityState.payment,
-#         PersonalReportState.payment,
-#         MiniConsultState.payment,
-#     ),
-# )
-# async def accept_pre_checkout_query(query: PreCheckoutQuery):
-#     await query.answer(True)
-
-
 ####################
 ### MINI CONSULT ###
 ####################
@@ -143,20 +131,13 @@ async def choose_mini_consult_payment_type(
         )
         await state.clear()
     else:
-        # await query.message.answer_invoice(
-        #     'Мини-консультация с экспертом',
-        #     'Мини-консультация с экспертом',
-        #     'mini_consult',
-        #     settings.CURRENCY,
-        #     [LabeledPrice(label=settings.CURRENCY, amount=999 * 100)],
-        #     settings.PROVIDER_TOKEN,
-        # )
         await state.set_state(MiniConsultState.payment)
         await send_payment_link(
             query,
             state,
             amount=999,
             description='Мини-консультация с экспертом',
+            email=client.email,
         )
 
 
@@ -430,20 +411,13 @@ async def choose_personal_report_payment_type(
         await state.clear()
         await make_vip_report(query.message, client)
     else:
-        # await query.message.answer_invoice(
-        #     'Глубокий персональный отчёт',
-        #     'Глубокий персональный отчёт',
-        #     'personal_report',
-        #     settings.CURRENCY,
-        #     [LabeledPrice(label=settings.CURRENCY, amount=1299 * 100)],
-        #     settings.PROVIDER_TOKEN,
-        # )
         await state.set_state(PersonalReportState.payment)
         await send_payment_link(
             query,
             state,
             amount=1299,
             description='Глубокий персональный отчёт',
+            email=client.email,
         )
 
 
@@ -530,20 +504,13 @@ async def buy_compatibility(
         )
         await state.clear()
     else:
-        # await query.message.answer_invoice(
-        #     'VIP-анализ совместимости',
-        #     'VIP-анализ совместимости',
-        #     'vip_compatability',
-        #     settings.CURRENCY,
-        #     [LabeledPrice(label=settings.CURRENCY, amount=1599 * 100)],
-        #     settings.PROVIDER_TOKEN,
-        # )
         await state.set_state(VIPCompatabilityState.payment)
         await send_payment_link(
             query,
             state,
             amount=1599,
             description='VIP-анализ совместимости',
+            email=client.email,
         )
 
 
