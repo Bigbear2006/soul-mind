@@ -15,7 +15,7 @@ class HDInputData:
     @classmethod
     def from_datetime(cls, birth: datetime, location: str):
         return cls(
-            birthdate=birth.strftime('%d.%m.%Y'),
+            birthdate=birth.strftime('%m.%d.%Y'),
             birthtime=birth.strftime('%H:%M'),
             location=location,
         )

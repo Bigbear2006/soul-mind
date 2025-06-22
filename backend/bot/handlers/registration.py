@@ -261,7 +261,7 @@ async def set_birth_location(msg: Message, client: Client, state: FSMContext):
 
         async with HumanDesignAPI() as hd_api:
             bodygraphs = await hd_api.bodygraphs(
-                HDInputData.from_datetime(birth.astimezone(UTC), msg.text),
+                HDInputData.from_datetime(birth, msg.text),
             )
 
         horoscope = await api.western_horoscope(

@@ -82,7 +82,7 @@ def get_destiny_mystery_text(client: Client) -> str:
     hd_type = hd_types_translation[client.type]
     soul_number = get_soul_number(client.fullname)
     fate_number = get_fate_number(client.fullname)
-    north_node_sign = get_lunar_nodes()['north']
+    north_node_sign = get_lunar_nodes(client.birth)['north']
     south_node_sign = signs_map[north_node_sign]
 
     if client.subscription_is_active():
