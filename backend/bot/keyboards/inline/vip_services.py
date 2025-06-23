@@ -132,14 +132,19 @@ async def get_consults_list_kb(client: Client, page: int = 1):
 
 
 def get_answer_consult_kb(
-    consult_id: int,
+    consult: MiniConsult,
     back_button_data: str | None = None,
 ):
-    return one_button_keyboard(
-        text='Ответить',
-        callback_data=f'answer_consult:{consult_id}',
-        back_button_data=back_button_data,
-    )
+    kb = InlineKeyboardBuilder()
+    kb.button(text='Ответить', callback_data=f'answer_consult:{consult.pk}')
+    if consult.photo_file_id:
+        kb.button(
+            text='Посмотреть фото',
+            callback_data=f'show_mini_consult_photo:{consult.pk}',
+        )
+    if back_button_data:
+        kb.button(text='Назад', callback_data=back_button_data)
+    return kb.adjust(1).as_markup()
 
 
 def get_end_consult_kb(consult_id: int, back_button_data: str | None = None):

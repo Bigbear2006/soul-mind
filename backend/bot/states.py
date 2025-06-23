@@ -43,6 +43,7 @@ class MiniConsultState(StatesGroup):
     payment = State()
     intention = State()
     topics = State()
+    photo = State()  # only for ExpertTypes.SPIRITUAL_MENTOR
     question = State()
     answer_consult = State()
     comment = State()

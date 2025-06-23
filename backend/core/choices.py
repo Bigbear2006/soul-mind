@@ -88,6 +88,7 @@ class Actions(models.TextChoices):
         'Энергия вашей совместимости',
     )
     SOUL_MUSE_QUESTION = 'soul_muse_question', 'Спроси у Soul Muse'
+    WEEKLY_QUEST = 'weekly_quest', 'Участие в еженедельном квесте'
 
     UNIVERSE_ADVICE = 'universe_advice', 'Совет вселенной'
     PERSONAL_DAY = 'personal_day', 'Твой личный день'

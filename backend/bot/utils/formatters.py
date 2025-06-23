@@ -34,6 +34,10 @@ def months_plural(n: int):
     return plural(n, ('месяц', 'месяца', 'месяцев'))
 
 
+def challenges_plural(n: int):
+    return plural(n, ('челлендже', 'челленджах', 'челленджах'))
+
+
 def your_plural(sign: str):
     if sign == 'Virgo':
         return 'Твоя'

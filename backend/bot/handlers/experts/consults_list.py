@@ -40,7 +40,7 @@ async def mini_consult_detail(query: CallbackQuery):
     await consult.send_to(
         chat_id=query.message.chat.id,
         reply_markup=get_answer_consult_kb(
-            consult.pk,
+            consult,
             back_button_data='delete_this_message',
         ),
     )

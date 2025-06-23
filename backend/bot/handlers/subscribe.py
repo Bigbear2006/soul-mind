@@ -15,6 +15,7 @@ from bot.loader import logger
 from bot.services.payment import check_payment, send_payment_link
 from bot.settings import settings
 from bot.utils.formatters import months_plural
+from core.choices import Actions
 from core.models import Client, SubscriptionPlans
 
 router = Router()
@@ -115,6 +116,9 @@ async def on_successful_payment(query: CallbackQuery, state: FSMContext):
                 f'Send message (+150 astropoints) error '
                 f'{e.__class__.__name__}: {e}',
             )
+
+    await client.update_limit(Actions.COMPATABILITY_ENERGY)
+    await client.update_limit(Actions.SOUL_MUSE_QUESTION)
 
     await query.message.edit_text(
         f'Вы оплатили подписку "{plan.label}" на {days} дней',

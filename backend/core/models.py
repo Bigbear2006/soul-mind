@@ -223,6 +223,13 @@ class Client(models.Model):
             else:
                 return 0
 
+        elif action == Actions.WEEKLY_QUEST:
+            if self.subscription_is_active():
+                if self.subscription_plan == SubscriptionPlans.PREMIUM:
+                    return 2
+                else:
+                    return 1
+
         return 0
 
     async def update_limit(self, action: Actions):
@@ -260,19 +267,20 @@ class Client(models.Model):
             return
 
         if (
-            (
-                today.month != client_action.updated_at.month
-                or today.year != client_action.updated_at.year
-            )
+            # if limit wasn't updated 30 days and more
+            client_action.updated_at < today - timedelta(days=30)
+            # if trial is ended
             or (
                 (client_action.updated_at - self.created_at).days
                 < 3
                 < (today - self.created_at).days
             )
+            # if subscription plan was changed
             or client_action.subscription_plan != self.subscription_plan
+            # if subscription is ended
             or (
                 self.subscription_end
-                and client_action.updated_at > self.subscription_end < now()
+                and now() > self.subscription_end > client_action.updated_at
             )
         ):
             await self.update_limit(action)
@@ -345,6 +353,32 @@ class Client(models.Model):
             client=self,
             quest=quest,
         )
+
+    def get_month_weekly_quests(self):
+        today = now()
+        return ClientWeeklyQuest.objects.filter(
+            client=self,
+            date__month=today.month,
+            date__year=today.year,
+        )
+
+    async def get_month_weekly_quests_count(self):
+        return await self.get_month_weekly_quests().acount()
+
+    async def get_month_weekly_quest_number(self, pk: int | str):
+        ids = await sync_to_async(
+            lambda: list(
+                self.get_month_weekly_quests().order_by('date').values_list('quest_id', flat=True)
+            )
+        )()
+        if pk not in ids:
+            return 0
+        return ids.index(pk) + 1
+
+    async def can_earn_points_on_weekly_quests(self):
+        limit = self.get_month_free_limit(Actions.WEEKLY_QUEST)
+        quests_count = await self.get_month_weekly_quests_count()
+        return limit - quests_count > 0
 
     async def get_previous_month_script(self) -> Optional['MonthText']:
         try:
@@ -650,6 +684,11 @@ class MiniConsult(models.Model):
     audio_file_path = models.CharField(
         'Путь к файлу',
         max_length=255,
+        blank=True,
+    )
+    photo_file_id = models.TextField(
+        'ID аудиофайла в телеграм',
+        null=True,
         blank=True,
     )
     expert_type = models.ForeignKey(

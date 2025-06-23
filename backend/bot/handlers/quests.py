@@ -22,7 +22,8 @@ from bot.text_templates.quests import (
     trial_quest_praise,
     weekly_praises,
 )
-from core.choices import SubscriptionPlans
+from bot.utils.formatters import challenges_plural
+from core.choices import Actions, SubscriptionPlans
 from core.models import (
     Client,
     ClientDailyQuest,
@@ -105,8 +106,18 @@ async def weekly_quests_list(msg: Message | CallbackQuery, client: Client):
 @router.callback_query(F.data == 'weekly_quests')
 @flags.with_client
 async def weekly_quests(query: CallbackQuery, client: Client):
+    text = 'Выбери, в каком челлендже ты хочешь участвовать\n'
+    if not await client.can_earn_points_on_weekly_quests():
+        limit = client.get_month_free_limit(Actions.WEEKLY_QUEST)
+        text += (
+            f'* Ты уже участвуешь в {limit} {challenges_plural(limit)}.\n'
+            'Можешь проходить другие квесты, '
+            'но баллы за них начисляться не будут.\n'
+            'Лимит сбрасывается в начале каждого месяца.'
+        )
+
     await query.message.edit_text(
-        'Выбери, в каком челлендже ты хочешь участвовать',
+        text,
         reply_markup=await get_weekly_quests_kb(client),
     )
 
@@ -214,6 +225,13 @@ async def quest_handler(query: CallbackQuery, client: Client):
         weekly_quest_task = await WeeklyQuestTask.objects.select_related(
             'quest',
         ).aget(id=quest_id)
+
+        if weekly_quest_task.quest_id != settings.TRIAL_WEEKLY_QUEST_ID:
+            quest_number = await client.get_month_weekly_quest_number(weekly_quest_task.quest_id)
+            quests_limit = client.get_month_free_limit(Actions.WEEKLY_QUEST)
+            if quest_number > quests_limit:
+                return
+
         if weekly_quest_task.day == 7:
             astropoints += 10
             await query.message.edit_text(random.choice(weekly_praises))

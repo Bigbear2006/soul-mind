@@ -9,7 +9,7 @@ from aiogram.types import BufferedInputFile, CallbackQuery, Message
 
 from bot.api.speechkit import synthesize
 from bot.keyboards.inline.vip_services import get_end_consult_kb
-from bot.keyboards.utils import keyboard_from_choices
+from bot.keyboards.utils import keyboard_from_choices, one_button_keyboard
 from bot.loader import logger
 from bot.states import MiniConsultState
 from bot.text_templates.vip_services import (
@@ -21,6 +21,18 @@ from core.choices import MiniConsultFeedbackRatings, MiniConsultStatuses
 from core.models import Client, ExpertAnswer, MiniConsult
 
 router = Router()
+
+
+@router.callback_query(F.data.startswith('show_mini_consult_photo'))
+async def show_mini_consult_photo(query: CallbackQuery):
+    consult = await MiniConsult.objects.aget(pk=query.data.split(':')[1])
+    await query.message.reply_photo(
+        consult.photo_file_id,
+        reply_markup=one_button_keyboard(
+            text='Назад',
+            callback_data='delete_this_message',
+        ),
+    )
 
 
 @router.callback_query(F.data.startswith('answer_consult'))
@@ -111,11 +123,11 @@ async def end_consult(query: CallbackQuery, state: FSMContext):
         await MiniConsult.objects.filter(client=consult.client).acount() % 3
         == 0
     ):
-        consults = MiniConsult.objects.prefetch_related('topics').filter(
+        consults = MiniConsult.objects.prefetch_related('expert_type', 'topics').filter(
             client=consult.client,
         )
         experts_text = '\n'.join(
-            {mosaic_experts_texts[i.expert_type] async for i in consults},
+            {mosaic_experts_texts[i.expert_type.name] async for i in consults},
         )
         all_topics = [
             mosaic_topic_texts[t]

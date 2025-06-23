@@ -37,6 +37,7 @@ from bot.states import (
     VIPCompatabilityState,
 )
 from bot.text_templates.base import astropoints_not_enough, connection_types
+from bot.text_templates.vip_services import ask_question_instructions
 from bot.utils.pdf import generate_pdf
 from core.choices import (
     ExperienceTypes,
@@ -232,7 +233,8 @@ async def ask_question(
     )
 
     pk = msg.data.split(':')[1] if isinstance(msg, CallbackQuery) else ''
-    topics = await state.get_value('topics', [])
+    data = await state.get_data()
+    topics = data.get('topics', [])
     if pk != 'done' or len(topics) == 3:
         if isinstance(msg, Message):
             topic, created = await Topic.objects.aget_or_create(name=msg.text)
@@ -243,16 +245,29 @@ async def ask_question(
         await answer_func(f'Метка {client.genderize(topic.name)} добавлена')
 
     if pk == 'done' or len(topics) == 3:
+        if data['expert_type'] == ExpertTypes.SPIRITUAL_MENTOR:
+            await state.set_state(MiniConsultState.photo)
+            await answer_func(
+                '🌿 Для настройки на твоё поле нужно фото.\n'
+                'Не архивное, а живое — недавнее, без фильтров.\n'
+                'Только чтобы почувствовать тебя — здесь и сейчас.\n'
+                'Фото нигде не сохраняется, используется только для ответа.',
+            )
+            return
+
         await state.set_state(MiniConsultState.question)
-        await answer_func(
-            '— «Вопрос — это не просто слова. Это как зеркало. Чем яснее ты сформулируешь, '
-            'тем точнее голос найдёт путь. Вот три подсказки от меня...»\n'
-            '1. Будь конкретен. Вместо «что мне делать?» скажи: '
-            '«я застрял в отношениях и не понимаю, это страх или правда?»\n'
-            '2. Говори голосом, если можешь. В твоей интонации больше правды, чем ты думаешь.\n'
-            '3. Если не знаешь, как спросить — просто скажи это. Это уже начало. И это нормально.\n'
-            'Soul Muse — не судит. Она слышит. И помогает видеть, что внутри уже есть ответ.',
-        )
+        await answer_func(ask_question_instructions)
+
+
+@router.message(StateFilter(MiniConsultState.photo))
+async def set_photo(msg: Message, state: FSMContext):
+    if not msg.photo:
+        await msg.answer('Не могу найти фото в сообщении. Попробуй еще раз.')
+        return
+
+    await state.update_data(photo_file_id=msg.photo[-1].file_id)
+    await state.set_state(MiniConsultState.question)
+    await msg.answer(ask_question_instructions)
 
 
 @router.message(F.text | F.voice, StateFilter(MiniConsultState.question))
@@ -275,6 +290,7 @@ async def send_question_to_expert(
         text=msg.text or '',
         audio_file_id=msg.voice.file_id if msg.voice else None,
         audio_file_path=file_path,
+        photo_file_id=data.get('photo_file_id', None),
         expert_type=await ExpertType.objects.aget(name=data['expert_type']),
         intention=data['intention'],
         experience_type=data['experience_type'],
@@ -295,7 +311,7 @@ async def send_question_to_expert(
     ):
         await consult.send_to(
             chat_id=client.id,
-            reply_markup=get_answer_consult_kb(consult.pk),
+            reply_markup=get_answer_consult_kb(consult),
         )
 
     await msg.answer('Вопрос принят. Эксперт ответит в течение 24 часов.')
@@ -316,10 +332,7 @@ async def send_feedback(query: CallbackQuery, state: FSMContext):
     )
 
 
-@router.callback_query(
-    F.data == 'send_feedback_without_comment',
-    StateFilter(MiniConsultState.comment),
-)
+@router.callback_query(F.data == 'send_feedback_without_comment')
 async def send_feedback_without_comment(
     query: CallbackQuery,
     state: FSMContext,
