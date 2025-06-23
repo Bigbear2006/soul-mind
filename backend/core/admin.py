@@ -97,7 +97,7 @@ class ClientActionLimitAdmin(admin.ModelAdmin):
 
 @admin.register(models.MiniConsult)
 class MiniConsultAdmin(admin.ModelAdmin, AudioPlayerMixin):
-    list_select_related = ('client',)
+    list_select_related = ('client', 'expert_type')
     readonly_fields = ('audio_player',)
     inlines = [MiniConsultTopicInline]
 

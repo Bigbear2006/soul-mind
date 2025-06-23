@@ -728,7 +728,11 @@ class MiniConsult(models.Model):
         ordering = ['-date']
 
     def __str__(self):
-        return f'{self.client} - {self.date.strftime(settings.DATE_FMT)}'
+        return (
+            f'[{self.date.strftime(settings.DATE_FMT)}] '
+            f'{self.client} - {ExpertTypes(self.expert_type.name).label} '
+            f'({MiniConsultStatuses(self.status).label})'
+        )
 
     def to_message_text(self) -> str:
         intention = (

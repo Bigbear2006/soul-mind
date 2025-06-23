@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import random
 
 from aiogram import F, Router, flags
@@ -90,6 +91,12 @@ async def end_consult(query: CallbackQuery, state: FSMContext):
         )
         return
 
+    try:
+        await query.message.edit_text('Консультация завершена')
+        await state.clear()
+    except TelegramBadRequest:
+        return
+
     await query.bot.send_message(
         consult.client.pk,
         '🔥 Ответ готов. Soul Muse ждёт тебя внутри.',
@@ -147,6 +154,3 @@ async def end_consult(query: CallbackQuery, state: FSMContext):
             consult.client.pk,
             BufferedInputFile(await synthesize(text), 'Мозаика Я.wav'),
         )
-
-    await state.clear()
-    await query.message.edit_text('Консультация завершена')
