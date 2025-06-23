@@ -65,6 +65,7 @@ def get_superpower_text(client: Client) -> str:
     mars_sign = [i for i in client.planets if i['name'] == 'Mars'][0]['sign']
     soul_number = get_soul_number(client.fullname)
     fate_number = get_fate_number(client.fullname, (11, 22, 33))
+    priority_center = client.get_priority_center()
     if client.subscription_is_active():
         return client.genderize(
             '⚡ Твоя суперсила\n\n'
@@ -87,9 +88,13 @@ def get_superpower_text(client: Client) -> str:
             'Есть зоны внутри тебя, которые не колеблются.\n'
             'Ты не просишь в них разрешения.\n'
             'Ты знаешь.\n\n'
-            'Определённые центры — это твои внутренние опоры,\n'
-            'то, что звучит стабильно в любом хаосе.\n'
-            f'{centers_descriptions[client.get_priority_center()]}\n\n'
+            + (
+                'Определённые центры — это твои внутренние опоры,\n'
+                'то, что звучит стабильно в любом хаосе.\n'
+                f'{centers_descriptions[priority_center]}\n\n'
+                if priority_center
+                else ''
+            ) +
             'Твоя стабильность — это не случайность.\n'
             'Это дар, который даёт другим спокойствие и ясность.\n\n'
             'Есть роль, в которую ты входишь неосознанно.\n'
@@ -121,10 +126,14 @@ def get_superpower_text(client: Client) -> str:
             'У тебя свой стиль действия.\n'
             'Марс — про то, как ты идёшь вперёд, как проявляешь силу и включаешь «огонь».\n'
             f'{mars_signs_descriptions_trial[mars_sign]}\n\n'
-            'Есть темы, в которых ты — якорь.\n'
-            'Стабильный. Надёжный. Настроенный.\n'
-            'Эти опоры не надо придумывать — они в тебе уже встроены.\n'
-            f'{centers_descriptions_trial[client.centers[0]]}\n\n'
+            + (
+                'Есть темы, в которых ты — якорь.\n'
+                'Стабильный. Надёжный. Настроенный.\n'
+                'Эти опоры не надо придумывать — они в тебе уже встроены.\n'
+                f'{centers_descriptions_trial[priority_center]}\n\n'
+                if priority_center
+                else ''
+            ) +
             'Ты несёшь в этот мир определённую вибрацию.\n'
             'Это не маска. Это энергия, через которую ты влияешь.\n'
             f'{soul_numbers_descriptions_trial[soul_number]}\n\n'

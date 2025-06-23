@@ -123,7 +123,10 @@ async def end_consult(query: CallbackQuery, state: FSMContext):
         await MiniConsult.objects.filter(client=consult.client).acount() % 3
         == 0
     ):
-        consults = MiniConsult.objects.prefetch_related('expert_type', 'topics').filter(
+        consults = MiniConsult.objects.prefetch_related(
+            'expert_type',
+            'topics',
+        ).filter(
             client=consult.client,
         )
         experts_text = '\n'.join(

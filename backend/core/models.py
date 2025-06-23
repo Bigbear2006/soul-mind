@@ -308,6 +308,9 @@ class Client(models.Model):
         return genderize(text, gender=self.gender, prefix='gender')
 
     def get_priority_center(self) -> str:
+        if not self.centers:
+            return ''
+
         return sorted(
             self.centers,
             key=lambda x: all_centers_ordered.index(x),
@@ -368,8 +371,10 @@ class Client(models.Model):
     async def get_month_weekly_quest_number(self, pk: int | str):
         ids = await sync_to_async(
             lambda: list(
-                self.get_month_weekly_quests().order_by('date').values_list('quest_id', flat=True)
-            )
+                self.get_month_weekly_quests()
+                .order_by('date')
+                .values_list('quest_id', flat=True),
+            ),
         )()
         if pk not in ids:
             return 0
@@ -856,7 +861,7 @@ class ExpertAnswer(models.Model):
     class Meta:
         verbose_name = 'Ответ эксперта'
         verbose_name_plural = 'Ответы экспертов'
-        ordering = ['-date']
+        ordering = ['date']
 
     def __str__(self):
         return f'{self.expert} - {self.consult}'

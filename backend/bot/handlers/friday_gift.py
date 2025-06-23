@@ -97,11 +97,10 @@ async def friday_gift_handler(query: CallbackQuery, client: Client):
     preamble = client.genderize(friday_gifts_preambles[gift_type])
     if gift_type == FridayGiftTypes.INSIGHT_PHRASES:
         text = ''
+        phrase_index = random.randint(0, len(insight_phrases) - 1)
         sent_msg = await query.message.answer_audio(
-            BufferedInputFile(
-                await synthesize(
-                    client.genderize(random.choice(insight_phrases)),
-                ),
+            BufferedInputFile.from_file(
+                f'assets/audio/insight_phrases/{phrase_index}_{client.gender}.wav',
                 'Инсайт.wav',
             ),
             caption=preamble,

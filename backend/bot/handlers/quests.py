@@ -227,7 +227,9 @@ async def quest_handler(query: CallbackQuery, client: Client):
         ).aget(id=quest_id)
 
         if weekly_quest_task.quest_id != settings.TRIAL_WEEKLY_QUEST_ID:
-            quest_number = await client.get_month_weekly_quest_number(weekly_quest_task.quest_id)
+            quest_number = await client.get_month_weekly_quest_number(
+                weekly_quest_task.quest_id,
+            )
             quests_limit = client.get_month_free_limit(Actions.WEEKLY_QUEST)
             if quest_number > quests_limit:
                 return

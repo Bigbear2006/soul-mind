@@ -6,7 +6,6 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile, CallbackQuery, Message
 from django.utils.timezone import now
 
-from bot.api.speechkit import synthesize
 from bot.keyboards.inline.base import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
@@ -143,7 +142,10 @@ async def show_power_day(query: CallbackQuery, client: Client):
 
     await query.message.edit_text(text)
     await query.message.answer_audio(
-        BufferedInputFile(await synthesize(text), 'Твой День силы.wav'),
+        BufferedInputFile.from_file(
+            f'assets/audio/power_days/{power_day}_{client.gender}.wav',
+            'Твой День силы.wav'
+        ),
     )
 
     await ClientAction.objects.aget_or_create(
@@ -263,8 +265,8 @@ async def show_vip_advice(query: CallbackQuery, client: Client):
 
     await query.message.edit_text(f'{advice_key}\n\n{advice_value}')
     await query.message.answer_audio(
-        BufferedInputFile(
-            await synthesize(advice_value),
+        BufferedInputFile.from_file(
+            f'assets/audio/universe_vip_advices/{advice_key}_{client.gender}.wav',
             'VIP-совет от Soul Muse.wav',
         ),
     )
