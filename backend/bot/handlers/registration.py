@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from datetime import UTC, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 
 from aiogram import F, Router, flags
 from aiogram.enums import ParseMode

@@ -1,4 +1,4 @@
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
 from django.utils.timezone import now
 
@@ -10,6 +10,10 @@ def get_lunar_nodes(date: datetime = None) -> dict[str, str] | None:
         date = now()
     for date_range, nodes in lunar_nodes.items():
         start_date, end_date = date_range
-        if start_date.replace(tzinfo=UTC) <= date <= end_date.replace(tzinfo=UTC):
+        if (
+            start_date.replace(tzinfo=UTC)
+            <= date
+            <= end_date.replace(tzinfo=UTC)
+        ):
             return nodes
     return None

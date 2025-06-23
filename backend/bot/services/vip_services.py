@@ -1,4 +1,4 @@
-from random import random
+import random
 
 from aiogram.types import BufferedInputFile, Message
 

@@ -8,7 +8,6 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import (
-    EmailValidator,
     MaxValueValidator,
     MinValueValidator,
 )
@@ -382,6 +381,10 @@ class ClientExpertType(models.Model):
         verbose_name='Тип эксперта',
     )
 
+    class Meta:
+        verbose_name = 'Тип эксперта'
+        verbose_name_plural = 'Типы экспертов'
+
 
 ##############
 ### QUESTS ###
@@ -718,7 +721,7 @@ class MiniConsult(models.Model):
             )
         if self.expert_type.name == ExpertTypes.NUMEROLOGIST:
             text += (
-                f'Дата рождения: {self.client.birth.strftime(settings.DATE_FMT)}\n'
+                f'Дата рождения: {self.client.birth.strftime("%d.%m.%Y")}\n'
                 f'ФИО: {self.client.fullname}'
             )
         return text

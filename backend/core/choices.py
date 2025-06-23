@@ -109,7 +109,7 @@ class ExpertTypes(models.TextChoices):
     ASTROLOGIST = 'astrologist', 'Астролог'
     NUMEROLOGIST = 'numerologist', 'Нумеролог'
     PSYCHOLOGIST = 'psychologist', 'Психолог'
-    HD_ANALYST = 'hd_analyst', 'Аналитик Human Design'
+    HD_ANALYST = 'hd_analyst', 'Эксперт Human Design'
     SPIRITUAL_MENTOR = 'spiritual_mentor', 'Духовный наставник-энергопрактик'
 
 

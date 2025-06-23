@@ -30,6 +30,10 @@ def compatability_plural(n: int):
     return plural(n, ('совместимость', 'совместимости', 'совместимостей'))
 
 
+def months_plural(n: int):
+    return plural(n, ('месяц', 'месяца', 'месяцев'))
+
+
 def your_plural(sign: str):
     if sign == 'Virgo':
         return 'Твоя'

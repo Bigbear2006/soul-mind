@@ -50,7 +50,7 @@ class Settings:
     ADMINS: list = field(default_factory=lambda: [1736885484])
 
     CURRENCY: str = field(default='RUB')
-    BOT_LINK: str = field(default='https://t.me/search_net_bot')
+    BOT_LINK: str = field(default='https://t.me/Soul_Muse_bot')
     TRIAL_WEEKLY_QUEST_ID: str = field(default=1)
     TZ: ZoneInfo = field(default=ZoneInfo('Europe/Moscow'))
     DATE_FMT: str = field(default='%d.%m.%Y %H:%M')

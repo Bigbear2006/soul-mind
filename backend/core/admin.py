@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.models import Group
 from django.utils.safestring import mark_safe
+from rangefilter.filters import DateTimeRangeFilterBuilder
 
 from bot.settings import settings
 from core import models
@@ -63,6 +64,11 @@ class WeeklyQuestAdmin(admin.ModelAdmin):
 @admin.register(models.Client)
 class ClientAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at',)
+    search_fields = ('fullname', 'username')
+    list_filter = (
+        'subscription_plan',
+        ('created_at', DateTimeRangeFilterBuilder()),
+    )
     inlines = [ClientQuestTagInline, ClientExpertTypeInline]
 
 

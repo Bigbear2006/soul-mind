@@ -133,4 +133,5 @@ async def end_consult(query: CallbackQuery, state: FSMContext):
             BufferedInputFile(await synthesize(text), 'Мозаика Я.wav'),
         )
 
+    await state.clear()
     await query.message.edit_text('Консультация завершена')

@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import io
+import re
 
 from pydub import AudioSegment
 
@@ -61,6 +62,7 @@ class SpeechKit(APIClient):
 
 
 async def synthesize(text: str) -> bytes:
+    text = re.sub(r'[*#]', '', text)
     async with SpeechKit() as sk:
         audio_chunks = await asyncio.gather(
             *[sk.synthesize_v3(chunk) for chunk in split_text(text)],
@@ -69,7 +71,5 @@ async def synthesize(text: str) -> bytes:
     for chunk in audio_chunks:
         if not chunk:
             continue
-        audio += AudioSegment.from_wav(
-            io.BytesIO(chunk),
-        )
+        audio += AudioSegment.from_wav(io.BytesIO(chunk))
     return audio.export(format='wav').read()

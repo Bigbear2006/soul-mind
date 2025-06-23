@@ -52,7 +52,7 @@ def get_month_resource_text(client: Client):
         f'твоя энергия в этом месяце раскрывается через {resource}.\n'
         f'{sun_signs_descriptions[sun_sign]}.\n'
         'Но сейчас ты входишь в новое состояние.\n'
-        '*Вот что просит твоя душа услышать:*\n'
+        'Вот что просит твоя душа услышать:\n'
         f'{random.choice(resources_descriptions[resource])}\n'
         'Ты не {gender:должен,должна} спешить. Достаточно — быть. И помнить.',
     )
