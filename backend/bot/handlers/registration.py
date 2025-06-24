@@ -199,11 +199,21 @@ async def set_birth_date(msg: Message, state: FSMContext):
 
     await state.update_data(birth_date=msg.text)
     await msg.answer(
-        '⏳ Введи точное время рождения. Это важно для точности разбора.\n'
+        '⏳ Введи точное время рождения. Это важно для точности разбора.',
+        reply_markup=one_button_keyboard(
+            text='Не знаю',
+            callback_data='unknown_birth_time',
+        ),
+    )
+    await state.set_state(UserInfoState.birth_time)
+
+
+@router.callback_query(F.data == 'unknown_birth_time')
+async def unknown_birth_time(query: CallbackQuery):
+    await query.message.edit_text(
         'Не знаешь? Выбери:',
         reply_markup=birth_times_kb,
     )
-    await state.set_state(UserInfoState.birth_time)
 
 
 @router.message(F.text, StateFilter(UserInfoState.birth_time))

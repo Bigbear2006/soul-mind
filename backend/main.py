@@ -63,7 +63,6 @@ async def main():
     dp.callback_query.middleware(WithClientMiddleware())
 
     dp.message.filter(F.chat.type == ChatType.PRIVATE)
-    await bot.delete_webhook(drop_pending_updates=True)
     await bot.set_my_commands(
         [
             BotCommand(command='/start', description='Запустить бота'),
