@@ -1,11 +1,11 @@
 import random
 
 from aiogram import F, Router, flags
+from aiogram.enums import ParseMode
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile, CallbackQuery, Message
 
-from bot.api.speechkit import synthesize
 from bot.keyboards.inline.base import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
@@ -80,12 +80,30 @@ async def friday_gift_intro(msg: Message, client: Client):
         )
 
 
+async def send_trial_teaser(query: CallbackQuery, client: Client):
+    if client.has_trial():
+        await query.message.answer(
+            client.genderize(
+                '<b>{gender:Ощутил,Ощутила}, как это может попадать в самое сердце?</b>\n'
+                'Этот подарок — раз в неделю, только для тех, кто выбрал идти глубже.\n'
+                'А сегодня был пробный.\n'
+                '<b>Хочешь получать такие — каждую пятницу?</b>\n'
+                'Подключи подписку — и я продолжу приносить тебе своё.',
+            ),
+            parse_mode=ParseMode.HTML,
+            reply_markup=get_to_subscription_plans_kb(
+                text='🎁 Получать подарки каждую неделю',
+            ),
+        )
+
+
 @router.callback_query(F.data == 'friday_gift')
 @flags.with_client
 async def friday_gift_handler(query: CallbackQuery, client: Client):
     gift = await FridayGift.objects.get_current_week_gift(client)
     if gift:
         await gift.send(query.message, client, friday_gift_kb)
+        await send_trial_teaser(query, client)
         return
 
     latest_gift = await FridayGift.objects.get_latest_gift(client)
@@ -124,6 +142,7 @@ async def friday_gift_handler(query: CallbackQuery, client: Client):
         logger.info(f'Invalid gift_type {gift_type!r}')
         return
 
+    await send_trial_teaser(query, client)
     await FridayGift.objects.acreate(
         client=client,
         type=gift_type,
@@ -166,6 +185,6 @@ async def save_insight(msg: Message, state: FSMContext):
         audio_file_id=msg.voice.file_id if msg.voice else None,
     )
     await msg.answer(
-        'Инсайт записан!\nВсе твои инсайты находятся в Soul Space.',
+        'Инсайт записан!\nВсе твои инсайты находятся в Личном кабинете.',
     )
     await state.clear()

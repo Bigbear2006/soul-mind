@@ -2,6 +2,7 @@ import random
 from datetime import date
 
 from aiogram import F, Router, flags
+from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile, CallbackQuery, Message
 from django.utils.timezone import now
@@ -46,65 +47,40 @@ async def premium_space(
                 text='🔒 Зарегистрируйся и загляни в Премиум-пространство',
             ),
         )
-    elif not client.has_trial() and not client.subscription_is_active():
-        await answer_func(
-            client.genderize(
-                '💎 Премиум-пространство\n\n'
-                'Ты уже {gender:почувствовал,почувствовала}, как Soul Muse ведёт.\n'
-                'Но в этом пространстве она говорит иначе. Точнее. Глубже.\n'
-                'Не для всех. Но для тебя — возможно.',
-            ),
-            reply_markup=get_to_subscription_plans_kb(
-                text='🔓 Оформить доступ к Премиум-пространству',
-            ),
-        )
-    elif client.subscription_plan == SubscriptionPlans.STANDARD:
-        await answer_func(
+        return
+
+    await answer_func(
+        client.genderize(
             '💎 Премиум-пространство\n\n'
-            'Ты уже слышишь Soul Muse — каждый день.\n'
-            'Но есть место, где она говорит не словами, а ключами.\n'
-            'Это Премиум-пространство. И оно ждёт.',
-            reply_markup=get_to_subscription_plans_kb(
-                text='💎 Перейти на Премиум',
-                only_premium=True,
-            ),
-        )
-    elif client.subscription_plan == SubscriptionPlans.PREMIUM:
-        await answer_func(
-            client.genderize(
-                '💎 Премиум-пространство\n\n'
-                'Ты {gender:сделал,сделала} шаг глубже.\n'
-                'А значит, теперь доступно не просто больше — доступно иное.\n\n'
-                'Здесь я говорю только тебе.\n'
-                'В нужное время. О самом важном.\n\n'
-                'Добро пожаловать в Премиум-пространство.\n'
-                'Открой — и почувствуй, как звучит твой следующий уровень.',
-            ),
-            reply_markup=premium_space_kb,
-        )
-    elif client.has_trial():
-        await answer_func(
-            client.genderize(
-                '💎 Премиум-пространство\n\n'
-                'Ты слушаешь Muse — и это уже много.\n'
-                'Но Премиум-пространство — это не просто голос.\n'
-                'Это глубина. Настоящие повороты. И ты к ним почти {gender:подошёл,подошла}.',
-            ),
-            reply_markup=get_to_subscription_plans_kb(
-                text='🔓 Оформи подписку, чтобы войти в Премиум-пространство',
-            ),
-        )
+            'Ты {gender:сделал,сделала} шаг глубже.\n'
+            'А значит, теперь доступно не просто больше — доступно иное.\n\n'
+            'Здесь я говорю только тебе.\n'
+            'В нужное время. О самом важном.\n\n'
+            'Добро пожаловать в Премиум-пространство.\n'
+            'Открой — и почувствуй, как звучит твой следующий уровень.',
+        ),
+        reply_markup=premium_space_kb,
+    )
 
 
 @router.callback_query(F.data == 'power_day')
 @flags.with_client
 async def power_day_handler(query: CallbackQuery, client: Client):
-    if not client.subscription_plan == SubscriptionPlans.PREMIUM:
+    if (
+        not client.subscription_is_active()
+        or client.subscription_plan == SubscriptionPlans.PREMIUM
+    ):
         await query.message.edit_text(
-            '🚀 Твой День силы\n\n'
-            'Этот ключ доступен только для Премиум-подписчиков.',
+            '<b>🚀 Твой День силы</b>\n\n'
+            '<b>У каждого месяца — есть своя вершина.</b>\n'
+            'Именно в этот день ты чувствуешь подъём, ясность, силу.\n'
+            'Я уже знаю, когда это для тебя.\n'
+            '<b>Ты тоже можешь узнать — в Премиум-пространстве.</b>',
+            parse_mode=ParseMode.HTML,
             reply_markup=get_to_subscription_plans_kb(
-                text='💎 Перейти на Премиум',
+                text='🚀 Увидеть свой День силы',
+                only_premium=True,
+                back_button_data='premium_space',
             ),
         )
         return
@@ -144,7 +120,7 @@ async def show_power_day(query: CallbackQuery, client: Client):
     await query.message.answer_audio(
         BufferedInputFile.from_file(
             f'assets/audio/power_days/{power_day}_{client.gender}.wav',
-            'Твой День силы.wav'
+            'Твой День силы.wav',
         ),
     )
 
@@ -158,11 +134,23 @@ async def show_power_day(query: CallbackQuery, client: Client):
 @router.callback_query(F.data == 'universe_answer')
 @flags.with_client
 async def universe_answer_handler(query: CallbackQuery, client: Client):
-    if not client.subscription_plan == SubscriptionPlans.PREMIUM:
+    if (
+        not client.subscription_is_active()
+        or client.subscription_plan == SubscriptionPlans.PREMIUM
+    ):
         await query.message.edit_text(
-            '✨ Ответ Вселенной\n\nДоступ только для Премиум-подписчиков.',
+            client.genderize(
+                '<b>✨ Ответ Вселенной</b>\n\n'
+                '<b>Иногда ты просто задаёшь вопрос — и ждёшь знак.</b>\n'
+                'В Премиум-пространстве он приходит.\n'
+                '<b>Один раз в месяц — для важного.</b>\n'
+                '{gender:Готов,Готова} услышать?',
+            ),
+            parse_mode=ParseMode.HTML,
             reply_markup=get_to_subscription_plans_kb(
-                text='💎 Получить доступ к ответу Вселенной',
+                text='🔮 Получить через Премиум',
+                only_premium=True,
+                back_button_data='premium_space',
             ),
         )
         return
@@ -217,12 +205,21 @@ async def show_universe_answer(query: CallbackQuery, client: Client):
 @router.callback_query(F.data == 'soul_muse_vip_answer')
 @flags.with_client
 async def soul_muse_vip_answer(query: CallbackQuery, client: Client):
-    if not client.subscription_plan == SubscriptionPlans.PREMIUM:
+    if (
+        not client.subscription_is_active()
+        or client.subscription_plan == SubscriptionPlans.PREMIUM
+    ):
         await query.message.edit_text(
-            '🔮 VIP-совет от Soul Muse\n\n'
-            'Этот знак доступен только на Премиуме.',
+            '<b>🔮 VIP-совет</b>\n\n'
+            '<b>Когда не хочется объяснений — а хочется знак.</b>\n'
+            'Это не прогноз, не аналитика. Это голос,\n'
+            'который будто знал, что ты сейчас в этом.\n'
+            '<b>Один раз в месяц. Только в Премиум.</b>',
+            parse_mode=ParseMode.HTML,
             reply_markup=get_to_subscription_plans_kb(
-                text='💎 Оформить Премиум и получить совет',
+                text='✨ Получить через Премиум',
+                only_premium=True,
+                back_button_data='premium_space',
             ),
         )
         return

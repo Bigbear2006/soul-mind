@@ -208,7 +208,7 @@ class Client(models.Model):
                 else:
                     return 3
             elif self.has_trial():
-                return 2
+                return 1
             else:
                 return 0
 
@@ -219,7 +219,7 @@ class Client(models.Model):
                 else:
                     return 4
             elif self.has_trial():
-                return 2
+                return 1
             else:
                 return 0
 

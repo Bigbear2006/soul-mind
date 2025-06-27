@@ -1,10 +1,14 @@
 from datetime import date, timedelta
 
 from aiogram import F, Router, flags
+from aiogram.enums import ParseMode
 from aiogram.types import CallbackQuery, Message
 from django.utils.timezone import now
 
-from bot.keyboards.inline.base import get_to_registration_kb
+from bot.keyboards.inline.base import (
+    get_to_registration_kb,
+    get_to_subscription_plans_kb,
+)
 from bot.keyboards.utils import one_button_keyboard
 from bot.text_templates.destiny_guide import astro_events, important_days
 from core.choices import Actions
@@ -72,16 +76,30 @@ async def destiny_guide_intro(msg: Message, client: Client):
 @router.callback_query(F.data == 'destiny_guide')
 @flags.with_client
 async def destiny_guide(query: CallbackQuery, client: Client):
-    reply_markup = None
-    if client.subscription_is_active():
-        reply_markup = one_button_keyboard(
-            text='🌘 Смотреть важные дни месяца',
-            callback_data='important_days',
-        )
     await query.message.edit_text(
         astro_events.get(date.today().strftime('%m.%Y')),
-        reply_markup=reply_markup,
+        reply_markup=one_button_keyboard(
+            text='🌘 Смотреть важные дни месяца',
+            callback_data='important_days',
+        ),
     )
+
+    await query.message.answer(
+        client.genderize(
+            '<b>Ты {gender:увидел,увидела} только первую звезду.</b>\n'
+            'Но на небе их гораздо больше.\n'
+            '<b>Астрособытия месяца</b> — лишь часть картины.\n'
+            '<b>Важные дни в твоих сферах</b>, энергетические пики, '
+            'моменты ясности — всё это ждёт в <i>Путеводителе судьбы</i>.\n'
+            '<b>Подписка откроет оба уровня доступа:</b>\n'
+            '— к полной карте неба\n'
+            '— и к важным поворотам именно в твоей жизни\n'
+            'Пора видеть глубже.',
+        ),
+        parse_mode=ParseMode.HTML,
+        reply_markup=get_to_subscription_plans_kb(text='🔓 Оформить подписку'),
+    )
+
     current_date = now()
     first_week_day = now() - timedelta(days=current_date.weekday())
     last_week_day = now() + timedelta(days=6)
@@ -94,7 +112,23 @@ async def destiny_guide(query: CallbackQuery, client: Client):
 
 
 @router.callback_query(F.data == 'important_days')
-async def important_days_handler(query: CallbackQuery):
+@flags.with_client
+async def important_days_handler(query: CallbackQuery, client: Client):
+    if not client.subscription_is_active():
+        await query.message.edit_text(
+            'Ты чувствуешь движение — но пока не видишь маршрута.\n'
+            '<i>Важные дни</i> — это подсветка моментов,'
+            'когда лучше действовать, ждать, говорить, молчать, начинать, завершать.\n'
+            '✨ Это карта энергий месяца —'
+            'персональная и точная.\n'
+            '<b>Откроется с подпиской.</b>',
+            parse_mode=ParseMode.HTML,
+            reply_markup=get_to_subscription_plans_kb(
+                text='🔓 Хочу видеть знаки',
+            ),
+        )
+        return
+
     await query.message.edit_text(
         important_days.get(date.today().strftime('%m.%Y')),
         reply_markup=one_button_keyboard(

@@ -313,7 +313,10 @@ async def set_birth_location(msg: Message, client: Client, state: FSMContext):
     )
 
     await msg_to_edit.edit_text(
-        'Введи свою почту. Она будет нужна для отправки чеков.',
+        '<b>Почему я прошу почту?</b>\n'
+        'Только по делу — для чеков и квитанций, если ты что-то покупаешь в боте.\n'
+        'Никакого спама. Только порядок и прозрачность.',
+        parse_mode=ParseMode.HTML,
     )
     await state.set_state(UserInfoState.email)
 

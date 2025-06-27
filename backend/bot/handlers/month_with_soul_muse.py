@@ -1,4 +1,5 @@
 from aiogram import F, Router, flags
+from aiogram.enums import ParseMode
 from aiogram.types import BufferedInputFile, CallbackQuery, Message
 
 from bot.api.soul_muse import SoulMuse
@@ -39,41 +40,16 @@ async def month_with_soul_muse(msg: Message | CallbackQuery, client: Client):
                 text='🔒 Зарегистрироваться и разблокировать прогноз',
             ),
         )
-    elif client.subscription_is_active():
-        await answer_func(
-            '📄 Месяц с Soul Muse\n\n'
-            'Каждый месяц несёт свою энергию.\n'
-            'Я уже почувствовала, куда он ведёт тебя.\n\n'
-            'Хочешь знать, в чём твой фокус, ресурс и сюжет?\n'
-            'Открой — и двигайся не наугад, а в резонансе.',
-            reply_markup=month_with_soul_muse_kb,
-        )
-    elif client.has_trial():
-        await answer_func(
-            client.genderize(
-                '📄 Месяц с Soul Muse\n\n'
-                'Ты уже {gender:начал,начала} путь.\n'
-                'Но для прогноза на месяц, главного ресурса и личного сценария —\n'
-                'нужно чуть больше доверия. И чуть глубже вход.\n\n'
-                'Подписка откроет для тебя карту месяца — без догадок, с направлением.',
-            ),
-            reply_markup=get_to_subscription_plans_kb(
-                text='🔓 Оформить подписку и заглянуть в свой месяц',
-            ),
-        )
-    else:
-        await answer_func(
-            client.genderize(
-                '📄 Месяц с Soul Muse\n\n'
-                'Есть знание, которое приходит не сразу.\n'
-                'Оно раскрывается, когда ты {gender:готов,готова} видеть больше, чем просто день.\n'
-                'Внутри — твой месяц. С фокусом. С ресурсом. С сюжетом.\n\n'
-                'Оформи подписку — и я покажу всё.',
-            ),
-            reply_markup=get_to_subscription_plans_kb(
-                text='🔓 Получить доступ к своему месяцу с Soul Muse',
-            ),
-        )
+        return
+
+    await answer_func(
+        '📄 Месяц с Soul Muse\n\n'
+        'Каждый месяц несёт свою энергию.\n'
+        'Я уже почувствовала, куда он ведёт тебя.\n\n'
+        'Хочешь знать, в чём твой фокус, ресурс и сюжет?\n'
+        'Открой — и двигайся не наугад, а в резонансе.',
+        reply_markup=month_with_soul_muse_kb,
+    )
 
 
 ######################
@@ -84,6 +60,24 @@ async def month_with_soul_muse(msg: Message | CallbackQuery, client: Client):
 @router.callback_query(F.data == 'month_forecast')
 @flags.with_client
 async def month_forecast(query: CallbackQuery, client: Client):
+    if not client.subscription_is_active():
+        await query.message.edit_text(
+            client.genderize(
+                '<b>Ты видишь только горизонт.</b>\n'
+                'А я могу показать погоду по дням.\n'
+                'Настроения, потоки, сферы —\n'
+                'всё, что помогает не терять себя\n'
+                'и двигаться в резонансе с собой.\n'
+                '<b>Откроется на подписке.</b>',
+            ),
+            parse_mode=ParseMode.HTML,
+            reply_markup=get_to_subscription_plans_kb(
+                text='🔓 Получить доступ',
+                back_button_data='month_with_soul_muse',
+            ),
+        )
+        return
+
     await query.message.edit_text(
         client.genderize(
             '🎁 Персональный прогноз на месяц\n\n'
@@ -132,7 +126,27 @@ async def show_month_forecast(query: CallbackQuery, client: Client):
 
 
 @router.callback_query(F.data == 'month_main_resource')
-async def month_main_resource(query: CallbackQuery):
+@flags.with_client
+async def month_main_resource(query: CallbackQuery, client: Client):
+    if not client.subscription_is_active():
+        await query.message.edit_text(
+            client.genderize(
+                '<b>Каждый месяц приносит тебе дар.</b>\n'
+                'Скрытый, но мощный.\n'
+                'Это может быть энергия. Способность.\n'
+                'Качество, которое станет опорой.\n'
+                '<b>Я уже вижу, что это.</b>\n'
+                'Хочешь — скажу.\n'
+                '<b>Откроется на подписке.</b>',
+            ),
+            parse_mode=ParseMode.HTML,
+            reply_markup=get_to_subscription_plans_kb(
+                text='🔓 Получить ресурс',
+                back_button_data='month_with_soul_muse',
+            ),
+        )
+        return
+
     await query.message.edit_text(
         '🎁 Главный ресурс месяца\n\n'
         'Каждый месяц дарит тебе что-то особенное.\n'
@@ -191,6 +205,23 @@ async def show_month_resource(query: CallbackQuery, client: Client):
 @router.callback_query(F.data == 'month_script')
 @flags.with_client
 async def month_script(query: CallbackQuery, client: Client):
+    if not client.subscription_is_active():
+        await query.message.edit_text(
+            '<b>Что будет звучать внутри тебя весь месяц?</b>\n'
+            'Какая роль включается?\n'
+            'Куда двигается сюжет?\n'
+            '<i>Этот уровень глубже — он про выбор.\n'
+            'И он доступен только тем,\n'
+            'кто вошёл в Премиум-пространство.</i>',
+            parse_mode=ParseMode.HTML,
+            reply_markup=get_to_subscription_plans_kb(
+                text='✨ Перейти в Премиум',
+                only_premium=True,
+                back_button_data='month_with_soul_muse',
+            ),
+        )
+        return
+
     if (
         client.subscription_is_active()
         and client.subscription_plan == SubscriptionPlans.PREMIUM

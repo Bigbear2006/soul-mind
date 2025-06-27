@@ -94,8 +94,8 @@ def get_superpower_text(client: Client) -> str:
                 f'{centers_descriptions[priority_center]}\n\n'
                 if priority_center
                 else ''
-            ) +
-            'Твоя стабильность — это не случайность.\n'
+            )
+            + 'Твоя стабильность — это не случайность.\n'
             'Это дар, который даёт другим спокойствие и ясность.\n\n'
             'Есть роль, в которую ты входишь неосознанно.\n'
             'Ты — не просто человек среди людей.\n'
@@ -133,8 +133,8 @@ def get_superpower_text(client: Client) -> str:
                 f'{centers_descriptions_trial[priority_center]}\n\n'
                 if priority_center
                 else ''
-            ) +
-            'Ты несёшь в этот мир определённую вибрацию.\n'
+            )
+            + 'Ты несёшь в этот мир определённую вибрацию.\n'
             'Это не маска. Это энергия, через которую ты влияешь.\n'
             f'{soul_numbers_descriptions_trial[soul_number]}\n\n'
             'У твоей силы есть направление.\n'

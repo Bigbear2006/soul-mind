@@ -6,6 +6,7 @@ __pycache__
 logs
 static
 data
+audio
 
 .env
 db.sqlite3

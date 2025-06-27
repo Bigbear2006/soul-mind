@@ -1,4 +1,5 @@
 from aiogram import F, Router, flags
+from aiogram.enums import ParseMode
 from aiogram.types import BufferedInputFile, CallbackQuery, Message
 
 from bot.keyboards.inline.base import get_to_subscription_plans_kb
@@ -58,6 +59,13 @@ async def show_destiny_mystery(query: CallbackQuery, client: Client):
             generate_pdf(get_destiny_mystery_text(client)),
             'Тайна твоего предназначения.pdf',
         ),
+        caption=client.genderize(
+            '<b>Ты {gender:увидел,увидела} лишь верхушку.</b>\n'
+            'Полный разбор покажет, <b>куда ведёт твой путь</b> — и как перестать идти в обход.\n'
+            '<b>Оформи подписку</b>, чтобы увидеть всё.',
+        ),
+        parse_mode=ParseMode.HTML,
+        reply_markup=get_to_subscription_plans_kb(text='✨ Открыть доступ'),
     )
 
 
@@ -76,6 +84,13 @@ async def show_career_and_finance(query: CallbackQuery, client: Client):
             generate_pdf(get_career_and_finance_text(client)),
             'Карьера и финансы.pdf',
         ),
+        caption=client.genderize(
+            '<b>Ты {gender:узнал,узнала}, где пробегает искра.</b>\n'
+            'Но в полной версии — <b>твои денежные каналы, зоны роста и точки выгорания.</b>\n'
+            '<b>Оформи подписку</b>, и я покажу весь маршрут.',
+        ),
+        parse_mode=ParseMode.HTML,
+        reply_markup=get_to_subscription_plans_kb(text='✨ Открыть доступ'),
     )
 
 
@@ -93,6 +108,15 @@ async def show_love_code(query: CallbackQuery, client: Client):
         BufferedInputFile(
             generate_pdf(get_love_code_text(client)),
             'Твой код любви.pdf',
+        ),
+        caption=client.genderize(
+            '<b>Сейчас ты {gender:прикоснулся,прикоснулась} к началу.</b>\n'
+            'А полная версия раскроет: <b>как ты строишь отношения, кого притягиваешь — и почему.</b>\n'
+            'Глубина любви начинается здесь.',
+        ),
+        parse_mode=ParseMode.HTML,
+        reply_markup=get_to_subscription_plans_kb(
+            text='✨ Получить весь разбор',
         ),
     )
 
@@ -112,6 +136,14 @@ async def show_superpower(query: CallbackQuery, client: Client):
             generate_pdf(get_superpower_text(client)),
             'Твоя суперсила.pdf',
         ),
+        caption=client.genderize(
+            '<b>Я только намекнула.</b>\n'
+            'Полный разбор покажет, <b>что в тебе работает как сила — '
+            'даже когда ты считаешь это слабостью.</b>\n'
+            '{gender:Готов,Готова} увидеть всю свою мощь?',
+        ),
+        parse_mode=ParseMode.HTML,
+        reply_markup=get_to_subscription_plans_kb(text='✨ Получить доступ'),
     )
 
 
@@ -139,7 +171,8 @@ async def show_full_profile(query: CallbackQuery, client: Client):
         )
         await query.message.answer(
             conclusion,
+            parse_mode=ParseMode.HTML,
             reply_markup=get_to_subscription_plans_kb(
-                text='Оформить подписку',
+                text='✨ Оформить подписку',
             ),
         )

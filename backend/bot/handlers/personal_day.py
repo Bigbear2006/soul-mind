@@ -1,6 +1,7 @@
 from datetime import date
 
 from aiogram import F, Router, flags
+from aiogram.enums import ParseMode
 from aiogram.types import CallbackQuery, Message
 from django.utils.timezone import now
 
@@ -79,6 +80,19 @@ async def personal_day(query: CallbackQuery, client: Client):
     number = get_personal_day_number(client.birth.date())
     await query.message.edit_text(
         personal_day_messages[phase][number],
+    )
+    await query.message.answer(
+        client.genderize(
+            '<b>Ты {gender:почувствовал,почуствовала}, как это работает.</b>\n'
+            'Каждый день — как подсказка, куда смотреть и что делать.\n'
+            'Но это было лишь знакомство.\n'
+            '<b>Хочешь, чтобы я приходила к тебе каждый день — с твоим прогнозом?\n'
+            'Оформи подписку — и не теряй связь с собой.</b>',
+        ),
+        parse_mode=ParseMode.HTML,
+        reply_markup=get_to_subscription_plans_kb(
+            text='💫 Получить доступ к личному дню',
+        ),
     )
     await ClientAction.objects.aget_or_create(
         client=client,

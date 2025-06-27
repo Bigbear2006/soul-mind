@@ -1,5 +1,4 @@
 import asyncio
-import contextlib
 import random
 
 from aiogram import F, Router, flags

@@ -33,6 +33,7 @@ async def get_weekly_quests_kb(client: Client):
             tags__tag__in=QuestTag.objects.filter(clients__client=client),
         ),
         'weekly_quest',
+        str_func=lambda quest: client.genderize(quest.title),
     )
 
 

@@ -34,8 +34,12 @@ async def subscription_plans_handler(
         if query.data == 'subscription_plans_with_back_button'
         else None
     )
+    answer_func = (
+        query.message.edit_text if query.message.text else query.message.answer
+    )
+
     await state.set_state()
-    await query.message.edit_text(
+    await answer_func(
         client.genderize(SubscriptionPlans.subscription_plans_teaser()),
         reply_markup=keyboard_from_choices(
             SubscriptionPlans,
