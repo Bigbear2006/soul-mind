@@ -3,6 +3,7 @@ import random
 from aiogram import F, Router, flags
 from aiogram.types import CallbackQuery, Message
 from django.db import IntegrityError, models
+from django.utils.timezone import now
 
 from bot.keyboards.inline.base import (
     get_to_registration_kb,
@@ -196,6 +197,7 @@ async def quest_handler(query: CallbackQuery, client: Client):
         await QuestModel.objects.filter(
             client_id=query.message.chat.id,
             quest_id=quest_id,
+            created_at__date=now().date(),
         ).aupdate(status=status)
     else:
         try:

@@ -5,15 +5,16 @@ import random
 from collections.abc import AsyncIterable
 from datetime import datetime, timedelta
 
-from aiogram.exceptions import TelegramBadRequest, TelegramRetryAfter
+from aiogram.exceptions import (
+    TelegramBadRequest,
+    TelegramForbiddenError,
+    TelegramRetryAfter,
+)
 from aiogram.types import InlineKeyboardMarkup
-from asgiref.sync import sync_to_async
 from celery import shared_task
 from celery.utils.log import get_task_logger
-from django.contrib.postgres.aggregates import ArrayAgg
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import (
-    Count,
     Exists,
     F,
     Max,
@@ -44,7 +45,6 @@ from core.models import (
     ClientDailyQuest,
     ClientWeeklyQuest,
     ClientWeeklyQuestTask,
-    DailyQuest,
     WeeklyQuestTask,
 )
 
@@ -62,6 +62,8 @@ def handle_send_message_errors(send_message_func):
             )
             await asyncio.sleep(e.retry_after)
             await send_message_func(chat_id, text, **kwargs)
+        except TelegramForbiddenError:
+            task_logger.info(f'Bot blocked by user id={chat_id}')
         except TelegramBadRequest as e:
             task_logger.info(
                 f'Cannot send a message to user (id={chat_id}) '
@@ -127,15 +129,9 @@ def async_shared_task(func):
     return decorator
 
 
-async def send_daily_quest(
-    client: Client,
-    quests_ids: set,
-    sent_quests_ids: list,
-):
+async def send_daily_quest(client: Client):
     try:
-        quest = await DailyQuest.objects.aget(
-            pk=random.choice(list(set(quests_ids) - set(sent_quests_ids))),
-        )
+        quest = await client.get_today_quest()
     except IndexError:
         return
 
@@ -146,59 +142,21 @@ async def send_daily_quest(
             'Сегодня — маленький шаг к себе.\n'
             'Быстрый. Точный. Не ради галочки, а ради фокуса.\n\n'
             'Хочешь почувствовать, что день не просто начался, а начался по-твоему?\n'
-            f'Вот задание:\n\n{quest.text}',
+            f'Вот задание:\n\n{quest.quest.text}',
         ),
-        reply_markup=get_quest_statuses_kb(client, 'daily', quest.pk),
+        reply_markup=get_quest_statuses_kb(client, 'daily', quest.quest.pk),
     )
 
 
 @async_shared_task
 async def send_daily_quests():
-    today = now()
-    quests_ids = await sync_to_async()(
-        lambda: set(DailyQuest.objects.values_list('id', flat=True)),
-    )()
-
-    quests = (
-        ClientDailyQuest.objects.select_related('client')
-        .filter(
-            client__notifications_enabled=True,
-            client__subscription_end__gte=today,
-            quest__is_active=True,
-        )
-        .annotate(sent_quests_ids=ArrayAgg('quest_id'))
+    clients = Client.objects.filter(
+        notifications_enabled=True,
+        subscription_end__gte=now(),
     )
     await asyncio_wait(
         [
-            asyncio.create_task(
-                send_daily_quest(
-                    quest.client,
-                    quests_ids,
-                    quest.sent_quests_ids,
-                ),
-            )
-            async for quest in quests
-        ],
-    )
-
-    clients = (
-        Client.objects.only('id', 'gender')
-        .annotate(sent_quests_count=Count('daily_quests'))
-        .filter(
-            sent_quests_count=0,
-            notifications_enabled=True,
-            subscription_end__gte=today,
-        )
-    )
-    await asyncio_wait(
-        [
-            asyncio.create_task(
-                send_daily_quest(
-                    client,
-                    quests_ids,
-                    [],
-                ),
-            )
+            asyncio.create_task(send_daily_quest(client))
             async for client in clients
         ],
     )
@@ -305,7 +263,7 @@ async def send_weekly_quests_tasks():
 @async_shared_task
 async def send_quests_reminders():
     today = now()
-    clients_ids = Client.objects.filter(
+    clients = Client.objects.filter(
         ~Q(
             id__in=ClientDailyQuest.objects.filter(
                 ~Q(status=''),
@@ -320,7 +278,7 @@ async def send_quests_reminders():
         callback_data='daily_quest',
     )
     await dispatch_genderized_messages(
-        clients_ids,
+        clients,
         quest_reminder,
         reply_markup=kb,
     )

@@ -352,10 +352,11 @@ class Client(models.Model):
         quest = await DailyQuest.objects.aget(
             pk=random.choice(list(all_quests_ids - sent_quests_ids)),
         )
-        return await ClientDailyQuest.objects.acreate(
+        await ClientDailyQuest.objects.acreate(
             client=self,
             quest=quest,
         )
+        return await self.get_today_quest()
 
     def get_month_weekly_quests(self):
         today = now()
