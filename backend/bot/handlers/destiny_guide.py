@@ -9,6 +9,7 @@ from bot.keyboards.inline.base import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
 )
+from bot.keyboards.inline.destiny_guide import destiny_guide_kb, to_destiny_guide_kb
 from bot.keyboards.utils import one_button_keyboard
 from bot.text_templates.destiny_guide import astro_events, important_days
 from core.choices import Actions
@@ -18,10 +19,15 @@ router = Router()
 
 
 @router.message(F.text == '🗺️ Путеводитель судьбы')
+@router.callback_query(F.data == 'destiny_guide_intro')
 @flags.with_client
-async def destiny_guide_intro(msg: Message, client: Client):
+async def destiny_guide_intro(msg: Message | CallbackQuery, client: Client):
+    answer_func = (
+        msg.answer if isinstance(msg, Message) else msg.message.edit_text
+    )
+
     if not client.is_registered():
-        await msg.answer(
+        await answer_func(
             client.genderize(
                 '🗺️ Путеводитель судьбы\n\n'
                 'Звёзды знают, где ты.\n'
@@ -33,31 +39,25 @@ async def destiny_guide_intro(msg: Message, client: Client):
             ),
         )
     elif client.subscription_is_active():
-        await msg.answer(
+        await answer_func(
             '🗺️ Путеводитель судьбы\n\n'
             'Я держу руку на пульсе космоса —\n'
             'и каждый месяц собираю для тебя карту:\n'
             'когда начинать, когда наблюдать, когда беречь, а когда сиять.\n\n'
             'Астрособытия. Важные дни. Личное направление.',
-            reply_markup=one_button_keyboard(
-                text='🌠 Смотреть Путеводитель',
-                callback_data='destiny_guide',
-            ),
+            reply_markup=destiny_guide_kb,
         )
     elif client.has_trial():
-        await msg.answer(
+        await answer_func(
             '🗺️ Путеводитель судьбы\n\n'
             'Ретрограды, затмения, важные транзиты —\n'
             'я собрала всё, что двигает пространство.\n'
             'Ты видишь главное. Остальное раскроется, если захочешь глубже.\n\n'
             'Хочешь знать, с какой энергией входит месяц?',
-            reply_markup=one_button_keyboard(
-                text='🌌 Открыть астрособытия',
-                callback_data='destiny_guide',
-            ),
+            reply_markup=destiny_guide_kb,
         )
     else:
-        await msg.answer(
+        await answer_func(
             client.genderize(
                 '🗺️ Путеводитель судьбы\n\n'
                 'Ты видишь главное —\n'
@@ -66,10 +66,7 @@ async def destiny_guide_intro(msg: Message, client: Client):
                 'Но я могу показать больше… когда ты будешь {gender:готов,готова}.\n\n'
                 'P.S. Подписка откроет доступ к важным дням в твоих сферах.',
             ),
-            reply_markup=one_button_keyboard(
-                text='🌘 Смотреть астрособытия месяца',
-                callback_data='destiny_guide',
-            ),
+            reply_markup=destiny_guide_kb,
         )
 
 
@@ -78,27 +75,27 @@ async def destiny_guide_intro(msg: Message, client: Client):
 async def destiny_guide(query: CallbackQuery, client: Client):
     await query.message.edit_text(
         astro_events.get(date.today().strftime('%m.%Y')),
-        reply_markup=one_button_keyboard(
-            text='🌘 Смотреть важные дни месяца',
-            callback_data='important_days',
-        ),
+        reply_markup=to_destiny_guide_kb,
     )
 
-    await query.message.answer(
-        client.genderize(
-            '<b>Ты {gender:увидел,увидела} только первую звезду.</b>\n'
-            'Но на небе их гораздо больше.\n'
-            '<b>Астрособытия месяца</b> — лишь часть картины.\n'
-            '<b>Важные дни в твоих сферах</b>, энергетические пики, '
-            'моменты ясности — всё это ждёт в <i>Путеводителе судьбы</i>.\n'
-            '<b>Подписка откроет оба уровня доступа:</b>\n'
-            '— к полной карте неба\n'
-            '— и к важным поворотам именно в твоей жизни\n'
-            'Пора видеть глубже.',
-        ),
-        parse_mode=ParseMode.HTML,
-        reply_markup=get_to_subscription_plans_kb(text='🔓 Оформить подписку'),
-    )
+    if not client.subscription_is_active():
+        await query.message.answer(
+            client.genderize(
+                '<b>Ты {gender:увидел,увидела} только первую звезду.</b>\n'
+                'Но на небе их гораздо больше.\n'
+                '<b>Астрособытия месяца</b> — лишь часть картины.\n'
+                '<b>Важные дни в твоих сферах</b>, энергетические пики, '
+                'моменты ясности — всё это ждёт в <i>Путеводителе судьбы</i>.\n'
+                '<b>Подписка откроет оба уровня доступа:</b>\n'
+                '— к полной карте неба\n'
+                '— и к важным поворотам именно в твоей жизни\n'
+                'Пора видеть глубже.',
+            ),
+            parse_mode=ParseMode.HTML,
+            reply_markup=get_to_subscription_plans_kb(
+                text='🔓 Оформить подписку',
+            ),
+        )
 
     current_date = now()
     first_week_day = now() - timedelta(days=current_date.weekday())
@@ -131,8 +128,5 @@ async def important_days_handler(query: CallbackQuery, client: Client):
 
     await query.message.edit_text(
         important_days.get(date.today().strftime('%m.%Y')),
-        reply_markup=one_button_keyboard(
-            text='🌘 Смотреть астрособытия месяца',
-            callback_data='destiny_guide',
-        ),
+        reply_markup=to_destiny_guide_kb,
     )

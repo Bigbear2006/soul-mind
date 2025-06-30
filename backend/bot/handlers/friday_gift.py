@@ -80,8 +80,8 @@ async def friday_gift_intro(msg: Message, client: Client):
         )
 
 
-async def send_trial_teaser(query: CallbackQuery, client: Client):
-    if client.has_trial():
+async def send_subscription_teaser(query: CallbackQuery, client: Client):
+    if not client.subscription_is_active():
         await query.message.answer(
             client.genderize(
                 '<b>{gender:Ощутил,Ощутила}, как это может попадать в самое сердце?</b>\n'
@@ -103,7 +103,7 @@ async def friday_gift_handler(query: CallbackQuery, client: Client):
     gift = await FridayGift.objects.get_current_week_gift(client)
     if gift:
         await gift.send(query.message, client, friday_gift_kb)
-        await send_trial_teaser(query, client)
+        await send_subscription_teaser(query, client)
         return
 
     latest_gift = await FridayGift.objects.get_latest_gift(client)
@@ -142,7 +142,7 @@ async def friday_gift_handler(query: CallbackQuery, client: Client):
         logger.info(f'Invalid gift_type {gift_type!r}')
         return
 
-    await send_trial_teaser(query, client)
+    await send_subscription_teaser(query, client)
     await FridayGift.objects.acreate(
         client=client,
         type=gift_type,

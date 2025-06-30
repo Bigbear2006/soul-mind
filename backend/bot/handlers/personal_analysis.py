@@ -54,18 +54,26 @@ async def destiny_mystery(query: CallbackQuery, client: Client):
 @router.callback_query(F.data == 'show_destiny_mystery')
 @flags.with_client
 async def show_destiny_mystery(query: CallbackQuery, client: Client):
+    kwargs = {}
+    if not client.subscription_is_active():
+        kwargs = {
+            'caption': client.genderize(
+                '<b>Ты {gender:увидел,увидела} лишь верхушку.</b>\n'
+                'Полный разбор покажет, <b>куда ведёт твой путь</b> — и как перестать идти в обход.\n'
+                '<b>Оформи подписку</b>, чтобы увидеть всё.',
+            ),
+            'parse_mode': ParseMode.HTML,
+            'reply_markup': get_to_subscription_plans_kb(
+                text='✨ Открыть доступ',
+            ),
+        }
+
     await query.message.answer_document(
         BufferedInputFile(
             generate_pdf(get_destiny_mystery_text(client)),
             'Тайна твоего предназначения.pdf',
         ),
-        caption=client.genderize(
-            '<b>Ты {gender:увидел,увидела} лишь верхушку.</b>\n'
-            'Полный разбор покажет, <b>куда ведёт твой путь</b> — и как перестать идти в обход.\n'
-            '<b>Оформи подписку</b>, чтобы увидеть всё.',
-        ),
-        parse_mode=ParseMode.HTML,
-        reply_markup=get_to_subscription_plans_kb(text='✨ Открыть доступ'),
+        **kwargs,
     )
 
 
@@ -79,18 +87,26 @@ async def career_and_finance(query: CallbackQuery, client: Client):
 @router.callback_query(F.data == 'show_career_and_finance')
 @flags.with_client
 async def show_career_and_finance(query: CallbackQuery, client: Client):
+    kwargs = {}
+    if not client.subscription_is_active():
+        kwargs = {
+            'caption': client.genderize(
+                '<b>Ты {gender:узнал,узнала}, где пробегает искра.</b>\n'
+                'Но в полной версии — <b>твои денежные каналы, зоны роста и точки выгорания.</b>\n'
+                '<b>Оформи подписку</b>, и я покажу весь маршрут.',
+            ),
+            'parse_mode': ParseMode.HTML,
+            'reply_markup': get_to_subscription_plans_kb(
+                text='✨ Открыть доступ',
+            ),
+        }
+
     await query.message.answer_document(
         BufferedInputFile(
             generate_pdf(get_career_and_finance_text(client)),
             'Карьера и финансы.pdf',
         ),
-        caption=client.genderize(
-            '<b>Ты {gender:узнал,узнала}, где пробегает искра.</b>\n'
-            'Но в полной версии — <b>твои денежные каналы, зоны роста и точки выгорания.</b>\n'
-            '<b>Оформи подписку</b>, и я покажу весь маршрут.',
-        ),
-        parse_mode=ParseMode.HTML,
-        reply_markup=get_to_subscription_plans_kb(text='✨ Открыть доступ'),
+        **kwargs,
     )
 
 
@@ -104,20 +120,26 @@ async def love_code(query: CallbackQuery, client: Client):
 @router.callback_query(F.data == 'show_love_code')
 @flags.with_client
 async def show_love_code(query: CallbackQuery, client: Client):
+    kwargs = {}
+    if not client.subscription_is_active():
+        kwargs = {
+            'caption': client.genderize(
+                '<b>Сейчас ты {gender:прикоснулся,прикоснулась} к началу.</b>\n'
+                'А полная версия раскроет: <b>как ты строишь отношения, кого притягиваешь — и почему.</b>\n'
+                'Глубина любви начинается здесь.',
+            ),
+            'parse_mode': ParseMode.HTML,
+            'reply_markup': get_to_subscription_plans_kb(
+                text='✨ Получить весь разбор',
+            ),
+        }
+
     await query.message.answer_document(
         BufferedInputFile(
             generate_pdf(get_love_code_text(client)),
             'Твой код любви.pdf',
         ),
-        caption=client.genderize(
-            '<b>Сейчас ты {gender:прикоснулся,прикоснулась} к началу.</b>\n'
-            'А полная версия раскроет: <b>как ты строишь отношения, кого притягиваешь — и почему.</b>\n'
-            'Глубина любви начинается здесь.',
-        ),
-        parse_mode=ParseMode.HTML,
-        reply_markup=get_to_subscription_plans_kb(
-            text='✨ Получить весь разбор',
-        ),
+        **kwargs,
     )
 
 
@@ -131,19 +153,27 @@ async def superpower(query: CallbackQuery, client: Client):
 @router.callback_query(F.data == 'show_superpower')
 @flags.with_client
 async def show_superpower(query: CallbackQuery, client: Client):
+    kwargs = {}
+    if not client.subscription_is_active():
+        kwargs = {
+            'caption': client.genderize(
+                '<b>Я только намекнула.</b>\n'
+                'Полный разбор покажет, <b>что в тебе работает как сила — '
+                'даже когда ты считаешь это слабостью.</b>\n'
+                '{gender:Готов,Готова} увидеть всю свою мощь?',
+            ),
+            'parse_mode': ParseMode.HTML,
+            'reply_markup': get_to_subscription_plans_kb(
+                text='✨ Получить доступ',
+            ),
+        }
+
     await query.message.answer_document(
         BufferedInputFile(
             generate_pdf(get_superpower_text(client)),
             'Твоя суперсила.pdf',
         ),
-        caption=client.genderize(
-            '<b>Я только намекнула.</b>\n'
-            'Полный разбор покажет, <b>что в тебе работает как сила — '
-            'даже когда ты считаешь это слабостью.</b>\n'
-            '{gender:Готов,Готова} увидеть всю свою мощь?',
-        ),
-        parse_mode=ParseMode.HTML,
-        reply_markup=get_to_subscription_plans_kb(text='✨ Получить доступ'),
+        **kwargs,
     )
 
 
@@ -158,13 +188,7 @@ async def full_profile(query: CallbackQuery, client: Client):
 @flags.with_client
 async def show_full_profile(query: CallbackQuery, client: Client):
     intro, content, conclusion = get_full_profile_text(client)
-    if client.subscription_is_active():
-        text = '\n\n'.join([intro, *content, conclusion])
-        await query.message.answer_document(
-            BufferedInputFile(generate_pdf(text), 'Твой полный профиль.pdf'),
-        )
-
-    elif client.has_trial():
+    if not client.subscription_is_active():
         text = '\n\n'.join([intro, *content])
         await query.message.answer_document(
             BufferedInputFile(generate_pdf(text), 'Твой полный профиль.pdf'),
@@ -176,3 +200,9 @@ async def show_full_profile(query: CallbackQuery, client: Client):
                 text='✨ Оформить подписку',
             ),
         )
+        return
+
+    text = '\n\n'.join([intro, *content, conclusion])
+    await query.message.answer_document(
+        BufferedInputFile(generate_pdf(text), 'Твой полный профиль.pdf'),
+    )

@@ -14,7 +14,7 @@ from core.models import Client, FridayGift, Insight, SubscriptionPlans
 router = Router()
 
 
-@router.message(F.text == '👤 Личный кабинет')
+@router.message(F.text.in_(('👤 Личный кабинет', '👤 Soul Space')))
 @router.callback_query(F.data == 'soul_space')
 @flags.with_client
 async def personal_account_handler(
