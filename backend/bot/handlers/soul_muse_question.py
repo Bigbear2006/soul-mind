@@ -102,7 +102,7 @@ async def soul_muse_question(msg: Message, client: Client):
                 'Ты носишь в себе вопрос?\n'
                 'О себе. О чувствах. О пути.\n'
                 'Задай — и я отвечу. Точно, глубоко, без шаблонов.\n\n'
-                'У тебя есть 2 вопроса. Используй их осознанно.\n\n'
+                'У тебя есть 1 вопрос. Используй его осознанно.\n\n'
                 f'{remaining_usages_str}',
                 reply_markup=get_soul_muse_question_kb(
                     buy_extra_questions_btn=False,

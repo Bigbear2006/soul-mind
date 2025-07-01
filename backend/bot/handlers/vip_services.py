@@ -88,7 +88,7 @@ async def vip_mini_consult(callback: CallbackQuery):
         '- Психолог\n- Духовный наставник-энергопрактик\n\n'
         '3–5 голосовых от того, кто умеет читать глубже.',
         reply_markup=one_button_keyboard(
-            text='999 ₽ / 1500 астробаллов',
+            text='999 ₽',
             callback_data='buy_mini_consult',
             back_button_data='vip_services',
         ),
@@ -101,7 +101,7 @@ async def buy_mini_consult(query: CallbackQuery, state: FSMContext):
     await query.message.answer(
         'Выбери тип оплаты',
         reply_markup=get_payment_choices_kb(
-            '1500 баллов',
+            None,
             '999 ₽',
         ),
     )

@@ -199,7 +199,8 @@ async def set_birth_date(msg: Message, state: FSMContext):
 
     await state.update_data(birth_date=msg.text)
     await msg.answer(
-        '⏳ Введи точное время рождения. Это важно для точности разбора.',
+        '⏳ Введи точное время рождения в формате 00:00. '
+        'Это важно для точности разбора.',
         reply_markup=one_button_keyboard(
             text='Не знаю',
             callback_data='unknown_birth_time',
@@ -211,7 +212,7 @@ async def set_birth_date(msg: Message, state: FSMContext):
 @router.callback_query(F.data == 'unknown_birth_time')
 async def unknown_birth_time(query: CallbackQuery):
     await query.message.edit_text(
-        'Не знаешь? Выбери:',
+        'Не знаешь? Выбери подходящий интервал, нажав на него:',
         reply_markup=birth_times_kb,
     )
 
@@ -326,7 +327,7 @@ async def set_email(msg: Message, state: FSMContext):
     validator = EmailValidator()
     try:
         validator(msg.text)
-        await Client.objects.filter(pk=msg.chat.id).aupdate(email=msg.text)
+        await Client.objects.filter(pk=msg.chat.id).aupdate(email=msg.text, notifications_enabled=True)
     except ValidationError:
         await msg.answer('Некорректная почта. Попробуй ещё раз.')
         return
@@ -346,24 +347,9 @@ async def set_email(msg: Message, state: FSMContext):
 
 
 @router.callback_query(F.data == 'personal_data_approval')
-@flags.with_client
-async def personal_data_approval(query: CallbackQuery, client: Client):
-    await query.message.answer(
-        client.genderize(
-            'Разрешение на пуш: '
-            'иногда я буду приходить к тебе — с советом, вдохновением или знаком.\n'
-            'Чтобы напомнить: ты не {gender:один,одна}.\n'
-            'Разреши мне тихо постучать - когда это будет важно.',
-        ),
-        reply_markup=notifications_kb,
-    )
-
-
-@router.callback_query(F.data.startswith('notifications'))
 async def set_notifications(query: CallbackQuery, state: FSMContext):
-    notifications_enabled = query.data.split(':')[-1] == 'yes'
     await Client.objects.filter(pk=query.message.chat.id).aupdate(
-        notifications_enabled=notifications_enabled,
+        notifications_enabled=True,
     )
 
     await query.message.answer(
