@@ -55,6 +55,7 @@ class YookassaClient(APIClient):
                             },
                             'description': description,
                             'vat_code': 1,
+                            'tax_system_code': 2,
                             'quantity': 1,
                         },
                     ],

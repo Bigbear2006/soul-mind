@@ -157,6 +157,10 @@ class Client(models.Model):
         username = self.first_name
         if self.username:
             username += f' (@{self.username})'
+        if self.fullname:
+            username += f' | {self.fullname}'
+        if self.birth:
+            username += f' - {date_to_str(self.birth)}'
         return username
 
     async def check_invitation(

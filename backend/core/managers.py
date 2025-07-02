@@ -67,10 +67,12 @@ class MonthTextManager(models.Manager):
         client: 'Client',
         type: MonthTextTypes,
     ) -> Optional['MonthText']:
+        today = now()
         try:
             return await self.aget(
                 client=client,
-                created_at__month=now().month,
+                created_at__month=today.month,
+                created_at__year=today.year,
                 type=type,
             )
         except ObjectDoesNotExist:

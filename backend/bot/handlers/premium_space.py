@@ -68,7 +68,7 @@ async def premium_space(
 async def power_day_handler(query: CallbackQuery, client: Client):
     if (
         not client.subscription_is_active()
-        or client.subscription_plan == SubscriptionPlans.PREMIUM
+        or client.subscription_plan != SubscriptionPlans.PREMIUM
     ):
         await query.message.edit_text(
             '<b>🚀 Твой День силы</b>\n\n'
@@ -136,7 +136,7 @@ async def show_power_day(query: CallbackQuery, client: Client):
 async def universe_answer_handler(query: CallbackQuery, client: Client):
     if (
         not client.subscription_is_active()
-        or client.subscription_plan == SubscriptionPlans.PREMIUM
+        or client.subscription_plan != SubscriptionPlans.PREMIUM
     ):
         await query.message.edit_text(
             client.genderize(
@@ -207,7 +207,7 @@ async def show_universe_answer(query: CallbackQuery, client: Client):
 async def soul_muse_vip_answer(query: CallbackQuery, client: Client):
     if (
         not client.subscription_is_active()
-        or client.subscription_plan == SubscriptionPlans.PREMIUM
+        or client.subscription_plan != SubscriptionPlans.PREMIUM
     ):
         await query.message.edit_text(
             '<b>🔮 VIP-совет</b>\n\n'

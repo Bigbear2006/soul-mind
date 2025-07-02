@@ -104,6 +104,7 @@ async def show_month_forecast(query: CallbackQuery, client: Client):
     if forecast:
         text = forecast.text
     else:
+        await query.message.edit_text('Составляю прогноз...')
         text = await SoulMuse().answer(get_month_forecast_prompt(client))
         await MonthText.objects.acreate(
             text=text,

@@ -32,7 +32,7 @@ async def synthesize_universe_vip_advices():
     for symbol, text in universe_vip_advices.items():
         await synthesize_static_text(
             'assets/audio/universe_vip_advices',
-            f'{symbol}\n\n{text}',
+            f'{symbol}.\n\n{text}',
             symbol,
         )
 
