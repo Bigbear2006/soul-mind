@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.models import Group
+from django.forms import ModelForm
+from django.http import HttpRequest
 from django.utils.safestring import mark_safe
 from rangefilter.filters import DateTimeRangeFilterBuilder
 
@@ -45,6 +47,7 @@ class ClientExpertTypeInline(admin.TabularInline):
 
 class WeeklyQuestTaskInline(admin.StackedInline):
     model = models.WeeklyQuestTask
+    extra = 1
 
 
 class MiniConsultTopicInline(admin.TabularInline):
@@ -58,7 +61,7 @@ class DailyQuestAdmin(admin.ModelAdmin):
 
 @admin.register(models.WeeklyQuest)
 class WeeklyQuestAdmin(admin.ModelAdmin):
-    inlines = [WeeklyQuestTagInline]
+    inlines = [WeeklyQuestTagInline, WeeklyQuestTaskInline]
 
 
 @admin.register(models.Client)
@@ -70,6 +73,19 @@ class ClientAdmin(admin.ModelAdmin):
         ('created_at', DateTimeRangeFilterBuilder()),
     )
     inlines = [ClientQuestTagInline, ClientExpertTypeInline]
+
+    def save_model(
+        self,
+        request: HttpRequest,
+        obj: models.Client,
+        form: ModelForm,
+        change: bool,
+    ):
+        subscription_changed = any(
+            field in form.changed_data
+            for field in ('subscription_end', 'subscription_plan')
+        )
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(models.ClientDailyQuest)

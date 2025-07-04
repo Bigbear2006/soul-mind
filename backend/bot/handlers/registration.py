@@ -7,7 +7,6 @@ from aiogram.filters import Command, CommandObject, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     CallbackQuery,
-    InputMediaVideo,
     Message,
 )
 from django.core.exceptions import ValidationError
@@ -18,7 +17,6 @@ from bot.api.geocoding import GeocodingAPI
 from bot.api.humandesign import HumanDesignAPI
 from bot.keyboards.inline.registration import (
     birth_times_kb,
-    notifications_kb,
     start_ways_kb,
 )
 from bot.keyboards.reply import menu_kb
@@ -63,31 +61,17 @@ async def start(msg: Message, command: CommandObject):
         )
     else:
         await msg.answer_video(
-            settings.MEDIA.soul_mind_video,
-            reply_markup=one_button_keyboard(
-                text='🔑 Войти',
-                callback_data='go_in',
-            ),
-        )
-
-
-@router.callback_query(F.data == 'go_in')
-async def go_in(query: CallbackQuery, state: FSMContext):
-    await state.set_state(UserInfoState.gender)
-    await query.message.edit_media(
-        InputMediaVideo(
-            media=settings.MEDIA.soul_muse_video,
+            settings.MEDIA.soul_muse_video,
             caption='Нажимая «🌌 Начать путь с Soul Muse», вы соглашаетесь '
             'с условиями нашего пространства:\n'
             f'<a href="{settings.PRIVACY_POLICY_URL}">Политика конфиденциальности SoulMind</a>\n'
             f'<a href="{settings.PUBLIC_OFFER_URL}">Публичная оферта SoulMind</a>\n',
             parse_mode=ParseMode.HTML,
-        ),
-        reply_markup=one_button_keyboard(
-            text='🌌 Начать путь с Soul Muse',
-            callback_data='start_way',
-        ),
-    )
+            reply_markup=one_button_keyboard(
+                text='🌌 Начать путь с Soul Muse',
+                callback_data='start_way',
+            ),
+        )
 
 
 @router.callback_query(F.data == 'to_registration')
@@ -117,7 +101,8 @@ async def start_way(query: CallbackQuery):
 
 
 @router.callback_query(F.data == 'start_way_explain')
-async def start_way_explain(query: CallbackQuery):
+async def start_way_explain(query: CallbackQuery, state: FSMContext):
+    await state.set_state(UserInfoState.gender)
     await query.message.edit_text(
         'Ты не просто «сложный человек».\n\n'
         'Ты — алгоритм с душой.\n\n'
@@ -133,30 +118,19 @@ async def start_way_explain(query: CallbackQuery):
         'Я покажу, кто ты: Генератор? Проектор? Манифестор?\n\n'
         '• Архетипы Юнга — Внутри: Герой, Любовник, Бунтарь… и Саботажник. '
         'Разберёмся, кто на троне, а кого пора усадить.\n\n'
-        'Готов?',
-        reply_markup=one_button_keyboard(
-            text='⚡ Soul Muse, активируй мой код',
-            callback_data='activate_code',
-        ),
+        'Готов?\n\n'
+        'Выбери свой пол — чтобы я могла обращаться именно так, '
+        'как ты хочешь.',
+        reply_markup=keyboard_from_choices(Genders),
     )
 
 
 @router.callback_query(F.data == 'start_way_right_now')
-async def start_way_right_now(query: CallbackQuery):
-    await query.message.edit_text(
-        'Давай соберём твой личный звёздный паспорт. '
-        'Без виз — но с космической точностью.',
-        reply_markup=one_button_keyboard(
-            text='⚡ Активировать мой код',
-            callback_data='activate_code',
-        ),
-    )
-
-
-@router.callback_query(F.data == 'activate_code')
-async def activate_code(query: CallbackQuery, state: FSMContext):
+async def start_way_right_now(query: CallbackQuery, state: FSMContext):
     await state.set_state(UserInfoState.gender)
     await query.message.edit_text(
+        'Давай соберём твой личный звёздный паспорт. '
+        'Без виз — но с космической точностью.\n\n'
         'Выбери свой пол — чтобы я могла обращаться именно так, '
         'как ты хочешь.',
         reply_markup=keyboard_from_choices(Genders),
@@ -327,7 +301,10 @@ async def set_email(msg: Message, state: FSMContext):
     validator = EmailValidator()
     try:
         validator(msg.text)
-        await Client.objects.filter(pk=msg.chat.id).aupdate(email=msg.text, notifications_enabled=True)
+        await Client.objects.filter(pk=msg.chat.id).aupdate(
+            email=msg.text,
+            notifications_enabled=True,
+        )
     except ValidationError:
         await msg.answer('Некорректная почта. Попробуй ещё раз.')
         return

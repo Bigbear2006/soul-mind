@@ -777,7 +777,11 @@ class MiniConsult(models.Model):
                 f'Дата рождения: {self.client.birth.strftime("%d.%m.%Y")}\n'
                 f'ФИО: {self.client.fullname}'
             )
-        if self.expert_type in (ExpertTypes.ASTROLOGIST, ExpertTypes.HD_ANALYST, ExpertTypes.PSYCHOLOGIST):
+        if self.expert_type in (
+            ExpertTypes.ASTROLOGIST,
+            ExpertTypes.HD_ANALYST,
+            ExpertTypes.PSYCHOLOGIST,
+        ):
             text += f'ФИО: {self.client.fullname}'
         return text
 

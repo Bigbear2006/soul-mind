@@ -9,8 +9,10 @@ from bot.keyboards.inline.base import (
     get_to_registration_kb,
     get_to_subscription_plans_kb,
 )
-from bot.keyboards.inline.destiny_guide import destiny_guide_kb, to_destiny_guide_kb
-from bot.keyboards.utils import one_button_keyboard
+from bot.keyboards.inline.destiny_guide import (
+    destiny_guide_kb,
+    to_destiny_guide_kb,
+)
 from bot.text_templates.destiny_guide import astro_events, important_days
 from core.choices import Actions
 from core.models import Client, ClientAction
