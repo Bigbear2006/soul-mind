@@ -55,10 +55,12 @@ class YookassaClient(APIClient):
                             },
                             'description': description,
                             'vat_code': 1,
-                            'tax_system_code': 2,
                             'quantity': 1,
+                            'payment_subject': 'payment',
+                            'payment_mode': 'full_payment',
                         },
                     ],
+                    'tax_system_code': 2,
                 },
             },
         ) as rsp:
