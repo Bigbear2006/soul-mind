@@ -2,31 +2,20 @@ from django.contrib import admin
 from django.contrib.auth.models import Group
 from django.forms import ModelForm
 from django.http import HttpRequest
-from django.utils.safestring import mark_safe
+from django.utils.timezone import now
 from rangefilter.filters import DateTimeRangeFilterBuilder
 
 from bot.settings import settings
 from core import models
+from core.choices import PurchaseTypes, SubscriptionPlans
+from core.filters import IsRegisteredFilter
+from core.mixins import AudioPlayerMixin
+from core.models import SourceTag
 
 admin.site.unregister(Group)
 
 admin.site.register(models.QuestTag)
 admin.site.register(models.Topic)
-
-
-class AudioPlayerMixin:
-    def audio_player(self, obj):
-        url = (
-            f'https://api.telegram.org/file/bot{settings.BOT_TOKEN}/'
-            f'{obj.audio_file_path}'
-        )
-        return mark_safe(
-            f'<audio controls src="{url}">'
-            'Ваш браузер не поддерживает элемент audio.'
-            '</audio>',
-        )
-
-    audio_player.short_description = 'Аудио'
 
 
 class DailyQuestTagInline(admin.TabularInline):
@@ -57,6 +46,7 @@ class MiniConsultTopicInline(admin.TabularInline):
 @admin.register(models.DailyQuest)
 class DailyQuestAdmin(admin.ModelAdmin):
     inlines = [DailyQuestTagInline]
+    search_fields = ('title', 'text')
 
 
 @admin.register(models.WeeklyQuest)
@@ -69,9 +59,14 @@ class ClientAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at',)
     search_fields = ('fullname', 'username')
     list_filter = (
+        'gender',
         'subscription_plan',
         ('created_at', DateTimeRangeFilterBuilder()),
+        'source_tag',
+        IsRegisteredFilter,
     )
+    list_select_related = ('source_tag',)
+    list_display = ('first_name', 'username', 'fullname', 'email', 'birth')
     inlines = [ClientQuestTagInline, ClientExpertTypeInline]
 
     def save_model(
@@ -81,11 +76,40 @@ class ClientAdmin(admin.ModelAdmin):
         form: ModelForm,
         change: bool,
     ):
+        old_obj = models.Client.objects.get(pk=obj.pk)
+        super().save_model(request, obj, form, change)
+
         subscription_changed = any(
             field in form.changed_data
             for field in ('subscription_end', 'subscription_plan')
         )
-        super().save_model(request, obj, form, change)
+        if (
+            not subscription_changed
+            or not change
+            or not form.cleaned_data.get('subscription_end')
+        ):
+            return
+
+        old_sub_end = old_obj.subscription_end or now()
+        added_sub_days = (
+            form.cleaned_data['subscription_end'] - old_sub_end
+        ).days
+        if added_sub_days > 0:
+            plan = form.cleaned_data['subscription_plan']
+            if plan == SubscriptionPlans.STANDARD:
+                purchase_type = PurchaseTypes.STANDARD_SUBSCRIPTION
+            elif plan == SubscriptionPlans.PREMIUM:
+                purchase_type = PurchaseTypes.PREMIUM_SUBSCRIPTION
+            else:
+                return
+
+            models.Purchase.objects.create(
+                client=obj,
+                client_subscription=obj.get_current_plan(),
+                purchase_type=purchase_type,
+                value=added_sub_days,
+                is_free=True,
+            )
 
 
 @admin.register(models.ClientDailyQuest)
@@ -149,3 +173,26 @@ class FridayGiftAdmin(admin.ModelAdmin):
 @admin.register(models.Insight)
 class InsightAdmin(admin.ModelAdmin):
     list_select_related = ('client',)
+
+
+@admin.register(models.Purchase)
+class PurchaseAdmin(admin.ModelAdmin):
+    list_select_related = ('client', 'client__source_tag')
+    list_display = (
+        'client',
+        'purchase_type',
+        'client_subscription',
+        'is_free',
+        'date',
+    )
+    list_filter = ('client_subscription', 'client__source_tag')
+
+
+@admin.register(models.SourceTag)
+class SourceTagAdmin(admin.ModelAdmin):
+    readonly_fields = ('tag_link',)
+
+    def tag_link(self, obj: SourceTag):
+        return f'{settings.BOT_LINK}?start={obj.tag}'
+
+    tag_link.short_description = 'Ссылка'

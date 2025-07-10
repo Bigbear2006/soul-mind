@@ -44,6 +44,7 @@ from core.choices import (
     ExpertTypes,
     FeelingsTypes,
     Intentions,
+    PurchaseTypes,
 )
 from core.models import (
     Client,
@@ -51,6 +52,7 @@ from core.models import (
     MiniConsult,
     MiniConsultFeedback,
     MiniConsultTopic,
+    Purchase,
     Topic,
 )
 
@@ -147,8 +149,16 @@ async def choose_mini_consult_payment_type(
     StateFilter(MiniConsultState.payment),
 )
 @flags.with_client
-async def choose_expert_type(query: CallbackQuery, state: FSMContext):
+async def choose_expert_type(
+    query: CallbackQuery,
+    state: FSMContext,
+    client: Client,
+):
     await check_payment(query, state)
+    await Purchase.objects.from_client(
+        client,
+        PurchaseTypes.MINI_CONSULT,
+    )
     await query.message.edit_text(
         'Выбери тип эксперта',
         reply_markup=keyboard_from_choices(ExpertTypes, prefix='expert'),
@@ -445,6 +455,10 @@ async def on_successful_payment(
     client: Client,
 ):
     await check_payment(query, state)
+    await Purchase.objects.from_client(
+        client,
+        PurchaseTypes.VIP_PERSONAL_REPORT,
+    )
     await query.message.edit_text(
         'Создаю отчет и аудио...\nЭто может занять несколько минут...',
     )
@@ -532,11 +546,17 @@ async def buy_compatibility(
     StateFilter(VIPCompatabilityState.payment),
 )
 @router.callback_query(F.data == 'connection_types')
+@flags.with_client
 async def on_successful_vip_compatability_payment(
     query: CallbackQuery,
     state: FSMContext,
+    client: Client,
 ):
     await check_payment(query, state)
+    await Purchase.objects.from_client(
+        client,
+        PurchaseTypes.VIP_COMPATABILITY,
+    )
     await query.message.edit_text(
         text='Выбери тип связи',
         reply_markup=connection_types_kb,

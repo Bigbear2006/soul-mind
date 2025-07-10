@@ -38,7 +38,7 @@ class YookassaClient(APIClient):
             headers=self.headers,
             json={
                 'amount': {'value': amount, 'currency': settings.CURRENCY},
-                'payment_method_data': {'type': 'sbp'},
+                'payment_method_data': {'type': 'bank_card'},
                 'capture': True,
                 'confirmation': {
                     'type': 'redirect',

@@ -23,6 +23,7 @@ from bot.keyboards.reply import menu_kb
 from bot.keyboards.utils import keyboard_from_choices, one_button_keyboard
 from bot.loader import logger
 from bot.schemas import HDInputData, HoroscopeParams
+from bot.services.source_tag import set_source_tag
 from bot.services.tags import get_client_tags
 from bot.settings import settings
 from bot.states import UserInfoState
@@ -40,6 +41,8 @@ async def start(msg: Message, command: CommandObject):
         msg.from_user,
     )
     await client.refresh_limits()
+
+    await set_source_tag(client, command.args)
 
     if created:
         logger.info(f'New client {client} id={client.pk} was created')

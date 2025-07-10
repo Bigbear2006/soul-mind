@@ -30,9 +30,11 @@ from bot.text_templates.soul_muse_question import (
     inappropriate_questions_answers,
 )
 from bot.utils.formatters import questions_plural, remaining_plural
+from core.choices import PurchaseTypes
 from core.models import (
     Actions,
     Client,
+    Purchase,
     SoulMuseQuestion,
     SubscriptionPlans,
 )
@@ -228,9 +230,15 @@ async def on_extra_questions_buying(
 ):
     await check_payment(query, state)
 
+    questions_count = 1 if await state.get_value('buy_count') == 'one' else 5
+    await Purchase.objects.from_client(
+        client,
+        PurchaseTypes.EXTRA_SOUL_MUSE_QUESTION,
+        questions_count,
+    )
     await client.add_extra_usages(
         action=Actions.SOUL_MUSE_QUESTION,
-        count=1 if await state.get_value('buy_count') == 'one' else 5,
+        count=questions_count,
     )
     remaining_usages = await client.get_remaining_usages(
         Actions.SOUL_MUSE_QUESTION,

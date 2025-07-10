@@ -2,6 +2,7 @@ from django.db import models
 
 
 class SubscriptionPlans(models.TextChoices):
+    TRIAL = 'trial', 'Тестовый период'  # only for filtering
     STANDARD = 'standard', '✨ SoulMind Стандарт'
     PREMIUM = 'premium', '💎 SoulMind Премиум'
 
@@ -151,3 +152,16 @@ class MiniConsultStatuses(models.TextChoices):
     WAITING = 'waiting', 'В ожидании'
     IN_PROGRESS = 'in_progress', 'В обработке'
     COMPLETED = 'completed', 'Завершена'
+
+
+class PurchaseTypes(models.TextChoices):
+    STANDARD_SUBSCRIPTION = 'standard_subscription', '✨ SoulMind Стандарт'
+    PREMIUM_SUBSCRIPTION = 'premium_subscription', '💎 SoulMind Премиум'
+    MINI_CONSULT = 'mini_consult', 'Мини-консультация с экспертом'
+    VIP_PERSONAL_REPORT = 'vip_personal_report', 'Глубокий персональный отчет'
+    VIP_COMPATABILITY = 'vip_compatability', 'VIP Совместимость'
+    EXTRA_COMPATABILITY = 'extra_compatability', 'Дополнительные совместимости'
+    EXTRA_SOUL_MUSE_QUESTION = (
+        'extra_soul_muse_question',
+        'Дополнительные вопросы к Soul Muse',
+    )

@@ -15,8 +15,8 @@ from bot.loader import logger
 from bot.services.payment import check_payment, send_payment_link
 from bot.settings import settings
 from bot.utils.formatters import months_plural
-from core.choices import Actions
-from core.models import Client, SubscriptionPlans
+from core.choices import Actions, PurchaseTypes
+from core.models import Client, Purchase, SubscriptionPlans
 
 router = Router()
 
@@ -98,6 +98,15 @@ async def on_successful_payment(query: CallbackQuery, state: FSMContext):
         else datetime.now(settings.TZ)
     )
     days = 30 if data['months'] == 1 else 365
+
+    purchase_type = (
+        PurchaseTypes.STANDARD_SUBSCRIPTION
+        if plan == SubscriptionPlans.STANDARD
+        else PurchaseTypes.PREMIUM_SUBSCRIPTION
+    )
+
+    await Purchase.objects.from_client(client, purchase_type, days)
+
     await Client.objects.filter(pk=client.pk).aupdate(
         subscription_end=subscription_end + timedelta(days=days),
         subscription_plan=plan.value,

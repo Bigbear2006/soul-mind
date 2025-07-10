@@ -103,6 +103,8 @@ def keyboard_from_choices(
 ) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     for value, label in choices.choices:
+        if value == 'trial':  # don't show trial subscription plan
+            continue
         kb.button(
             text=label,
             callback_data=f'{prefix}:{value}' if prefix else value,

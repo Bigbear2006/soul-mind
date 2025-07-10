@@ -229,11 +229,11 @@ CELERY_BEAT_SCHEDULE = {
     },
     'send_destiny_guide_messages': {
         'task': 'core.tasks.send_destiny_guide_messages',
-        'schedule': crontab(minute='0', hour='19', day_of_week='0'),
+        'schedule': crontab(minute='0', hour='16', day_of_week='0'),
     },
     'send_friday_gift_messages': {
         'task': 'core.tasks.send_friday_gift_messages',
-        'schedule': crontab(minute='0', hour='19', day_of_week='5'),
+        'schedule': crontab(minute='0', hour='9', day_of_week='5'),
     },
     'send_power_day_messages': {
         'task': 'core.tasks.send_power_day_messages',

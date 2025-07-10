@@ -24,8 +24,8 @@ from bot.services.payment import check_payment, send_payment_link
 from bot.states import CompatabilityEnergyState
 from bot.text_templates.base import astropoints_not_enough
 from bot.utils.formatters import compatability_plural, remaining_plural
-from core.choices import Genders, SubscriptionPlans
-from core.models import Actions, Client
+from core.choices import Genders, PurchaseTypes, SubscriptionPlans
+from core.models import Actions, Client, Purchase
 
 router = Router()
 
@@ -208,10 +208,19 @@ async def on_extra_compatability_buying(
 ):
     await check_payment(query, state)
 
+    compatabilities_count = (
+        1 if await state.get_value('buy_count') == 'one' else 3
+    )
+    await Purchase.objects.from_client(
+        client,
+        PurchaseTypes.EXTRA_COMPATABILITY,
+        compatabilities_count,
+    )
     await client.add_extra_usages(
         action=Actions.COMPATABILITY_ENERGY,
-        count=1 if await state.get_value('buy_count') == 'one' else 3,
+        count=compatabilities_count,
     )
+
     remaining_usages = await client.get_remaining_usages(
         Actions.COMPATABILITY_ENERGY,
     )

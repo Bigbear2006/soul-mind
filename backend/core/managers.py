@@ -6,10 +6,14 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils.timezone import now
 
-from core.choices import Actions, MonthTextTypes
+from core.choices import (
+    Actions,
+    MonthTextTypes,
+    PurchaseTypes,
+)
 
 if TYPE_CHECKING:
-    from core.models import Client, FridayGift, MonthText, Payment
+    from core.models import Client, FridayGift, MonthText, Purchase
 
 
 class ClientManager(models.Manager):
@@ -106,10 +110,16 @@ class FridayGiftManager(models.Manager):
             return None
 
 
-class PaymentManager(models.Manager):
-    async def from_message(self, msg: types.Message) -> 'Payment':
+class PurchaseManager(models.Manager):
+    async def from_client(
+        self,
+        client: 'Client',
+        purchase_type: PurchaseTypes,
+        value: int | None = None,
+    ) -> 'Purchase':
         return await self.acreate(
-            client_id=msg.chat.id,
-            charge_id=msg.successful_payment.provider_payment_charge_id,
-            payment_type=msg.successful_payment.invoice_payload,
+            client=client,
+            client_subscription=client.get_current_plan(),
+            purchase_type=purchase_type,
+            value=value,
         )

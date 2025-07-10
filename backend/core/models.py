@@ -30,6 +30,7 @@ from core.choices import (
     MiniConsultFeedbackRatings,
     MiniConsultStatuses,
     MonthTextTypes,
+    PurchaseTypes,
     QuestStatuses,
     SubscriptionPlans,
 )
@@ -37,7 +38,7 @@ from core.managers import (
     ClientManager,
     FridayGiftManager,
     MonthTextManager,
-    PaymentManager,
+    PurchaseManager,
 )
 
 
@@ -63,6 +64,14 @@ class Client(models.Model):
         verbose_name='Кем приглашен',
         null=True,
         blank=True,
+    )
+    source_tag = models.ForeignKey(
+        'SourceTag',
+        models.SET_NULL,
+        'clients',
+        null=True,
+        blank=True,
+        verbose_name='UTM Метка',
     )
     astropoints = models.IntegerField('Астробаллы', default=0)
     subscription_plan = models.CharField(
@@ -157,10 +166,6 @@ class Client(models.Model):
         username = self.first_name
         if self.username:
             username += f' (@{self.username})'
-        if self.fullname:
-            username += f' | {self.fullname}'
-        if self.birth:
-            username += f' - {date_to_str(self.birth)}'
         return username
 
     async def check_invitation(
@@ -184,6 +189,15 @@ class Client(models.Model):
         if self.subscription_end:
             return self.subscription_end > datetime.now(settings.TZ)
         return False
+
+    def get_current_plan(self) -> str:
+        if self.subscription_is_active():
+            client_subscription = self.subscription_plan
+        elif self.has_trial():
+            client_subscription = SubscriptionPlans.TRIAL
+        else:
+            client_subscription = ''
+        return client_subscription
 
     def is_registered(self) -> bool:
         return bool(self.aspects)
@@ -719,13 +733,14 @@ class MiniConsult(models.Model):
         max_length=50,
         choices=FeelingsTypes,
     )
-    date = models.DateTimeField('Дата', auto_now_add=True)
+    date = models.DateTimeField('Дата создания', auto_now_add=True)
     status = models.CharField(
         'Статус',
         max_length=20,
         choices=MiniConsultStatuses,
         default=MiniConsultStatuses.WAITING,
     )
+    end_date = models.DateTimeField('Дата окончания', null=True, blank=True)
 
     class Meta:
         verbose_name = 'Мини-консультация'
@@ -1037,24 +1052,49 @@ class Insight(models.Model):
         return f'Аудио от {self.created_at.strftime(settings.DATE_FMT)}'
 
 
-class Payment(models.Model):
+class Purchase(models.Model):
     client = models.ForeignKey(
         Client,
         models.CASCADE,
         'payments',
         verbose_name='Пользователь',
     )
-    charge_id = models.CharField('ID платежа')
-    payment_type = models.CharField('Тип оплаты')
-    date = models.DateTimeField(auto_now_add=True)
-    objects = PaymentManager()
+    client_subscription = models.CharField(
+        'Тип подписки на момент покупки',
+        blank=True,
+        max_length=50,
+        choices=SubscriptionPlans,
+    )
+    purchase_type = models.CharField(
+        'Тип покупки',
+        max_length=100,
+        choices=PurchaseTypes,
+    )
+    is_free = models.BooleanField('Бесплатная покупка', default=False)
+    value = models.IntegerField('Значение', null=True, blank=True)
+    date = models.DateTimeField(auto_now_add=True, verbose_name='Дата')
+    objects = PurchaseManager()
 
     class Meta:
-        verbose_name = 'Оплата'
-        verbose_name_plural = 'Оплаты'
+        verbose_name = 'Покупка'
+        verbose_name_plural = 'Покупки'
         ordering = ['-date']
 
     def __str__(self):
-        return (
-            f'[{date_to_str(self.date)}] {self.client} - {self.payment_type}'
-        )
+        return f'[{date_to_str(self.date)}] {self.client} - {self.pk}'
+
+
+class SourceTag(models.Model):
+    tag = models.CharField(
+        'Метка',
+        max_length=25,
+        primary_key=True,
+        help_text='Только английские буквы, цифры и нижние подчеркивания',
+    )
+
+    class Meta:
+        verbose_name = 'UTM-Метка'
+        verbose_name_plural = 'UTM-Метки'
+
+    def __str__(self):
+        return self.tag
