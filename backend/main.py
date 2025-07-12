@@ -37,6 +37,7 @@ async def main():
     from bot.middlewares import WithClientMiddleware
 
     dp.include_routers(
+        support.router,
         registration.router,
         menu.router,
         subscribe.router,
@@ -53,7 +54,6 @@ async def main():
         invite_friend.router,
         personal_account.router,
         vip_services.router,
-        support.router,
         load_media.router,
         experts.router,
         tests.router,

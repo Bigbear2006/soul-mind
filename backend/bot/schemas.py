@@ -89,6 +89,7 @@ class House:
     house: int
     sign: str
     degree: float
+    sign_id: int | None = None
 
 
 @dataclass

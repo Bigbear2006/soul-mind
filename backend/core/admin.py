@@ -8,7 +8,7 @@ from rangefilter.filters import DateTimeRangeFilterBuilder
 from bot.settings import settings
 from core import models
 from core.choices import PurchaseTypes, SubscriptionPlans
-from core.filters import IsRegisteredFilter
+from core.filters import IsRegisteredFilter, SubscriptionPlanFilter
 from core.mixins import AudioPlayerMixin
 from core.models import SourceTag
 
@@ -57,10 +57,10 @@ class WeeklyQuestAdmin(admin.ModelAdmin):
 @admin.register(models.Client)
 class ClientAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at',)
-    search_fields = ('fullname', 'username')
+    search_fields = ('first_name', 'fullname', 'username')
     list_filter = (
         'gender',
-        'subscription_plan',
+        SubscriptionPlanFilter,
         ('created_at', DateTimeRangeFilterBuilder()),
         'source_tag',
         IsRegisteredFilter,

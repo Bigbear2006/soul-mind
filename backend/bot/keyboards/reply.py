@@ -1,5 +1,10 @@
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
+start_kb = ReplyKeyboardMarkup(
+    keyboard=[[KeyboardButton(text='🛠 Тех. поддержка')]],
+    resize_keyboard=True,
+)
+
 menu_kb = ReplyKeyboardMarkup(
     keyboard=[
         [

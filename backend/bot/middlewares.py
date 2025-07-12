@@ -2,6 +2,7 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from aiogram import BaseMiddleware
+from aiogram.dispatcher.event.bases import SkipHandler
 from aiogram.dispatcher.flags import get_flag
 from aiogram.types import CallbackQuery, Message, TelegramObject
 from django.core.exceptions import ObjectDoesNotExist
@@ -29,4 +30,5 @@ class WithClientMiddleware(BaseMiddleware):
                 data['client'] = client
             except ObjectDoesNotExist:
                 logger.info(event)
+                raise SkipHandler
         return await handler(event, data)
