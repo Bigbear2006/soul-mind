@@ -32,6 +32,7 @@ from bot.text_templates.push_messages import (
     destiny_guide,
     friday_gift,
     new_weekly_quest_is_available,
+    power_day_message,
     two_days_before_power_day,
     universe_advice,
     universe_advice_extended,
@@ -400,19 +401,21 @@ async def send_power_day_messages():
     today = now().date()
     clients = Client.objects.filter(notifications_enabled=True)
     days_in_month = calendar.monthrange(today.year, today.month)[1]
-    clients_ids = []
+    clients_and_messages = []
+
     async for client in clients:
         day = get_power_day(client.birth.date())
         if day > days_in_month:
             day -= days_in_month
+
         if day - 2 == today.day:
-            clients_ids.append(client.pk)
+            clients_and_messages.append((client.pk, two_days_before_power_day))
+        if day == today.day:
+            clients_and_messages.append((client.pk, power_day_message))
 
     await asyncio_wait(
         [
-            asyncio.create_task(
-                safe_send_message(cid, two_days_before_power_day),
-            )
-            for cid in clients_ids
+            asyncio.create_task(safe_send_message(client_id, msg_text))
+            for client_id, msg_text in clients_and_messages
         ],
     )

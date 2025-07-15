@@ -15,6 +15,7 @@ from django.core.validators import EmailValidator
 from bot.api.astrology import AstrologyAPI
 from bot.api.geocoding import GeocodingAPI
 from bot.api.humandesign import HumanDesignAPI
+from bot.api.telegraphyx import send_start_param
 from bot.keyboards.inline.registration import (
     birth_times_kb,
     start_ways_kb,
@@ -41,6 +42,9 @@ async def start(msg: Message, command: CommandObject):
         msg.from_user,
     )
     await client.refresh_limits()
+
+    if command.args and command.args.startswith('sl-'):
+        await send_start_param(command.args)
 
     await set_source_tag(client, command.args)
 

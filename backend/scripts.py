@@ -1,7 +1,15 @@
 import asyncio
 import os.path
 
+import django
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
+django.setup()
+
+from django.utils.timezone import now
+
 from bot.api.speechkit import synthesize
+from bot.text_templates.base import ru_months
 from bot.text_templates.friday_gift import insight_phrases
 from bot.text_templates.premium_space import (
     power_days_descriptions,
@@ -24,8 +32,13 @@ async def synthesize_static_text(base_dir: str, text: str, key: int | str):
 
 
 async def synthesize_power_days():
+    month = ru_months[now().month]
     for number, text in power_days_descriptions.items():
-        await synthesize_static_text('assets/audio/power_days', text, number)
+        await synthesize_static_text(
+            'assets/audio/power_days',
+            text.replace('{month}', month),
+            number,
+        )
 
 
 async def synthesize_universe_vip_advices():

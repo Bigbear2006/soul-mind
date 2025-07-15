@@ -14,6 +14,7 @@ from bot.keyboards.inline.base import (
 from bot.keyboards.inline.premium_space import premium_space_kb
 from bot.keyboards.utils import one_button_keyboard
 from bot.services.numerology import get_life_path_number, get_power_day
+from bot.text_templates.base import ru_months
 from bot.text_templates.premium_space import (
     power_days_descriptions,
     universe_answers,
@@ -85,7 +86,7 @@ async def power_day_handler(query: CallbackQuery, client: Client):
         )
         return
 
-    if await client.get_month_usages(Actions.POWER_DAY) >= 1:
+    if await client.get_month_usages(Actions.POWER_DAY) >= 999999:  # unlimited
         await query.message.edit_text(
             '🚀 Твой День силы\n\n'
             'Твой День силы ещё не наступил — я сообщу тебе, когда придёт время.',
@@ -116,7 +117,9 @@ async def show_power_day(query: CallbackQuery, client: Client):
     power_day = get_power_day(client.birth.date())
     text = client.genderize(power_days_descriptions[power_day])
 
-    await query.message.edit_text(text)
+    await query.message.edit_text(
+        text.format(month=ru_months.get(now().month)),
+    )
     await query.message.answer_audio(
         BufferedInputFile.from_file(
             f'assets/audio/power_days/{power_day}_{client.gender}.wav',
