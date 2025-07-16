@@ -237,6 +237,6 @@ CELERY_BEAT_SCHEDULE = {
     },
     'send_power_day_messages': {
         'task': 'core.tasks.send_power_day_messages',
-        'schedule': crontab(minute='0', hour='10'),
+        'schedule': crontab(minute='0', hour='6'),
     },
 }

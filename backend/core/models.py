@@ -172,6 +172,9 @@ class Client(models.Model):
         self,
         inviter_id: int | str,
     ) -> Optional['Client']:
+        if isinstance(inviter_id, str) and not inviter_id.isdigit():
+            return
+
         try:
             invited_by = await Client.objects.aget(pk=inviter_id)
         except ObjectDoesNotExist:

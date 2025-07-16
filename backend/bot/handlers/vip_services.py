@@ -39,6 +39,7 @@ from bot.states import (
 from bot.text_templates.base import astropoints_not_enough, connection_types
 from bot.text_templates.vip_services import ask_question_instructions
 from bot.utils.pdf import generate_pdf
+from bot.utils.validation import validate_time
 from core.choices import (
     ExperienceTypes,
     ExpertTypes,
@@ -616,7 +617,10 @@ async def set_birth_date(msg: Message, state: FSMContext):
         '⏳ Введи точное время рождения человека. '
         'Это важно для точности разбора.\n'
         'Не знаешь? Выбери:',
-        reply_markup=birth_times_kb,
+        reply_markup=one_button_keyboard(
+            text='Не знаю',
+            callback_data='unknown_birth_time',
+        ),
     )
     await state.set_state(VIPCompatabilityState.birth_time)
 
@@ -628,6 +632,7 @@ async def set_birth_date(msg: Message, state: FSMContext):
 )
 async def set_birth_time(msg: Message | CallbackQuery, state: FSMContext):
     if isinstance(msg, Message):
+        await validate_time(msg)
         birth_time = msg.text
         answer_func = msg.answer
     else:

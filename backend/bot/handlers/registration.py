@@ -28,6 +28,7 @@ from bot.services.source_tag import set_source_tag
 from bot.services.tags import get_client_tags
 from bot.settings import settings
 from bot.states import UserInfoState
+from bot.utils.validation import validate_time
 from core.models import Client, ClientQuestTag, Genders, QuestTag
 
 router = Router()
@@ -206,12 +207,7 @@ async def unknown_birth_time(query: CallbackQuery):
 )
 async def set_birth_time(msg: Message | CallbackQuery, state: FSMContext):
     if isinstance(msg, Message):
-        try:
-            datetime.strptime(msg.text, '%H:%M')
-        except ValueError:
-            await msg.answer('Некорректное время. Попробуй еще раз')
-            return
-
+        await validate_time(msg)
         birth_time = msg.text
         answer_func = msg.answer
     else:
