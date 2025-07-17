@@ -1,3 +1,5 @@
+from django.utils.timezone import now
+
 from bot.services.numerology import get_life_path_number, get_soul_number
 from bot.text_templates.base import archetypes
 from core.models import Client
@@ -127,6 +129,7 @@ def get_month_forecast_prompt(client: Client):
         'Не сопротивляйся ветру. Он не враг. Он путь.\n\n'
         '🔹 Важно:\n'
         'Вот данные пользователя, с которыми ты работаешь:\n'
+        f'Номер текущего месяца {now().month}\n\n'
         f'ФИО: {client.fullname}\n'
         f'Дата и время рождения: {client.birth}\n'
         f'Тип: {client.type}\n'

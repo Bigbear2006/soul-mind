@@ -1,5 +1,7 @@
 from typing import Literal
 
+from django.utils.timezone import now
+
 from bot.text_templates.base import all_centers
 
 
@@ -9,6 +11,7 @@ def get_vip_compatability_prompt(
 ) -> str:
     def person_to_text(person: dict) -> str:
         return (
+            f'Номер текущего месяца {now().month}\n'
             f'{person["fullname"]}\n'
             f'Тип: {person["type"]}\n'
             f'Авторитет: {person["authority"]}\n'
